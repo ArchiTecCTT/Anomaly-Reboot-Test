@@ -276,14 +276,14 @@ local function calculate_neck_trauma(target, shit, bone_name, flesh_power, flesh
                 db.actor.power = -0.6 
                 if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("TRACHEA CRUSHED - ASPHYXIATION", "flesh") end
             end 
-            dmg_mult = dmg_mult + 0.8
+            dmg_mult = dmg_mult + 1.2
             if bullet_pen <= 0 then break end
         end
 
         -- Jugular / Carotid Arteries (Lateral Edges, Mid-Depth)
         if not hits.artery and (math_abs(current_x) > 25 and math_abs(current_x) < 55) and (current_z > -20 and current_z < 20) then
             hits.artery = true
-            dmg_mult, bleed_mult = dmg_mult + 1.5, bleed_mult + 4.0
+            dmg_mult, bleed_mult = dmg_mult + 2.5, bleed_mult + 4.0
             
             bullet_pen = apply_tissue_drag("artery", "jugular", bullet_pen, flesh_power, wounds, "torso", "internal")
             total_pain_spike = total_pain_spike + 20
@@ -430,7 +430,7 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
             end
             if not hits.artery and (math_abs(current_x) > 25 and math_abs(current_x) < 45) and (current_z > 0 and current_z < 15) then
                 hits.artery = true
-                bleed_mult = bleed_mult + 3.0
+                dmg_mult, bleed_mult = dmg_mult + 0.8, bleed_mult + 3.0
                 table.insert(path_log, "Brachial Artery")
                 
                 bullet_pen = apply_tissue_drag("artery", "brachial_artery", bullet_pen, flesh_power, wounds, bone_name, "internal")
@@ -462,7 +462,7 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
             end
             if not hits.artery and current_y > 200 and (math_abs(current_x) > 15 and math_abs(current_x) < 35) and (current_z > 15 and current_z < 35) then
                 hits.artery = true
-                bleed_mult = bleed_mult + 2.5
+                dmg_mult, bleed_mult = dmg_mult + 0.5, bleed_mult + 2.5
                 table.insert(path_log, "Radial Artery")
                 
                 bullet_pen = apply_tissue_drag("artery", "radial_artery", bullet_pen, flesh_power, wounds, bone_name, "internal")
@@ -479,7 +479,7 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
         elseif string.find(bone_name, "thigh") then
             if not hits.bone and math_abs(current_x) < 18 and (current_z > -10 and current_z < 20) then
                 hits.bone = true
-                dmg_mult, severe_shock = dmg_mult + 1.0, true
+                dmg_mult, severe_shock = dmg_mult + 1.8, true
                 table.insert(path_log, "Femur Shattered")
                 
                 bullet_pen = apply_tissue_drag("femur", side_prefix .. "femur", bullet_pen, flesh_power, wounds, bone_name, "fracture")
@@ -495,7 +495,7 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
             end
             if not hits.artery and current_y < 200 and (math_abs(current_x) > 30 and math_abs(current_x) < 70) and (current_z > 10 and current_z < 40) then
                 hits.artery = true
-                bleed_mult = bleed_mult + 3.5
+                dmg_mult, bleed_mult = dmg_mult + 1.5, bleed_mult + 3.5
                 table.insert(path_log, "Femoral Artery")
                 
                 bullet_pen = apply_tissue_drag("artery", "femoral_artery", bullet_pen, flesh_power, wounds, bone_name, "internal")
@@ -604,7 +604,7 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
     local base_power_cost = 0.025 
     local power_cost_per_step = base_power_cost
     
-    local total_dmg_mult = 0.5
+    local total_dmg_mult = 1.0
     local total_bleed_mult = 0.2
     local path_log = {string.format("Entry (X:%d, Z:%d, Y:%d)", current_x, current_z, current_y)}
     
@@ -694,7 +694,7 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
                 total_pain_spike = total_pain_spike + 50
                 if bullet_pen <= 0 then break end
             end
-            total_dmg_mult = total_dmg_mult + 0.25
+            total_dmg_mult = total_dmg_mult + 3.5
             total_bleed_mult = total_bleed_mult + 0.30
         end
         
@@ -711,7 +711,7 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
                 table.insert(path_log, "Lungs (Hypoxia)")
                 if bullet_pen <= 0 then break end
             end
-            total_dmg_mult = total_dmg_mult + 0.10
+            total_dmg_mult = total_dmg_mult + 1.5
             total_bleed_mult = total_bleed_mult + 0.15
         end
 
@@ -723,7 +723,7 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
                 bullet_pen = apply_tissue_drag("liver", nil, bullet_pen, flesh_power, wounds, "torso", "internal")
                 if bullet_pen <= 0 then break end
             end
-            total_dmg_mult = total_dmg_mult + 0.15
+            total_dmg_mult = total_dmg_mult + 1.8
             total_bleed_mult = total_bleed_mult + 0.25
         end
 
@@ -735,7 +735,7 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
                 bullet_pen = apply_tissue_drag("gi_tract", nil, bullet_pen, flesh_power, wounds, "torso", "internal")
                 if bullet_pen <= 0 then break end
             end
-            total_dmg_mult = total_dmg_mult + 0.10
+            total_dmg_mult = total_dmg_mult + 0.6
             total_bleed_mult = total_bleed_mult + 0.125
         end
 
@@ -755,7 +755,7 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
         
         if not hits.iliac and current_y < 120 and ((current_x > 40 and current_x < 70) or (current_x < -40 and current_x > -70)) and current_z > 100 and current_z < 180 then
             hits.iliac = true
-            total_dmg_mult = total_dmg_mult + 1.0
+            total_dmg_mult = total_dmg_mult + 2.5
             total_bleed_mult = total_bleed_mult + 3.5
             
             bullet_pen = apply_tissue_drag("artery", "iliac_artery", bullet_pen, flesh_power, wounds, "torso", "internal")
@@ -931,6 +931,8 @@ end
 function process_flesh_hit(target, shit, flesh_power, flesh_impulse, bullet_pen, bone_id, impact_type)
     if not (shit.type == hit.fire_wound) then return end
     if flesh_power <= 0.01 then return end 
+    
+    bullet_pen = bullet_pen or 50.0
 
     local bone_name = target:bone_name(bone_id) or ""
     local category = get_bone_category(bone_name)

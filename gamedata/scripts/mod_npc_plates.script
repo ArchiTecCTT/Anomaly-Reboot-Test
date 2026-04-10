@@ -383,10 +383,10 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
     if not (shit.type == hit.fire_wound or shit.type == hit.wound or shit.type == hit.strike) then return end
     
     local v_data = npc_virtual_plates[npc:id()]
-    if not v_data then return end
+    if not v_data then return "PENETRATING", 50.0 end
     
     local bone_name = npc:bone_name(bone_id)
-    if not bone_name then return end
+    if not bone_name then return "PENETRATING", 50.0 end
 
     local hit_zone = nil
     local impact_angle_deg = 0
@@ -399,7 +399,7 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
         impact_angle_deg = math_deg(math_acos(math_abs(dot)))
     
     elseif string.find(bone_name, "pelvis") or string.find(bone_name, "neck") or string.find(bone_name, "head") then
-        return
+        return "PENETRATING", 50.0
     else
         if string.find(bone_name, "l_upperarm") then hit_zone = "l_up"; impact_angle_deg = get_curved_impact_angle(65)
         elseif string.find(bone_name, "r_upperarm") then hit_zone = "r_up"; impact_angle_deg = get_curved_impact_angle(65)
@@ -412,9 +412,9 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
         end
     end
 
-    if not hit_zone then return end
+    if not hit_zone then return "PENETRATING", 50.0 end
     local active_plate = v_data[hit_zone]
-    if not active_plate or active_plate.cond < 0.05 then return end
+    if not active_plate or active_plate.cond < 0.05 then return "PENETRATING", 50.0 end
 
     -- ==========================================================
     -- 2. FETCH AMMO OR SYNTHESIZE MUTANT KINETICS
@@ -546,7 +546,7 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
         t_data.phase = "PHASE 1 - RICOCHET"
         t_data.final_dmg_str = string.format("Power: 0.0 | Plate_Cond: -%.4f", 0.005 * durability)
         log_telemetry(t_data)
-        return
+        return "RICOCHET", 0
     end
 
     -- ==========================================================
@@ -588,7 +588,7 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
             t_data.phase = "PHASE 4 - SOFT CATCH"
             t_data.final_dmg_str = string.format("Blunt: %.2f | Spall: %.2f", blunt_dmg, spall_dmg)
             log_telemetry(t_data)
-            return "BLUNT"
+        return "BLUNT", 0
         else
             -- PHASE 5: OVER-PENETRATION
             local soft_armor_mm = safe_koeff * 40
@@ -613,7 +613,8 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
             t_data.phase = "PHASE 5 - LETHAL BREACH"
             t_data.final_dmg_str = string.format("Piercing: %.2f | Blunt: %.2f | Spall: %.2f", piercing_dmg, blunt_dmg, spall_dmg)
             log_telemetry(t_data)
-            return "PENETRATING"
+        local remaining_pen = math_max(0.1, bullet_pen - total_material_drag)
+        return "PENETRATING", remaining_pen
         end
     else
         -- PHASE 3: CLEAN STOP
@@ -637,7 +638,7 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
         t_data.phase = "PHASE 3 - CLEAN STOP"
         t_data.final_dmg_str = string.format("Blunt: %.2f | Spall: %.2f | Stamina Pen: %.2f", blunt_dmg, spall_dmg, stamina_penalty)
         log_telemetry(t_data)
-        return "BLUNT"
+    return "BLUNT", 0
     end
 end
 
@@ -646,9 +647,19 @@ end
 -- ==========================================================
 local function npc_on_before_hit(npc, shit, bone_id)
     if not (npc and IsStalker(npc)) then return end
-    local impact_type = armor_npc_on_before_hit(npc, shit, bone_id) or "PENETRATING"
+    if not (shit.type == hit.fire_wound or shit.type == hit.wound or shit.type == hit.strike) then return end
+
+    local impact_type, remaining_pen = armor_npc_on_before_hit(npc, shit, bone_id)
+    if not impact_type then 
+        impact_type = "PENETRATING"
+        remaining_pen = 50.0
+    end
+
+    local flesh_power = shit.power
+    local flesh_impulse = shit.impulse
+
     if mod_flesh_math and mod_flesh_math.process_flesh_hit then
-        mod_flesh_math.process_flesh_hit(npc, shit, bone_id, impact_type)
+        mod_flesh_math.process_flesh_hit(npc, shit, flesh_power, flesh_impulse, remaining_pen, bone_id, impact_type)
     end
 end
 

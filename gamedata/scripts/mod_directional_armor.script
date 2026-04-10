@@ -232,7 +232,7 @@ end
 -- ==========================================================
 
 local function armor_actor_on_before_hit(shit, bone_id)
-    if not (shit.type == hit.fire_wound or shit.type == hit.wound or shit.type == hit.strike) then return end
+    if not (shit.type == hit.fire_wound or shit.type == hit.wound or shit.type == hit.strike or shit.type == hit.explosion) then return end
     
     local is_torso = torso_bones[bone_id] ~= nil
     local is_curved = curved_bones[bone_id] ~= nil
@@ -583,9 +583,14 @@ end
 -- MASTER PIPELINE CONTROLLER (THE ROUTER)
 -- ==========================================================
 local function actor_on_before_hit(shit, bone_id)
+    if not (shit.type == hit.fire_wound or shit.type == hit.wound or shit.type == hit.strike) then return end
+
     -- 1. Execute Armor Physics
     local impact_type, remaining_pen = armor_actor_on_before_hit(shit, bone_id)
-    if not impact_type then return end
+    if not impact_type then 
+        impact_type = "PENETRATING"
+        remaining_pen = 50.0
+    end
     
     -- 2. Extract kinetic variables into pure Lua floats
     local flesh_power = shit.power

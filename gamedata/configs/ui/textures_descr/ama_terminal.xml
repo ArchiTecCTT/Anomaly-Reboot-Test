@@ -1,0 +1,7 @@
+<w>
+    <file name="ui\ui_hud_ama_terminal_bars">
+        <texture id="ui_ama_terminal_bar_bg" x="26" y="78" width="230" height="11" />
+        <texture id="ui_ama_blood_fill" x="26" y="22" width="230" height="11" />
+        <texture id="ui_ama_pain_fill" x="26" y="41" width="230" height="11" />
+    </file>
+</w>

@@ -1,0 +1,12 @@
+We will add plate degradation for NPCs. They will spawn with their plates and the degradation will be similar to the players degradation. We will also add outfit degradation for NPCs so that after hitting an NPC with a nosorog with 30 fmj bullets to the chest, their armor won't be in pristine condition.
+We will also make the outfit degradation faster because that's more realistic. But to compensate for that, repairing will be more generous and forgiving.
+We will fix a bug where the player is still taking vanilla damage if a grenade shrapnel hits or a grenade hits near the player.
+We will also fix a bug where hits to the limb armors consumes outfit durability. If I'd have to guess, it has something to do with the soft armor catch mechanic. We will make it so that hits to the plates will shred the outfit condition.
+We will clear all the vanilla effects that vanilla medical items give such as bleeding control, health restoration, etc.
+We will make it so that morphine and other vanilla meds that used to give increased ballistic resistance will now reduce received death rating and pain levels by 15-30% depending on the strength of the medicine.
+Add the new ballistic values to vanilla weapons and vanilla ammunition.
+Adrenaline, stimpacks, and other performance boosters will also allow the player to not lose stamina when getting hit.
+Buff the bleed rate, it's currently very low right now. Any penetrating hit to the flesh will cause bleeding.
+Fix a bug where you can still use bandages despite it being not allowed. Same goes for tourniquets. Same goes for medkits.
+As of right now, applying a bandage to your limbs does not do anything. We must separate the legs and arms into forearms, upperarms, thighs, and shins.
+Currently, Large Glucose shot only give 500 blood while small glucose shot gives you 750. Update it so that small glucose shot gives you 300 blood while large glucose shot will give you 750.
