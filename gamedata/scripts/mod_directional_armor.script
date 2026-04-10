@@ -22,7 +22,7 @@ local string_find = string.find
 -- ==========================================================
 
 local function log_telemetry(data)
-    if not mod_directional_armor.AMA_DEBUG_MODE then return end
+    if not AMA_DEBUG_MODE then return end
     
     log(string.format("[AMA BALLISTICS] ----------------------------------------------"))
     log(string.format("[TARGET]      : %s", data.target or "db.actor (SKY)"))
@@ -214,8 +214,18 @@ local function restore_audio_safely()
     end
 end
 
-local function save_state(m_data) if original_volume then m_data.ama_original_volume = original_volume end end
-local function load_state(m_data) if m_data.ama_original_volume then get_console():execute("snd_volume " .. tostring(m_data.ama_original_volume)); m_data.ama_original_volume = nil end end
+local function save_state(m_data)
+    if original_volume then
+        m_data.ama_original_volume = original_volume
+    end
+end
+
+local function load_state(m_data)
+    if m_data.ama_original_volume then
+        get_console():execute("snd_volume " .. tostring(m_data.ama_original_volume))
+        m_data.ama_original_volume = nil
+    end
+end
 
 -- ==========================================================
 -- MAIN HIT CALLBACK
@@ -297,7 +307,7 @@ local function armor_actor_on_before_hit(shit, bone_id)
         impact_angle_deg = calculate_shared_limb_geometry(shit.direction, curve_data.radius)
     end
 
-    if not active_plate or active_plate.cond < 0.05 then return end
+    if not active_plate or active_plate.cond < 0.05 then return "PENETRATING", 50.0 end
 
     local bullet_pen = 0.1
     local bullet_bite = 0
@@ -373,7 +383,7 @@ local function armor_actor_on_before_hit(shit, bone_id)
         shit.power = 0
         db.actor.psy_health = -0.10
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ANOMALY: PROJECTILE PHASED", "stopped") end
-        return
+        return "PHASED", 0
     end
 
     if is_mutant_attack then
@@ -433,7 +443,7 @@ local function armor_actor_on_before_hit(shit, bone_id)
         t_data.phase = "PHASE 1 - RICOCHET"
         t_data.final_dmg_str = string.format("Power: 0.0 | Plate_Cond: -%.4f", 0.005 * durability)
         log_telemetry(t_data)
-        return
+        return "RICOCHET", 0
     end
     
     -- ==========================================================
@@ -575,10 +585,7 @@ end
 local function actor_on_before_hit(shit, bone_id)
     -- 1. Execute Armor Physics
     local impact_type, remaining_pen = armor_actor_on_before_hit(shit, bone_id)
-    if not impact_type then 
-        impact_type = "PENETRATING"
-        remaining_pen = 50.0 -- Fallback for naked hits or mutants
-    end
+    if not impact_type then return end
     
     -- 2. Extract kinetic variables into pure Lua floats
     local flesh_power = shit.power
