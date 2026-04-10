@@ -11,6 +11,11 @@ local math_cos   = math.cos
 local math_acos  = math.acos
 local math_deg   = math.deg
 local math_rad   = math.rad
+local math_asin  = math.asin
+local math_atan2 = math.atan2
+local math_pi    = math.pi
+local math_random = math.random
+local string_find = string.find
 
 -- ==========================================================
 -- TELEMETRY ENGINE (DEBUG FEED)
@@ -109,15 +114,15 @@ local function play_plate_sound(material, state)
 
     if state == "broken" then
         utils_obj.play_sound(path .. s_mat .. "_break")
-        utils_obj.play_sound(path .. "flesh_" .. math.random(1, 6))
+        utils_obj.play_sound(path .. "flesh_" .. math_random(1, 6))
     elseif state == "penetrated" then
-        utils_obj.play_sound(path .. s_mat .. "_pierce_" .. math.random(1, 3))
-        utils_obj.play_sound(path .. "flesh_" .. math.random(1, 6))
+        utils_obj.play_sound(path .. s_mat .. "_pierce_" .. math_random(1, 3))
+        utils_obj.play_sound(path .. "flesh_" .. math_random(1, 6))
     elseif state == "stopped" then
-        utils_obj.play_sound(path .. s_mat .. "_hit_" .. math.random(1, 3))
+        utils_obj.play_sound(path .. s_mat .. "_hit_" .. math_random(1, 3))
     elseif state == "ricochet" then
-        utils_obj.play_sound("material\\bullet\\collide\\metal\\ext_metal_hit_" .. math.random(1, 4))
-        utils_obj.play_sound(path .. "ricochet_" .. math.random(1, 6))
+        utils_obj.play_sound("material\\bullet\\collide\\metal\\ext_metal_hit_" .. math_random(1, 4))
+        utils_obj.play_sound(path .. "ricochet_" .. math_random(1, 6))
     end
 end
 
@@ -148,12 +153,12 @@ local function calculate_shared_limb_geometry(shit_dir, radius_mm)
     
     -- Matches mod_flesh_math.script exactly
     local base_offset = right_vec:dotproduct(shit_dir) * radius_mm
-    local dispersion = math.random(-15, 15)
+    local dispersion = math_random(-15, 15)
     local lateral_offset = math_min(math_abs(base_offset + dispersion), radius_mm)
     
     -- Convert physical offset distance to impact angle
     local sine_ratio = lateral_offset / radius_mm
-    return math_deg(math.asin(sine_ratio))
+    return math_deg(math_asin(sine_ratio))
 end
 
 -- ==========================================================
@@ -246,15 +251,15 @@ local function armor_actor_on_before_hit(shit, bone_id)
         local dir_to_shooter = shooter:position():sub(db.actor:position()):normalize()
         local actor_dir = db.actor:direction()
         
-        local angle_diff = math.atan2(dir_to_shooter.x, dir_to_shooter.z) - math.atan2(actor_dir.x, actor_dir.z)
-        if angle_diff > math.pi then angle_diff = angle_diff - 2 * math.pi end
-        if angle_diff < -math.pi then angle_diff = angle_diff + 2 * math.pi end
+        local angle_diff = math_atan2(dir_to_shooter.x, dir_to_shooter.z) - math_atan2(actor_dir.x, actor_dir.z)
+        if angle_diff > math_pi then angle_diff = angle_diff - 2 * math_pi end
+        if angle_diff < -math_pi then angle_diff = angle_diff + 2 * math_pi end
         
         local plate_hit = nil
-        if angle_diff > -math.pi/4 and angle_diff <= math.pi/4 then plate_hit = "front"
-        elseif angle_diff > math.pi/4 and angle_diff <= 3*math.pi/4 then plate_hit = "right"
-        elseif angle_diff > 3*math.pi/4 or angle_diff <= -3*math.pi/4 then plate_hit = "back"
-        elseif angle_diff > -3*math.pi/4 and angle_diff <= -math.pi/4 then plate_hit = "left" end
+        if angle_diff > -math_pi/4 and angle_diff <= math_pi/4 then plate_hit = "front"
+        elseif angle_diff > math_pi/4 and angle_diff <= 3*math_pi/4 then plate_hit = "right"
+        elseif angle_diff > 3*math_pi/4 or angle_diff <= -3*math_pi/4 then plate_hit = "back"
+        elseif angle_diff > -3*math_pi/4 and angle_diff <= -math_pi/4 then plate_hit = "left" end
         
         if not plate_hit then return end
         
@@ -310,12 +315,12 @@ local function armor_actor_on_before_hit(shit, bone_id)
         local d_sec = shooter:section()
         ammo_sec = "Mutant Attack"
         
-        if string.find(d_sec, "tushkano") or string.find(d_sec, "rat") or string.find(d_sec, "zombie") then mass_mult = 0.5
-        elseif string.find(d_sec, "dog") or string.find(d_sec, "cat") or string.find(d_sec, "fracture") then mass_mult = 1.5
-        elseif string.find(d_sec, "boar") or string.find(d_sec, "snork") or string.find(d_sec, "flesh") then mass_mult = 3.5
-        elseif string.find(d_sec, "chimera") or string.find(d_sec, "gigant") or string.find(d_sec, "bloodsucker") then mass_mult = 8.0 end
+        if string_find(d_sec, "tushkano") or string_find(d_sec, "rat") or string_find(d_sec, "zombie") then mass_mult = 0.5
+        elseif string_find(d_sec, "dog") or string_find(d_sec, "cat") or string_find(d_sec, "fracture") then mass_mult = 1.5
+        elseif string_find(d_sec, "boar") or string_find(d_sec, "snork") or string_find(d_sec, "flesh") then mass_mult = 3.5
+        elseif string_find(d_sec, "chimera") or string_find(d_sec, "gigant") or string_find(d_sec, "bloodsucker") then mass_mult = 8.0 end
         
-        if string.find(d_sec, "burer") or string.find(d_sec, "poltergeist") then
+        if string_find(d_sec, "burer") or string_find(d_sec, "poltergeist") then
             mass_mult = math_max(1.0, shit.power * 6.0)
             bullet_pen, bullet_bite, bullet_impulse, k_ap = 2.0, 0, mass_mult * 2.0, 0.0
         else
@@ -359,12 +364,12 @@ local function armor_actor_on_before_hit(shit, bone_id)
     local safe_koeff = math_max(0.01, raw_koeff)
     
     local is_shear_plug = false
-    local is_monocrystal = string.find(active_plate.sec, "monocrystal")
-    local is_empty = string.find(active_plate.sec, "empty")
-    local is_soul = string.find(active_plate.sec, "soul")
-    local is_kolobok = string.find(active_plate.sec, "kolobok")
+    local is_monocrystal = string_find(active_plate.sec, "monocrystal")
+    local is_empty = string_find(active_plate.sec, "empty")
+    local is_soul = string_find(active_plate.sec, "soul")
+    local is_kolobok = string_find(active_plate.sec, "kolobok")
 
-    if is_empty and math.random(1, 100) <= 20 then
+    if is_empty and math_random(1, 100) <= 20 then
         shit.power = 0
         db.actor.psy_health = -0.10
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ANOMALY: PROJECTILE PHASED", "stopped") end
@@ -373,7 +378,7 @@ local function armor_actor_on_before_hit(shit, bone_id)
 
     if is_mutant_attack then
         if material == "steel" or material == "metal" then
-            if string.find(active_plate.sec, "scrap") and shooter.health then
+            if string_find(active_plate.sec, "scrap") and shooter.health then
                 shooter.health = math_max(0, shooter.health - 0.15)
                 if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("SCRAP PLATE INJURED MUTANT", "flesh") end
             else
@@ -389,11 +394,11 @@ local function armor_actor_on_before_hit(shit, bone_id)
         end
     end
 
-    if string.find(active_plate.sec, "stf") then
+    if string_find(active_plate.sec, "stf") then
         if kinetic_shock > 0.3 then hardness, padding_mult = 0.85, padding_mult * 1.5 else hardness = 0.20 end
     end
-    if string.find(active_plate.sec, "titanium") then material, is_shear_plug = "metal", true end
-    if string.find(active_plate.sec, "mamasbeads") then hardness = hardness + ((1.0 - active_plate.cond) * 0.6) end
+    if string_find(active_plate.sec, "titanium") then material, is_shear_plug = "metal", true end
+    if string_find(active_plate.sec, "mamasbeads") then hardness = hardness + ((1.0 - active_plate.cond) * 0.6) end
 
     local current_strength = (nom_thickness * hardness) * active_plate.cond
 
@@ -491,7 +496,7 @@ local function armor_actor_on_before_hit(shit, bone_id)
             t_data.phase = "PHASE 4 - SOFT CATCH"
             t_data.final_dmg_str = string.format("Blunt: %.2f | Spall: %.2f", blunt_dmg, spall_dmg)
             log_telemetry(t_data)
-            return "BLUNT"
+            return "BLUNT", 0
         else
             -- PHASE 5: LETHAL OVER-PENETRATION
             local soft_armor_mm = safe_koeff * 40
@@ -529,7 +534,8 @@ local function armor_actor_on_before_hit(shit, bone_id)
             t_data.phase = "PHASE 5 - LETHAL BREACH"
             t_data.final_dmg_str = string.format("Piercing: %.2f | Blunt: %.2f | Spall: %.2f", piercing_dmg, blunt_dmg, spall_dmg)
             log_telemetry(t_data)
-            return "PENETRATING"
+            local remaining_pen = math_max(0.1, bullet_pen - total_material_drag)
+            return "PENETRATING", remaining_pen
         end
 
     else
@@ -559,7 +565,7 @@ local function armor_actor_on_before_hit(shit, bone_id)
         t_data.phase = "PHASE 3 - CLEAN STOP"
         t_data.final_dmg_str = string.format("Blunt: %.2f | Spall: %.2f", blunt_dmg, spall_dmg)
         log_telemetry(t_data)
-        return "BLUNT"
+        return "BLUNT", 0
     end
 end
 
@@ -567,15 +573,23 @@ end
 -- MASTER PIPELINE CONTROLLER (THE ROUTER)
 -- ==========================================================
 local function actor_on_before_hit(shit, bone_id)
-    -- 1. Execute the Armor Physics (Phase 1 to 5)
-    local impact_type = armor_actor_on_before_hit(shit, bone_id) or "PENETRATING"
+    -- 1. Execute Armor Physics
+    local impact_type, remaining_pen = armor_actor_on_before_hit(shit, bone_id)
+    if not impact_type then 
+        impact_type = "PENETRATING"
+        remaining_pen = 50.0 -- Fallback for naked hits or mutants
+    end
     
-    -- 2. Pass the surviving bullet to the Flesh Math
+    -- 2. Extract kinetic variables into pure Lua floats
+    local flesh_power = shit.power
+    local flesh_impulse = shit.impulse
+    
+    -- 3. Pass to Flesh Math
     if mod_flesh_math and mod_flesh_math.process_flesh_hit then
-        mod_flesh_math.process_flesh_hit(db.actor, shit, bone_id, impact_type)
+        mod_flesh_math.process_flesh_hit(db.actor, shit, flesh_power, flesh_impulse, remaining_pen, bone_id, impact_type)
     end
 
-    -- 3. Nullify Vanilla HP Damage (HP is deprecated)
+    -- 4. Nullify Vanilla HP Damage
     shit.power = 0.0001
 end
 
