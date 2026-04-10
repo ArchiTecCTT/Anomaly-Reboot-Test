@@ -1,0 +1,293 @@
+; ==========================================================================
+; 						VANILLA LEATHER JACKETS
+; ==========================================================================
+
+;--------------------------------------------------------------------------
+![novice_outfit]; Leather Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 0
+	inv_grid_y							= 12
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_base_01
+	script_binding			 			= ama_armor_binder.bind
+	
+;--------------------------------------------------------------------------
+![novice_outfit_camo]; Firearm Enthusiast's Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 8
+	inv_grid_y							= 6
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_base_01
+	script_binding			 			= ama_armor_binder.bind
+	
+;--------------------------------------------------------------------------
+![novice_outfit_tourist]; Tourist Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 12
+	inv_grid_y							= 12
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_base_01
+	script_binding			 			= ama_armor_binder.bind
+	
+;--------------------------------------------------------------------------
+![bandit_novice_outfit]; Black Leather Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 4
+	inv_grid_y							= 0
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_base_01
+	script_binding			 			= ama_armor_binder.bind
+	
+;--------------------------------------------------------------------------
+![bandit_novice_outfit_alt]; Armored Leather Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 0
+	inv_grid_y							= 0
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_upgraded_002
+	script_binding			 			= ama_armor_binder.bind
+	inv_weight							= 8.6
+	control_inertion_factor				= 1.20
+	power_loss							= 0.14
+	
+	shock_protection					= 0.05
+	burn_protection						= 0.03
+	
+;--------------------------------------------------------------------------
+![cs_novice_outfit]; Clear Sky Leather Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 12
+	inv_grid_y							= 0
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_base_01
+	script_binding			 			= ama_armor_binder.bind
+	
+;--------------------------------------------------------------------------
+![dolg_novice_outfit]; Duty Leather Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 0
+	inv_grid_y							= 6
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_base_01
+	script_binding			 			= ama_armor_binder.bind
+	
+;--------------------------------------------------------------------------
+![redline_novice_outfit]; Redline Leather Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 8
+	inv_grid_y							= 12
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_base_01
+	script_binding			 			= ama_armor_binder.bind
+	
+;--------------------------------------------------------------------------
+![svoboda_novice_outfit]; Freedom Leather Jacket
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 12
+	inv_grid_y							= 6
+	inv_grid_scale						= 2
+	bones_koeff_protection				= actor_armor_class_ama_base_01
+	script_binding			 			= ama_armor_binder.bind
+
+; ==========================================================================
+; 						NEW LEATHER JACKET VARIANTS
+; ==========================================================================
+
+
+[novice_outfit_upgraded_ama]:novice_outfit
+	inv_name							= novice_outfit_upgraded_name
+	inv_name_short						= novice_outfit_upgraded_name
+	description							= novice_outfit_upgraded_description
+	inv_grid_x							= 4
+	inv_grid_y							= 12
+	icons_texture						= ui\ui_icon_o_novice_ama
+	bones_koeff_protection				= actor_armor_class_ama_upgraded_002
+	immunities_sect						= sect_novice_outfit_upgraded_immunities
+	inv_weight							= 8.3
+	control_inertion_factor				= 1.20
+	power_loss							= 0.14
+	
+	shock_protection					= 0.05
+	burn_protection						= 0.03
+	
+[sect_novice_outfit_upgraded_immunities]
+	burn_immunity                 		= 0.23
+	chemical_burn_immunity        		= 0.073
+	explosion_immunity            		= 0.28
+	fire_wound_immunity           		= 0.078
+	radiation_immunity            		= 0.0
+	shock_immunity                		= 0.05
+	strike_immunity               		= 0.0
+	telepatic_immunity            		= 0.0
+	wound_immunity                		= 0.125
+
+;--------------------------------------------------------------------------
+[novice_outfit_tourist_upgraded_ama]:novice_outfit_tourist
+	inv_name							= novice_outfit_tourist_upgraded_name
+	inv_name_short						= novice_outfit_tourist_upgraded_name
+	description							= novice_outfit_tourist_upgraded_description
+	inv_grid_x							= 16
+	inv_grid_y							= 12
+	icons_texture						= ui\ui_icon_o_novice_ama
+	bones_koeff_protection				= actor_armor_class_ama_upgraded_001
+	immunities_sect						= sect_novice_outfit_upgraded_immunities
+	inv_weight							= 6.5
+	control_inertion_factor				= 1.20
+	power_loss							= 0.11
+	
+	shock_protection					= 0.05
+	burn_protection						= 0.03
+	
+;--------------------------------------------------------------------------
+[bandit_novice_outfit_upgraded_ama]:bandit_novice_outfit
+	inv_name							= bandit_novice_outfit_upgraded_name
+	inv_name_short						= bandit_novice_outfit_upgraded_name
+	description							= bandit_novice_outfit_upgraded_description
+	inv_grid_x							= 8
+	inv_grid_y							= 0
+	icons_texture						= ui\ui_icon_o_novice_ama
+	bones_koeff_protection				= actor_armor_class_ama_upgraded_002
+	immunities_sect						= sect_novice_outfit_upgraded_immunities
+	inv_weight							= 8.1
+	control_inertion_factor				= 1.20
+	power_loss							= 0.14
+	
+	shock_protection					= 0.05
+	burn_protection						= 0.03
+	
+;--------------------------------------------------------------------------
+[cs_novice_outfit_upgraded_ama]:cs_novice_outfit
+	inv_name							= csky_novice_outfit_upgraded_name
+	inv_name_short						= csky_novice_outfit_upgraded_name
+	description							= csky_novice_outfit_upgraded_description
+	inv_grid_x							= 16
+	inv_grid_y							= 0
+	icons_texture						= ui\ui_icon_o_novice_ama
+	bones_koeff_protection				= actor_armor_class_ama_upgraded_003
+	immunities_sect						= sect_novice_outfit_upgraded_immunities
+	inv_weight							= 5.6
+	control_inertion_factor				= 1.18
+	power_loss							= 0.08
+	max_front_plate						= 2
+	
+;--------------------------------------------------------------------------
+[dolg_novice_outfit_upgraded_ama]:dolg_novice_outfit
+	inv_name							= dolg_novice_outfit_upgraded_name
+	inv_name_short						= dolg_novice_outfit_upgraded_name
+	description							= dolg_novice_outfit_upgraded_description
+	inv_grid_x							= 4
+	inv_grid_y							= 6
+	icons_texture						= ui\ui_icon_o_novice_ama
+	bones_koeff_protection				= actor_armor_class_ama_upgraded_003
+	immunities_sect						= sect_novice_outfit_upgraded_immunities
+	inv_weight							= 5.3
+	control_inertion_factor				= 1.18
+	power_loss							= 0.08
+	max_front_plate						= 2
+	
+;--------------------------------------------------------------------------
+[svoboda_novice_outfit_upgraded_ama]:svoboda_novice_outfit
+	inv_name							= svoboda_novice_outfit_upgraded_name
+	inv_name_short						= svoboda_novice_outfit_upgraded_name
+	description							= svoboda_novice_outfit_upgraded_description
+	inv_grid_x							= 16
+	inv_grid_y							= 6
+	icons_texture						= ui\ui_icon_o_novice_ama
+	bones_koeff_protection				= actor_armor_class_ama_upgraded_001
+	immunities_sect						= sect_novice_outfit_upgraded_immunities
+	inv_weight							= 6.8
+	control_inertion_factor				= 1.20
+	power_loss							= 0.11
+	
+	shock_protection					= 0.05
+	burn_protection						= 0.03
+
+;--------------------------------------------------------------------------
+[scrap_pile_ama]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description							= scrap_pile_ama_name
+	inv_name 							= scrap_pile_ama_name
+	inv_name_short 						= scrap_pile_ama_desc
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width 						= 2
+	inv_grid_height 					= 2
+	inv_grid_x 							= 0
+	inv_grid_y 							= 18
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 5
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+	
+[kevlar_materials_ama]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description							= kevlar_materials_ama_name
+	inv_name 							= kevlar_materials_ama_name
+	inv_name_short 						= kevlar_materials_ama_desc
+	icons_texture						= ui\ui_icon_o_novice_ama
+	inv_grid_width 						= 2
+	inv_grid_height 					= 2
+	inv_grid_x 							= 2
+	inv_grid_y 							= 18
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 2
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+	
+; ==========================================================================
+; 							VANILLA LCS OUTFITS
+; ==========================================================================
+![merc_outfit]; Mercenary LC Suit
+
+![merc_scout_outfit]; Mercenary LC-S Suit
+
+![merc_fighter_outfit]; Mercenary LC-F Suit
+
+![merc_jackal_outfit]; Mercenary LTS-J Body Suit
+
+![merc_sunset_outfit]; Mercenary LCz Suit
+
+![merc_coyote_outfit]; Mercenary MTS-C Body Suit
+
+![banditmerc_outfit]; Fenced LC Suit
+
+![dolg_voin_outfit]; PS6-V Warrior Suit
+
+![greh_armored_outfit]; Irij Flak Armour
+
+![greh_armored_camo_outfit]; Vyriy Flak Armour
+
+![isg_lcs_outfit]; UNISG LC Suit
+
+![isg_lcs_camo_outfit]; UNISG LC-C Suit
+
+![isg_lcs_urban_outfit]; UNISG LC-UC Suit
+
+![renegademerc_outfit]; Renegade LC Suit
+
+![ghillie_outfit]; Ghillie Suit

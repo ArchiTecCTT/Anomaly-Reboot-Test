@@ -1,0 +1,535 @@
+#include "creatures\m_stalker_ama_body_damage.ltx"
+#include "creatures\actor_ama_body_damage.ltx"
+#include "ammo\mod_ammo_bas_ama.ltx"
+#include "ammo\mod_ammo_other_ama.ltx"
+#include "ammo\mod_ammo_pistol_ama.ltx"
+#include "ammo\mod_ammo_rifle_ama.ltx"
+#include "ammo\mod_ammo_shotgun_ama.ltx"
+#include "ammo\mod_ammo_sniper_ama.ltx"
+#include "plugins\mod_stress_ama.ltx"
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - LEATHER JACKETS
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_01] 
+bip01_pelvis 			= 1, 0.07
+bip01_spine 		 	= 1, 0.07
+bip01_spine1 		 	= 1, 0.07
+bip01_spine2 		 	= 1, 0.07
+
+bip01_l_clavicle	 	= 1, 0.05
+bip01_l_upperarm	 	= 1, 0.05
+bip01_l_forearm	 	 	= 1, 0.05
+bip01_l_hand	 	 	= 1, 0.01
+
+bip01_r_clavicle	 	= 1, 0.05
+bip01_r_upperarm	 	= 1, 0.05
+bip01_r_forearm	 	 	= 1, 0.05
+bip01_r_hand	 	 	= 1, 0.01
+
+bip01_l_thigh	 	 	= 1, 0.05
+bip01_l_calf	 	 	= 1, 0.05
+bip01_l_foot	 	 	= 1, 0.01
+
+bip01_r_thigh	 	 	= 1, 0.05
+bip01_r_calf	 	 	= 1, 0.05
+bip01_r_foot	 	 	= 1, 0.01
+
+[ama_damage_001]:ama_damage_01 ; Armored Torso Variant = Lower Torso Protection
+bip01_spine 		 	= 1, 0.18
+bip01_spine1 		 	= 1, 0.18
+
+[ama_damage_002]:ama_damage_01 ; Armored Torso Variant = Full Torso Protection
+bip01_spine 		 	= 1, 0.18
+bip01_spine1 		 	= 1, 0.18
+bip01_spine2 		 	= 1, 0.18
+
+[ama_damage_003]:ama_damage_01 ; Armored Torso Varaint = Full Torso Protection - Kevlar
+bip01_spine 		 	= 1, 0.14
+bip01_spine1 		 	= 1, 0.14
+bip01_spine2 		 	= 1, 0.14
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - OVERCOATS
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_02]
+bip01_pelvis 			= 1, 0.10
+bip01_spine 		 	= 1, 0.10
+bip01_spine1 		 	= 1, 0.10
+bip01_spine2 		 	= 1, 0.10
+
+bip01_l_clavicle	 	= 1, 0.10
+bip01_l_upperarm	 	= 1, 0.10
+bip01_l_forearm	 	 	= 1, 0.10
+bip01_l_hand	 	 	= 1, 0.01
+
+bip01_r_clavicle	 	= 1, 0.10
+bip01_r_upperarm	 	= 1, 0.10
+bip01_r_forearm	 	 	= 1, 0.10
+bip01_r_hand	 	 	= 1, 0.01
+
+bip01_l_thigh	 	 	= 1, 0.10
+bip01_l_calf	 	 	= 1, 0.05
+bip01_l_foot	 	 	= 1, 0.01
+
+bip01_r_thigh	 	 	= 1, 0.10
+bip01_r_calf	 	 	= 1, 0.05
+bip01_r_foot	 	 	= 1, 0.01
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - LIGHT BODY ARMOUR
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_03]
+bip01_pelvis 			= 1, 0.10
+bip01_spine 		 	= 1, 0.15
+bip01_spine1 		 	= 1, 0.15
+bip01_spine2 		 	= 1, 0.15
+
+bip01_l_clavicle	 	= 1, 0.05
+bip01_l_upperarm	 	= 1, 0.05
+bip01_l_forearm	 	 	= 1, 0.05
+bip01_l_hand	 	 	= 1, 0.01
+
+bip01_r_clavicle	 	= 1, 0.05
+bip01_r_upperarm	 	= 1, 0.05
+bip01_r_forearm	 	 	= 1, 0.05
+bip01_r_hand	 	 	= 1, 0.01
+
+bip01_l_thigh	 	 	= 1, 0.05
+bip01_l_calf	 	 	= 1, 0.05
+bip01_l_foot	 	 	= 1, 0.01
+
+bip01_r_thigh	 	 	= 1, 0.05
+bip01_r_calf	 	 	= 1, 0.05
+bip01_r_foot	 	 	= 1, 0.01
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - MEDIUM BODY ARMOUR
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_04]
+bip01_pelvis 			= 1, 0.10
+bip01_spine 		 	= 1, 0.25
+bip01_spine1 		 	= 1, 0.25
+bip01_spine2 		 	= 1, 0.25
+
+bip01_l_clavicle	 	= 1, 0.10
+bip01_l_upperarm	 	= 1, 0.05
+bip01_l_forearm	 	 	= 1, 0.05
+bip01_l_hand	 	 	= 1, 0.01
+
+bip01_r_clavicle	 	= 1, 0.10
+bip01_r_upperarm	 	= 1, 0.05
+bip01_r_forearm	 	 	= 1, 0.05
+bip01_r_hand	 	 	= 1, 0.01
+
+bip01_l_thigh	 	 	= 1, 0.05
+bip01_l_calf	 	 	= 1, 0.05
+bip01_l_foot	 	 	= 1, 0.01
+
+bip01_r_thigh	 	 	= 1, 0.05
+bip01_r_calf	 	 	= 1, 0.05
+bip01_r_foot	 	 	= 1, 0.01
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - HEAVY BODY ARMOUR
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_05]
+bip01_pelvis 			= 1, 0.10
+bip01_spine 		 	= 1, 0.35
+bip01_spine1 		 	= 1, 0.35
+bip01_spine2 		 	= 1, 0.35
+
+bip01_l_clavicle	 	= 1, 0.15
+bip01_l_upperarm	 	= 1, 0.05
+bip01_l_forearm	 	 	= 1, 0.05
+bip01_l_hand	 	 	= 1, 0.02
+
+bip01_r_clavicle	 	= 1, 0.15
+bip01_r_upperarm	 	= 1, 0.05
+bip01_r_forearm	 	 	= 1, 0.05
+bip01_r_hand	 	 	= 1, 0.02
+
+bip01_l_thigh	 	 	= 1, 0.05
+bip01_l_calf	 	 	= 1, 0.05
+bip01_l_foot	 	 	= 1, 0.02
+
+bip01_r_thigh	 	 	= 1, 0.05
+bip01_r_calf	 	 	= 1, 0.05
+bip01_r_foot	 	 	= 1, 0.02
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - UNARMORED SCIENTIFIC SUITS
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_06]
+bip01_pelvis 			= 1, 0.15
+bip01_spine 		 	= 1, 0.15
+bip01_spine1 		 	= 1, 0.15
+bip01_spine2 		 	= 1, 0.15
+
+bip01_l_clavicle	 	= 1, 0.10
+bip01_l_upperarm	 	= 1, 0.10
+bip01_l_forearm	 	 	= 1, 0.10
+bip01_l_hand	 	 	= 1, 0.03
+
+bip01_r_clavicle	 	= 1, 0.10
+bip01_r_upperarm	 	= 1, 0.10
+bip01_r_forearm	 	 	= 1, 0.10
+bip01_r_hand	 	 	= 1, 0.03
+
+bip01_l_thigh	 	 	= 1, 0.10
+bip01_l_calf	 	 	= 1, 0.10
+bip01_l_foot	 	 	= 1, 0.03
+
+bip01_r_thigh	 	 	= 1, 0.10
+bip01_r_calf	 	 	= 1, 0.10
+bip01_r_foot	 	 	= 1, 0.03
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - ARMORED SCIENTIFIC SUITS
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_07]
+bip01_pelvis 			= 1, 0.25
+bip01_spine 		 	= 1, 0.25
+bip01_spine1 		 	= 1, 0.25
+bip01_spine2 		 	= 1, 0.25
+
+bip01_l_clavicle	 	= 1, 0.10
+bip01_l_upperarm	 	= 1, 0.10
+bip01_l_forearm	 	 	= 1, 0.10
+bip01_l_hand	 	 	= 1, 0.03
+
+bip01_r_clavicle	 	= 1, 0.10
+bip01_r_upperarm	 	= 1, 0.10
+bip01_r_forearm	 	 	= 1, 0.10
+bip01_r_hand	 	 	= 1, 0.03
+
+bip01_l_thigh	 	 	= 1, 0.10
+bip01_l_calf	 	 	= 1, 0.10
+bip01_l_foot	 	 	= 1, 0.03
+
+bip01_r_thigh	 	 	= 1, 0.10
+bip01_r_calf	 	 	= 1, 0.10
+bip01_r_foot	 	 	= 1, 0.03
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - EXOSUITS
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_08]
+bip01_pelvis 			= 1, 0.20
+bip01_spine 		 	= 1, 0.43
+bip01_spine1 		 	= 1, 0.43
+bip01_spine2 		 	= 1, 0.43
+
+bip01_l_clavicle	 	= 1, 0.43
+bip01_l_upperarm	 	= 1, 0.05
+bip01_l_forearm	 	 	= 1, 0.05
+bip01_l_hand	 	 	= 1, 0.03
+
+bip01_r_clavicle	 	= 1, 0.43
+bip01_r_upperarm	 	= 1, 0.05
+bip01_r_forearm	 	 	= 1, 0.05
+bip01_r_hand	 	 	= 1, 0.03
+
+bip01_l_thigh	 	 	= 1, 0.05
+bip01_l_calf	 	 	= 1, 0.05
+bip01_l_foot	 	 	= 1, 0.03
+
+bip01_r_thigh	 	 	= 1, 0.05
+bip01_r_calf	 	 	= 1, 0.05
+bip01_r_foot	 	 	= 1, 0.03
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - EXOSKELETONS
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_09]; LIGHTLY ARMORED EXOSKELETONS
+bip01_pelvis 			= 1, 0.10
+bip01_spine 		 	= 1, 0.15
+bip01_spine1 		 	= 1, 0.15
+bip01_spine2 		 	= 1, 0.15
+
+bip01_l_clavicle	 	= 1, 0.10
+bip01_l_upperarm	 	= 1, 0.10
+bip01_l_forearm	 	 	= 1, 0.10
+bip01_l_hand	 	 	= 1, 0.06
+
+bip01_r_clavicle	 	= 1, 0.10
+bip01_r_upperarm	 	= 1, 0.10
+bip01_r_forearm	 	 	= 1, 0.10
+bip01_r_hand	 	 	= 1, 0.06
+
+bip01_l_thigh	 	 	= 1, 0.10
+bip01_l_calf	 	 	= 1, 0.10
+bip01_l_foot	 	 	= 1, 0.06
+
+bip01_r_thigh	 	 	= 1, 0.10
+bip01_r_calf	 	 	= 1, 0.10
+bip01_r_foot	 	 	= 1, 0.06
+
+[ama_damage_10]; MEDIUM ARMORED EXOSKELETONS
+bip01_pelvis 			= 1, 0.10
+bip01_spine 		 	= 1, 0.25
+bip01_spine1 		 	= 1, 0.25
+bip01_spine2 		 	= 1, 0.25
+
+bip01_l_clavicle	 	= 1, 0.10
+bip01_l_upperarm	 	= 1, 0.10
+bip01_l_forearm	 	 	= 1, 0.10
+bip01_l_hand	 	 	= 1, 0.06
+
+bip01_r_clavicle	 	= 1, 0.10
+bip01_r_upperarm	 	= 1, 0.10
+bip01_r_forearm	 	 	= 1, 0.10
+bip01_r_hand	 	 	= 1, 0.06
+
+bip01_l_thigh	 	 	= 1, 0.10
+bip01_l_calf	 	 	= 1, 0.10
+bip01_l_foot	 	 	= 1, 0.06
+
+bip01_r_thigh	 	 	= 1, 0.10
+bip01_r_calf	 	 	= 1, 0.10
+bip01_r_foot	 	 	= 1, 0.06
+
+[ama_damage_11]; HEAVY ARMORED EXOSKELETONS
+bip01_pelvis 			= 1, 0.20
+bip01_spine 		 	= 1, 0.47
+bip01_spine1 		 	= 1, 0.47
+bip01_spine2 		 	= 1, 0.47
+
+bip01_l_clavicle	 	= 1, 0.47
+bip01_l_upperarm	 	= 1, 0.20
+bip01_l_forearm	 	 	= 1, 0.20
+bip01_l_hand	 	 	= 1, 0.06
+
+bip01_r_clavicle	 	= 1, 0.47
+bip01_r_upperarm	 	= 1, 0.20
+bip01_r_forearm	 	 	= 1, 0.20
+bip01_r_hand	 	 	= 1, 0.06
+
+bip01_l_thigh	 	 	= 1, 0.20
+bip01_l_calf	 	 	= 1, 0.15
+bip01_l_foot	 	 	= 1, 0.06
+
+bip01_r_thigh	 	 	= 1, 0.20
+bip01_r_calf	 	 	= 1, 0.15
+bip01_r_foot	 	 	= 1, 0.06
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - NOSOROGS
+;----------------------------------------------------------------------------------------------------------------
+[ama_damage_12]
+bip01_pelvis 			= 1, 0.20
+bip01_spine 		 	= 1, 0.49
+bip01_spine1 		 	= 1, 0.49
+bip01_spine2 		 	= 1, 0.49
+
+bip01_l_clavicle	 	= 1, 0.49
+bip01_l_upperarm	 	= 1, 0.22
+bip01_l_forearm	 	 	= 1, 0.22
+bip01_l_hand	 	 	= 1, 0.06
+
+bip01_r_clavicle	 	= 1, 0.49
+bip01_r_upperarm	 	= 1, 0.22
+bip01_r_forearm	 	 	= 1, 0.22
+bip01_r_hand	 	 	= 1, 0.06
+
+bip01_l_thigh	 	 	= 1, 0.22
+bip01_l_calf	 	 	= 1, 0.17
+bip01_l_foot	 	 	= 1, 0.06
+
+bip01_r_thigh	 	 	= 1, 0.22
+bip01_r_calf	 	 	= 1, 0.17
+bip01_r_foot	 	 	= 1, 0.06
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR HEAD SECTIONS - CLASS 0
+;----------------------------------------------------------------------------------------------------------------
+[ama_helm_damage_01] ; CLOTH
+bip01_neck 			 	= 1, 0.0
+bip01_head 			 	= 1, 0.0
+eyelid_1 			 	= 1, 0.0
+eye_left 			 	= 1, 0.0
+eye_right 			 	= 1, 0.0
+jaw_1 		 		 	= 1, 0.0
+
+[ama_helm_damage_02] ; RESPIRATOR
+bip01_neck 			 	= 1, 0.011
+bip01_head 			 	= 1, 0.011
+eyelid_1 			 	= 1, 0.011
+eye_left 			 	= 1, 0.011
+eye_right 			 	= 1, 0.011
+jaw_1 		 		 	= 1, 0.011
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR HEAD SECTIONS - CLASS II
+;----------------------------------------------------------------------------------------------------------------
+[ama_helm_damage_03] ; II
+bip01_neck 			 	= 1, 0.15
+bip01_head 			 	= 1, 0.15
+eyelid_1 			 	= 1, 0.15
+eye_left 			 	= 1, 0.15
+eye_right 			 	= 1, 0.15
+jaw_1 		 		 	= 1, 0.15
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR HEAD SECTIONS - CLASS III
+;----------------------------------------------------------------------------------------------------------------
+[ama_helm_damage_04] ; IIIA
+bip01_neck 			 	= 1, 0.01
+bip01_head 			 	= 1, 0.20
+eyelid_1 			 	= 1, 0.05
+eye_left 			 	= 1, 0.05
+eye_right 			 	= 1, 0.05
+jaw_1 		 		 	= 1, 0.01
+
+[ama_helm_damage_05] ; III-
+bip01_neck 			 	= 1, 0.3
+bip01_head 			 	= 1, 0.3
+eyelid_1 			 	= 1, 0.3
+eye_left 			 	= 1, 0.3
+eye_right 			 	= 1, 0.3
+jaw_1 		 		 	= 1, 0.3
+
+[ama_helm_damage_06] ; III
+bip01_neck 			 	= 1, 0.35
+bip01_head 			 	= 1, 0.35
+eyelid_1 			 	= 1, 0.35
+eye_left 			 	= 1, 0.35
+eye_right 			 	= 1, 0.35
+jaw_1 		 		 	= 1, 0.35
+
+[ama_helm_damage_07] ; III+
+bip01_neck 			 	= 1, 0.4
+bip01_head 			 	= 1, 0.4
+eyelid_1 			 	= 1, 0.4
+eye_left 			 	= 1, 0.4
+eye_right 			 	= 1, 0.4
+jaw_1 		 		 	= 1, 0.4
+
+[ama_helm_damage_08] ; III++
+bip01_neck 			 	= 1, 0.45
+bip01_head 			 	= 1, 0.45
+eyelid_1 			 	= 1, 0.45
+eye_left 			 	= 1, 0.45
+eye_right 			 	= 1, 0.45
+jaw_1 		 		 	= 1, 0.45
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR MODULE SECTIONS - VESTS
+;----------------------------------------------------------------------------------------------------------------
+
+; ===== WESTERN TACTICAL VESTS =====
+
+[ama_armor_lap_09]:ama_damage_09
+bip01_pelvis			= 1, 0.45
+
+[ama_armor_gorget_09]:ama_damage_09
+bip01_spine2			= 1, 0.45
+
+[ama_armor_pauldrons_09]:ama_damage_09
+bip01_l_clavicle    	= 1, 0.45
+bip01_r_clavicle    	= 1, 0.45
+bip01_l_upperarm    	= 1, 0.45
+bip01_r_upperarm    	= 1, 0.45
+
+[ama_armor_lap_gorget_09]:ama_damage_09
+bip01_pelvis			= 1, 0.45
+bip01_spine2			= 1, 0.45
+
+[ama_armor_lap_pauldrons_09]:ama_damage_09
+bip01_pelvis			= 1, 0.45
+bip01_l_clavicle    	= 1, 0.45
+bip01_r_clavicle    	= 1, 0.45
+bip01_l_upperarm    	= 1, 0.45
+bip01_r_upperarm    	= 1, 0.45
+
+[ama_armor_gorget_pauldrons_09]:ama_damage_09
+bip01_spine2			= 1, 0.45
+bip01_l_clavicle    	= 1, 0.45
+bip01_r_clavicle    	= 1, 0.45
+bip01_l_upperarm    	= 1, 0.45
+bip01_r_upperarm    	= 1, 0.45
+
+[ama_armor_full_09]:ama_damage_09
+bip01_pelvis			= 1, 0.45
+bip01_spine2			= 1, 0.45
+bip01_l_clavicle    	= 1, 0.45
+bip01_r_clavicle    	= 1, 0.45
+bip01_l_upperarm    	= 1, 0.45
+bip01_r_upperarm    	= 1, 0.45
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR MODULE SECTIONS - HELMETS
+;----------------------------------------------------------------------------------------------------------------
+
+; ===== WESTERN TACTICAL HELMETS =====
+[ama_helm_base_06]
+bip01_neck 			 	= 1, 0.01
+bip01_head 			 	= 1, 0.35
+eyelid_1 			 	= 1, 0.05
+eye_left 			 	= 1, 0.05
+eye_right 			 	= 1, 0.05
+jaw_1 		 		 	= 1, 0.01
+
+[ama_helm_visor_06]:ama_helm_base_06
+eyelid_1 			 	= 1, 0.15
+eye_left 			 	= 1, 0.15
+eye_right 			 	= 1, 0.15
+
+[ama_helm_mandible_06]:ama_helm_base_06
+bip01_neck 			 	= 1, 0.15
+bip01_head 			 	= 1, 0.35
+jaw_1 		 		 	= 1, 0.25
+
+[ama_helm_slaap_06]:ama_helm_base_06
+bip01_head				= 1, 39
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - LEATHER JACKETS
+;----------------------------------------------------------------------------------------------------------------
+[actor_armor_class_ama_base_01]:ama_damage_01, head_damage_00
+ap_scale				= 1
+
+[actor_armor_class_ama_upgraded_001]:ama_damage_001, head_damage_00
+ap_scale				= 1
+
+[actor_armor_class_ama_upgraded_002]:ama_damage_002, head_damage_00
+ap_scale				= 1
+
+[actor_armor_class_ama_upgraded_003]:ama_damage_003, head_damage_00
+ap_scale				= 1
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - VESTS
+;----------------------------------------------------------------------------------------------------------------
+[actor_armor_class_ama_base_04]:ama_damage_04, head_damage_00
+ap_scale				= 0.80
+
+[actor_armor_class_ama_lap_09]:ama_armor_lap_09, head_damage_00
+ap_scale				= 0.80
+
+[actor_armor_class_ama_gorget_09]:ama_armor_gorget_09, head_damage_00
+ap_scale				= 0.80
+
+[actor_armor_class_ama_pauldrons_09]:ama_armor_pauldrons_09, head_damage_00
+ap_scale				= 0.80
+
+[actor_armor_class_ama_lap_gorget_09]:ama_armor_lap_gorget_09, head_damage_00
+ap_scale				= 0.80
+
+[actor_armor_class_ama_lap_pauldrons_09]:ama_armor_lap_pauldrons_09, head_damage_00
+ap_scale				= 0.80
+
+[actor_armor_class_ama_gorget_pauldrons_09]:ama_armor_gorget_pauldrons_09, head_damage_00
+ap_scale				= 0.80
+
+[actor_armor_class_ama_full_09]:ama_armor_full_09, head_damage_00
+ap_scale				= 0.80
+
+;----------------------------------------------------------------------------------------------------------------
+; ACTOR ARMOR SECTIONS - HELMETS
+;----------------------------------------------------------------------------------------------------------------
+[actor_armor_class_ama_helm_04]:body_damage_absent, ama_helm_damage_04
+ap_scale				= 0.85
+
+[actor_armor_class_ama_helm_08]:body_damage_absent, ama_helm_damage_08
+ap_scale				= 0.60

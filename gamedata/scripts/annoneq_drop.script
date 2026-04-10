@@ -1,0 +1,72 @@
+---==================================================================================================================---
+---                                                                                                                  ---
+---    Original Author(s) : NLTP_ASHES                                                                               ---
+---    Edited : N/A                                                                                                  ---
+---    Date : 20/03/2024                                                                                             ---
+---    License : Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)           ---
+---                                                                                                                  ---
+---    Script used to spawn outfits and helmets in dead stalker, according to their faction and rank.                ---
+---                                                                                                                  ---
+---==================================================================================================================---
+
+ini_items              = ini_file([[plugins\annoneq\importer.ltx]])
+items                  = {}
+
+death_manager_spawn_cosmetics = death_manager.spawn_cosmetics
+function death_manager.spawn_cosmetics (npc, npc_id, npc_comm, npc_rank, visual, rand_condition)
+	death_manager_spawn_cosmetics(npc, npc_id, npc_comm, npc_rank, visual, rand_condition)
+	
+	local spawned_outfit = false
+	local spawned_helmet = false
+	
+	for sec, data in pairs(items) do
+		local is_outfit = IsItem("outfit", sec)
+		local is_helmet = IsItem("helmet", sec)
+		
+		if (is_outfit and not spawned_outfit) or (is_helmet and not spawned_helmet) then
+			
+			if has_required_property(data.communities, npc_comm) and has_required_property(data.ranks, npc_rank) and math.random() < data.chance/100 then
+				death_manager.spawn_with_condition(npc, sec, math.random(data.condition.min, data.condition.max)/100)
+				
+				if is_outfit then spawned_outfit = true end
+				if is_helmet then spawned_helmet = true end
+			end
+		end
+		
+		if spawned_outfit and spawned_helmet then
+			return
+		end
+	end
+end
+
+function parse_items_from_config()
+    ini_items:section_for_each(function(section)
+        local chance = ini_items:r_float_ex(section, "chance")
+        local condition = str_explode(ini_items:r_string_ex(section, "condition") or "100,100",",")
+        local communities = str_explode(ini_items:r_string_ex(section, "communities") or "",",")
+        local ranks = str_explode(ini_items:r_string_ex(section, "ranks") or "",",")
+
+        items[section] = {
+            chance = chance or 1.0,
+            condition = {
+                min = tonumber(condition[1] or 1.0),
+                max = tonumber(condition[2] or 1.0)
+            },
+            communities = communities or {},
+            ranks = ranks or {},
+        }
+    end)
+end
+
+function on_game_start()
+    RegisterScriptCallback("on_game_load", parse_items_from_config)
+end
+
+function has_required_property(properties, property)
+    for idx, required_property in pairs(properties) do
+        if property == required_property then
+            return true
+        end
+    end
+    return false
+end

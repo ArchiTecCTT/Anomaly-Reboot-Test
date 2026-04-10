@@ -1,0 +1,227 @@
+local upgrade_recipes = {
+
+    -- ==========================================================
+    -- ===                 UNISG RANGER VEST                  ===
+    -- ==========================================================
+    
+    -- Base Vest
+    ["unisg_ranger_vest"] = {
+        ["ranger_lap"]       = "unisg_ranger_vest_lap",
+        ["ranger_gorget"]    = "unisg_ranger_vest_gorget",
+        ["ranger_pauldrons"] = "unisg_ranger_vest_pauldrons"
+    },
+	    ["unisg_ranger_vest_merc"] = {
+        ["ranger_lap"]       = "unisg_ranger_vest_lap",
+        ["ranger_gorget"]    = "unisg_ranger_vest_gorget",
+        ["ranger_pauldrons"] = "unisg_ranger_vest_pauldrons"
+    },
+    ["unisg_ranger_vest_freedom"] = {
+        ["ranger_lap"]       = "unisg_ranger_vest_lap",
+        ["ranger_gorget"]    = "unisg_ranger_vest_gorget",
+        ["ranger_pauldrons"] = "unisg_ranger_vest_pauldrons"
+    },
+	
+    -- Single-Module Variants
+    ["unisg_ranger_vest_lap"] = {
+        ["ranger_gorget"]    = "unisg_ranger_vest_lap_gorget",
+        ["ranger_pauldrons"] = "unisg_ranger_vest_lap_pauldrons"
+    },
+    ["unisg_ranger_vest_gorget"] = {
+        ["ranger_lap"]       = "unisg_ranger_vest_lap_gorget",
+        ["ranger_pauldrons"] = "unisg_ranger_vest_gorget_pauldrons"
+    },
+    ["unisg_ranger_vest_pauldrons"] = {
+        ["ranger_lap"]       = "unisg_ranger_vest_lap_pauldrons",
+        ["ranger_gorget"]    = "unisg_ranger_vest_gorget_pauldrons"
+    },
+
+    -- Double-Module Variants
+    ["unisg_ranger_vest_lap_gorget"] = {
+        ["ranger_pauldrons"] = "unisg_ranger_vest_full"
+    },
+    ["unisg_ranger_vest_lap_pauldrons"] = {
+        ["ranger_gorget"]    = "unisg_ranger_vest_full"
+    },
+    ["unisg_ranger_vest_gorget_pauldrons"] = {
+        ["ranger_lap"]       = "unisg_ranger_vest_full"
+    },
+    
+    -- ==========================================================
+    -- ===               UNISG SPECTER HELMET                 ===
+    -- ==========================================================
+    
+    -- Base Helmet
+    ["unisg_specter_helm"] = {
+        ["specter_visor"]     = "unisg_specter_visor",
+        ["specter_mandible"]  = "unisg_specter_mandible",
+        ["specter_slaap"]     = "unisg_specter_slaap",
+        ["specter_ear_cover"] = "unisg_specter_ear_cover"
+    },
+	    ["unisg_specter_merc"] = {
+        ["specter_visor"]     = "unisg_specter_visor",
+        ["specter_mandible"]  = "unisg_specter_mandible",
+        ["specter_slaap"]     = "unisg_specter_slaap",
+        ["specter_ear_cover"] = "unisg_specter_ear_cover"
+    },
+	    ["unisg_specter_freedom"] = {
+        ["specter_visor"]     = "unisg_specter_visor",
+        ["specter_mandible"]  = "unisg_specter_mandible",
+        ["specter_slaap"]     = "unisg_specter_slaap",
+        ["specter_ear_cover"] = "unisg_specter_ear_cover"
+    },
+
+    -- Single-Module Variants
+    ["unisg_specter_visor"] = {
+        ["specter_mandible"]  = "unisg_specter_v_m",
+        ["specter_slaap"]     = "unisg_specter_v_s",
+        ["specter_ear_cover"] = "unisg_specter_v_e"
+    },
+    ["unisg_specter_mandible"] = {
+        ["specter_visor"]     = "unisg_specter_v_m",
+        ["specter_slaap"]     = "unisg_specter_m_s",
+        ["specter_ear_cover"] = "unisg_specter_m_e"
+    },
+    ["unisg_specter_slaap"] = {
+        ["specter_visor"]     = "unisg_specter_v_s",
+        ["specter_mandible"]  = "unisg_specter_m_s",
+        ["specter_ear_cover"] = "unisg_specter_s_e"
+    },
+    ["unisg_specter_ear_cover"] = {
+        ["specter_visor"]     = "unisg_specter_v_e",
+        ["specter_mandible"]  = "unisg_specter_m_e",
+        ["specter_slaap"]     = "unisg_specter_s_e"
+    },
+
+    -- Double-Module Variants
+    ["unisg_specter_v_m"] = {
+        ["specter_slaap"]     = "unisg_specter_v_m_s",
+        ["specter_ear_cover"] = "unisg_specter_v_m_e"
+    },
+    ["unisg_specter_v_s"] = {
+        ["specter_mandible"]  = "unisg_specter_v_m_s",
+        ["specter_ear_cover"] = "unisg_specter_v_s_e"
+    },
+    ["unisg_specter_v_e"] = {
+        ["specter_mandible"]  = "unisg_specter_v_m_e",
+        ["specter_slaap"]     = "unisg_specter_v_s_e"
+    },
+    ["unisg_specter_m_s"] = {
+        ["specter_visor"]     = "unisg_specter_v_m_s",
+        ["specter_ear_cover"] = "unisg_specter_m_s_e"
+    },
+    ["unisg_specter_m_e"] = {
+        ["specter_visor"]     = "unisg_specter_v_m_e",
+        ["specter_slaap"]     = "unisg_specter_m_s_e"
+    },
+    ["unisg_specter_s_e"] = {
+        ["specter_visor"]     = "unisg_specter_v_s_e",
+        ["specter_mandible"]  = "unisg_specter_m_s_e"
+    },
+
+    -- Triple-Module Variants
+    ["unisg_specter_v_m_s"] = {
+        ["specter_ear_cover"] = "unisg_specter_full"
+    },
+    ["unisg_specter_v_m_e"] = {
+        ["specter_slaap"]     = "unisg_specter_full"
+    },
+    ["unisg_specter_v_s_e"] = {
+        ["specter_mandible"]  = "unisg_specter_full"
+    },
+    ["unisg_specter_m_s_e"] = {
+        ["specter_visor"]     = "unisg_specter_full"
+    },
+	
+	-- ==========================================================
+    -- ===                 LEATHER JACKETS                    ===
+    -- ==========================================================
+	
+	["novice_outfit"] = {
+		["scrap_pile_ama"]			= "novice_outfit_upgraded_ama"
+	},
+	["novice_outfit_tourist"] = {
+		["scrap_pile_ama"]			= "novice_outfit_tourist_upgraded_ama"
+	},
+	["bandit_novice_outfit"] = {
+		["scrap_pile_ama"]			= "bandit_novice_outfit_upgraded_ama"
+	},
+	["cs_novice_outfit"] = {
+		["kevlar_materials_ama"]	= "cs_novice_outfit_upgraded_ama"
+	},
+	["dolg_novice_outfit"] = {
+		["kevlar_materials_ama"]	= "dolg_novice_outfit_upgraded_ama"
+	},
+	["svoboda_novice_outfit"] = {
+		["scrap_pile_ama"]			= "svoboda_novice_outfit_upgraded_ama"
+	}
+}
+
+local function execute_armor_transformation(module_item, old_outfit, new_outfit_sec)
+    local old_id = old_outfit:id()
+    local current_condition = old_outfit:condition()
+    local installed_upgrades = utils_item.get_upgrades_installed(old_outfit)
+
+    local saved_plates = mod_plate_inventory.installed_plates[old_id]
+    local saved_limbs = mod_limb_armor.installed_limbs and mod_limb_armor.installed_limbs[old_id]
+
+    alife_release_id(module_item:id())
+    alife_release_id(old_id)
+    
+    local se_new_outfit = alife_create_item(new_outfit_sec, db.actor)
+    
+    if se_new_outfit then
+        local new_id = se_new_outfit.id
+        
+        ama_armor_binder.armor_spawn_condition[new_id] = current_condition
+        if installed_upgrades and #installed_upgrades > 0 then
+            ama_armor_binder.armor_spawn_upgrades[new_id] = installed_upgrades
+        end
+        
+        if saved_plates then 
+            mod_plate_inventory.installed_plates[new_id] = saved_plates 
+        end
+        if saved_limbs then 
+            mod_limb_armor.installed_limbs[new_id] = saved_limbs 
+        end
+        
+        CreateTimeEvent("ama_ui_refresh", "refresh_" .. new_id, 0.1, function()
+            local obj = level.object_by_id(new_id)
+            if obj then
+                mod_plate_inventory.update_vest_weight(obj)
+                
+                local inventory = ActorMenu.get_actor_menu()
+                if inventory and inventory:IsShown() then
+                    inventory:UpdateItems()
+                end
+                return true
+            end
+            return false
+        end)
+    end
+    
+    utils_obj.play_sound("interface\\inv_zipper_open")
+    actor_menu.set_msg(1, game.translate_string("st_module_installed"), 3)
+end
+
+local function on_item_drag_dropped(from, to, slot_from, slot_to)
+    if not (slot_from == EDDListType.iActorBag and (slot_to == EDDListType.iActorBag or slot_to == EDDListType.iActorSlot)) then
+        return
+    end
+
+    if not (from and to) then return end
+    if not (IsOutfit(to) or IsHeadgear(to)) then return end
+
+    local module_sec = from:section()
+    local outfit_sec = to:section()
+
+    if upgrade_recipes[outfit_sec] then
+        local target_upgraded_armor = upgrade_recipes[outfit_sec][module_sec]
+        if target_upgraded_armor then
+            execute_armor_transformation(from, to, target_upgraded_armor)
+        end
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("ActorMenu_on_item_drag_drop", on_item_drag_dropped)
+end

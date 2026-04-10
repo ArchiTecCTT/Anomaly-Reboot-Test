@@ -1,0 +1,242 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - BASE LAYER MODULE
+-- ======================================================================
+
+installed_clothing = {}
+
+function on_item_drag_dropped(clothing_item, vest_item, slot_from, slot_to)
+    if not (slot_from == EDDListType.iActorBag and (slot_to == EDDListType.iActorBag or slot_to == EDDListType.iActorSlot)) then return end
+
+    local c_sec = clothing_item:section()
+    if not SYS_GetParam(1, c_sec, "IsAShirt") then return end
+    if not IsOutfit(vest_item) then return end
+
+    local c_type = SYS_GetParam(0, c_sec, "ama_clothing_type")
+    if not c_type then return end
+
+    local vid = vest_item:id()
+    if not installed_clothing[vid] then installed_clothing[vid] = {} end
+
+    if not installed_clothing[vid][c_type] then
+        installed_clothing[vid][c_type] = {
+            sec = c_sec,
+            cond = clothing_item:condition()
+        }
+        
+        utils_obj.play_sound("interface\\inv_iam_open")
+        actor_menu.set_msg(1, "Equipped " .. c_type:upper() .. " base layer.", 3)
+        alife_release_id(clothing_item:id())
+        
+        mod_plate_inventory.update_vest_weight(vest_item)
+        
+        local inventory = ActorMenu.get_actor_menu()
+        if inventory and inventory:IsShown() then
+            inventory:UpdateItems()
+        end
+    else
+        actor_menu.set_msg(1, c_type:upper() .. " layer is already occupied.", 3)
+    end
+end
+
+function extract_clothing(vest_obj, slot_name, silent)
+    local vid = vest_obj:id()
+    local c_data = installed_clothing[vid]
+    if not (c_data and c_data[slot_name]) then return end
+
+    local clothing_data = c_data[slot_name]
+    alife_create_item(clothing_data.sec, db.actor, {cond = clothing_data.cond})
+
+    installed_clothing[vid][slot_name] = nil
+    mod_plate_inventory.update_vest_weight(vest_obj)
+    
+    if not silent then
+        utils_obj.play_sound("interface\\inv_iam_open")
+        actor_menu.set_msg(1, "Removed " .. slot_name:upper() .. " base layer.", 3)
+    end
+end
+
+function extract_all_clothing(vest_obj)
+    local vid = vest_obj:id()
+    local c_data = installed_clothing[vid]
+    if not c_data then return end
+
+    for slot_name, _ in pairs(c_data) do
+        extract_clothing(vest_obj, slot_name, true)
+    end
+    
+    utils_obj.play_sound("interface\\inv_iam_open")
+    actor_menu.set_msg(1, "All base layers removed.", 3)
+end
+
+function actor_on_before_hit(shit, bone_id)
+    if shit.power <= 0 then return end
+    
+    local outfit = db.actor:item_in_slot(7)
+    if not outfit then return end
+    
+    local vid = outfit:id()
+    local c_data = installed_clothing[vid]
+    if not c_data then return end
+
+    local hit_type_map = {
+        [hit.burn]          = "ama_burn_protection",
+        [hit.chemical_burn] = "ama_chemical_burn_protection",
+        [hit.radiation]     = "ama_radiation_protection",
+        [hit.shock]         = "ama_shock_protection",
+        [hit.wound]         = "ama_wound_protection",
+        [hit.strike]        = "ama_strike_protection",
+        [hit.explosion]     = "ama_explosion_protection"
+    }
+    
+    local param_to_check = hit_type_map[shit.type]
+    if not param_to_check then return end
+    
+    local total_raw_protection = 0
+    local degradation_amount = 0
+    
+    if shit.type == hit.burn or shit.type == hit.chemical_burn then
+        degradation_amount = (shit.power * 0.05) 
+    elseif shit.type == hit.wound or shit.type == hit.strike or shit.type == hit.explosion then
+        degradation_amount = (shit.power * 0.02)
+    end
+	
+    for slot, data in pairs(c_data) do
+        local raw_prot = SYS_GetParam(2, data.sec, param_to_check) or 0
+        
+        total_raw_protection = total_raw_protection + (raw_prot * data.cond)
+        
+        if degradation_amount > 0 then
+            data.cond = math.max(0, data.cond - degradation_amount)
+        end
+    end
+    
+    if total_raw_protection > 0 then
+        local global_max = {
+            [hit.burn]          = 1.15,
+            [hit.chemical_burn] = 0.25,
+            [hit.radiation]     = 0.055,
+            [hit.shock]         = 4.0,
+            [hit.wound]         = 2.2,
+            [hit.strike]        = 1.0,
+            [hit.explosion]     = 1.0
+        }
+        
+        local divisor = global_max[shit.type] or 1.0
+        local protection_percentage = total_raw_protection / divisor
+        
+        protection_percentage = math.min(protection_percentage, 1.0)
+        
+        shit.power = shit.power * (1.0 - protection_percentage)
+    end
+end
+
+local function cond_manage_clothing(obj)  
+    local v = installed_clothing[obj:id()] 
+    return v and next(v) and true or false 
+end
+
+local function name_manage_clothing(obj)
+    return "Manage Base Layers" 
+end
+
+local function func_manage_clothing(obj)  
+    ui_ama_context.start(obj, "clothing") 
+end
+
+local function save_state(mdata) mdata.installed_clothing = installed_clothing end
+local function load_state(mdata) installed_clothing = mdata.installed_clothing or {} end
+local function server_entity_on_unregister(se_obj, typ) installed_clothing[se_obj.id] = nil end
+
+local gc = game.translate_string
+local clr_g = utils_xml.get_color("ui_green")
+local clr_w = utils_xml.get_color("ui_white")
+
+local global_max = {
+    burn  = 1.15,
+    chem  = 0.25,
+    rad   = 0.055,
+    shock = 4.0,
+    wound = 2.2
+}
+
+local original_build_footer = ui_item.build_desc_footer
+function ui_item.build_desc_footer(obj, sec, str)
+    str = str or gc(SYS_GetParam(0, sec, "description"))
+    if (not str) then return "" end
+    
+    str = original_build_footer(obj, sec, str)
+
+    if SYS_GetParam(1, sec, "IsAShirt") then
+        local burn  = SYS_GetParam(2, sec, "ama_burn_protection") or 0
+        local chem  = SYS_GetParam(2, sec, "ama_chemical_burn_protection") or 0
+        local rad   = SYS_GetParam(2, sec, "ama_radiation_protection") or 0
+        local shock = SYS_GetParam(2, sec, "ama_shock_protection") or 0
+        local wound = SYS_GetParam(2, sec, "ama_wound_protection") or 0
+        local power = SYS_GetParam(2, sec, "ama_power_restore_speed") or 0
+
+        local function format_stat(name, val, max_val)
+            if val > 0 then
+                local percentage = (val / max_val) * 100
+                return "\\n " .. clr_w .. name .. ": " .. clr_g .. "+" .. string.format("%.0f", percentage) .. "%"
+            end
+            return ""
+        end
+
+        local stats_str = ""
+        stats_str = stats_str .. format_stat("Burn Protection", burn, global_max.burn)
+        stats_str = stats_str .. format_stat("Chemical Protection", chem, global_max.chem)
+        stats_str = stats_str .. format_stat("Radiation Protection", rad, global_max.rad)
+        stats_str = stats_str .. format_stat("Shock Protection", shock, global_max.shock)
+        stats_str = stats_str .. format_stat("Rupture Protection", wound, global_max.wound)
+        
+        local max_power = SYS_GetParam(2, "actor_condition", "max_power_restore_speed") or 0.015
+        stats_str = stats_str .. format_stat("Stamina Recovery", power, max_power)
+
+        if stats_str ~= "" then
+            str = str .. "\\n \\n" .. clr_w .. "==== Environmental Resistances ====" .. stats_str .. clr_w
+        end
+    end
+    
+    return str
+end
+
+local last_tick = 0
+
+function actor_on_update()
+    local tg = time_global()
+    if tg < last_tick + 250 then return end 
+    
+    local dt = (tg - last_tick) / 1000
+    last_tick = tg
+
+    local outfit = db.actor:item_in_slot(7)
+    if not outfit then return end
+
+    local vid = outfit:id()
+    local c_data = installed_clothing[vid]
+    if not c_data then return end
+
+    local total_power_restore = 0
+    for slot, data in pairs(c_data) do
+        local restore_val = SYS_GetParam(2, data.sec, "ama_power_restore_speed") or 0
+        total_power_restore = total_power_restore + restore_val
+    end
+
+    if total_power_restore > 0 then
+        db.actor:change_power(total_power_restore * dt)
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("ActorMenu_on_item_drag_drop", on_item_drag_dropped)
+    RegisterScriptCallback("actor_on_before_hit", actor_on_before_hit)
+	RegisterScriptCallback("actor_on_update", actor_on_update)
+
+    RegisterScriptCallback("save_state", save_state)
+    RegisterScriptCallback("load_state", load_state)
+    RegisterScriptCallback("server_entity_on_unregister", server_entity_on_unregister)
+
+    if custom_functor_autoinject then
+        custom_functor_autoinject.add_functor("manage_clothing", cond_manage_clothing, name_manage_clothing, nil, func_manage_clothing, true)
+    end
+end

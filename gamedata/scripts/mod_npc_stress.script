@@ -1,0 +1,256 @@
+-- ======================================================================
+-- AMA DYNAMIC STRESS SYSTEM - PSYCHOLOGICAL SUPPRESSION
+-- ======================================================================
+
+local math_min = math.min
+local math_max = math.max
+
+-- Central Matrix: { [id] = { stress = float, last_spike = time_global(), base_fov = float, base_range = float, tier = int } }
+npc_stress_matrix = {}
+
+-- Config settings
+local STRESS_MAX = 100.0
+local STRESS_DECAY_RATE = 5.0 -- per second
+local STRESS_DECAY_DELAY = 2000 -- ms before decay starts
+
+-- Constants for behavior changes
+local TIER_1_THRESHOLD = 25.0
+local TIER_2_THRESHOLD = 50.0
+local TIER_3_THRESHOLD = 75.0
+
+local THREAT_INI = ini_file("plugins\\mod_stress_ama.ltx")
+
+-- ==========================================================
+-- ============ AMA NPC STRESS ============
+-- Diagnostic logging — prints to engine log with tagged prefix
+-- ==========================================================
+local function ama_stress_log(msg)
+    printf("[AMA NPC STRESS] %s", msg)
+end
+
+-- ==========================================================
+-- HELPER: GET ACTOR THREAT VALUE
+-- ==========================================================
+local function get_actor_threat_value()
+    if not db.actor then return 1.0 end
+    
+    local threat_val = 1.0
+    
+    -- Check armor
+    local outfit = db.actor:item_in_slot(7)
+    if outfit then
+        local sec = outfit:section()
+        if THREAT_INI and THREAT_INI:section_exist("armor_threat_values") and THREAT_INI:line_exist("armor_threat_values", sec) then
+            threat_val = threat_val * (THREAT_INI:r_float_ex("armor_threat_values", sec) or 1.0)
+        elseif THREAT_INI and THREAT_INI:section_exist("threat_keywords") then
+            if string.find(sec, "exo") then threat_val = threat_val * (THREAT_INI:r_float_ex("threat_keywords", "armor_exo") or 1.4)
+            elseif string.find(sec, "nosorog") then threat_val = threat_val * (THREAT_INI:r_float_ex("threat_keywords", "armor_nosorog") or 1.6)
+            elseif string.find(sec, "heavy") then threat_val = threat_val * (THREAT_INI:r_float_ex("threat_keywords", "armor_heavy") or 1.2)
+            end
+        end
+    end
+    
+    -- Check active weapon
+    local wpn = db.actor:active_item()
+    if wpn and IsWeapon(wpn) then
+        local sec = wpn:section()
+        if THREAT_INI and THREAT_INI:section_exist("weapon_threat_values") and THREAT_INI:line_exist("weapon_threat_values", sec) then
+            threat_val = threat_val * (THREAT_INI:r_float_ex("weapon_threat_values", sec) or 1.0)
+        elseif THREAT_INI and THREAT_INI:section_exist("threat_keywords") then
+            if string.find(sec, "pkm") or string.find(sec, "pocheneg") then threat_val = threat_val * (THREAT_INI:r_float_ex("threat_keywords", "weapon_pkm") or 1.5)
+            elseif string.find(sec, "rpg") then threat_val = threat_val * (THREAT_INI:r_float_ex("threat_keywords", "weapon_rpg") or 2.0)
+            elseif string.find(sec, "rg-6") or string.find(sec, "rg6") then threat_val = threat_val * (THREAT_INI:r_float_ex("threat_keywords", "weapon_rg6") or 1.8)
+            elseif string.find(sec, "shotgun") then threat_val = threat_val * (THREAT_INI:r_float_ex("threat_keywords", "weapon_shotgun") or 1.2)
+            end
+        end
+    end
+    
+    return threat_val
+end
+
+-- ==========================================================
+-- ADD STRESS
+-- ==========================================================
+function add_stress(npc_id, amount, source_is_actor)
+    local npc = level.object_by_id(npc_id)
+    if not (npc and IsStalker(npc) and npc:alive()) then return end
+    
+    local final_amount = amount
+    local threat_mult = 1.0
+    if source_is_actor then
+        threat_mult = get_actor_threat_value()
+        final_amount = final_amount * threat_mult
+    end
+    
+    if not npc_stress_matrix[npc_id] then
+        npc_stress_matrix[npc_id] = {
+            stress = 0,
+            last_spike = 0,
+            base_fov = npc:fov(),
+            base_range = npc:range(),
+            tier = 0
+        }
+    end
+    
+    local entry = npc_stress_matrix[npc_id]
+    local old_stress = entry.stress
+    entry.stress = math_min(STRESS_MAX, entry.stress + final_amount)
+    entry.last_spike = time_global()
+    
+    ama_stress_log(string.format("STRESS ADD | NPC: %s (id:%d) | +%.1f stress (base:%.1f x threat:%.2f) | Total: %.1f -> %.1f",
+        npc:character_name() or "unknown", npc_id, final_amount, amount, threat_mult, old_stress, entry.stress))
+end
+
+-- ==========================================================
+-- CALLBACKS
+-- ==========================================================
+
+-- X-Ray relation constants: game_object.enemy = 0, game_object.neutral = 1, game_object.friend = 2
+local function npc_on_hear_callback(npc, who_id, s_type, dist, sound_power, sound_pos)
+    if not (npc and IsStalker(npc) and npc:alive()) then return end
+    if not who_id then return end
+    
+    local who = level.object_by_id(who_id)
+    local source_is_actor = (who_id == 0)
+    
+    -- Only react to sounds made by enemies
+    if who and npc:relation(who) ~= game_object.enemy then return end
+    
+    if s_type == snd_type.weapon_bullet_hit then
+        -- Acoustic near-miss (distance from impact to NPC)
+        if dist <= 2.5 then
+            ama_stress_log(string.format("HEAR STRESS | NPC: %s (id:%d) | Bullet impact within 2.5m (dist:%.1f) | +15.0 stress",
+                npc:character_name() or "unknown", npc:id(), dist))
+            add_stress(npc:id(), 15.0, source_is_actor)
+        elseif dist <= 5.0 then
+            ama_stress_log(string.format("HEAR STRESS | NPC: %s (id:%d) | Bullet impact within 5.0m (dist:%.1f) | +5.0 stress",
+                npc:character_name() or "unknown", npc:id(), dist))
+            add_stress(npc:id(), 5.0, source_is_actor)
+        end
+    elseif s_type == snd_type.weapon_shoot then
+        -- Heavy suppression fire nearby
+        if dist <= 15.0 and sound_power > 0.5 then
+            ama_stress_log(string.format("HEAR STRESS | NPC: %s (id:%d) | Gunfire within 15m (dist:%.1f | power:%.2f) | +2.0 stress",
+                npc:character_name() or "unknown", npc:id(), dist, sound_power))
+            add_stress(npc:id(), 2.0, source_is_actor)
+        end
+    end
+end
+
+local function npc_on_death_callback(npc, who)
+    if not (npc and IsStalker(npc)) then return end
+    local npc_pos = npc:position()
+    local dead_faction = character_community(npc)
+    
+    for id, v in pairs(db.storage) do
+        local ally = v.object or level.object_by_id(id)
+        if ally and IsStalker(ally) and ally:alive() and id ~= npc:id() then
+            -- Only stress same-faction or friendly NPCs
+            if character_community(ally) == dead_faction or ally:relation(npc) == game_object.friend then
+                local dist = ally:position():distance_to(npc_pos)
+                if dist <= 20.0 then
+                    -- Saw/Heard buddy die
+                    local source_is_actor = (who and who:id() == 0)
+                    ama_stress_log(string.format("ALLY DEATH | Ally: %s (id:%d) witnessed death of %s (id:%d) | dist:%.1f | +25.0 stress",
+                        ally:character_name() or "unknown", id, npc:character_name() or "unknown", npc:id(), dist))
+                    add_stress(id, 25.0, source_is_actor)
+                end
+            end
+        end
+    end
+end
+
+local function apply_stress_tier(npc, entry)
+    local current_tier = 0
+    if entry.stress >= TIER_3_THRESHOLD then current_tier = 3
+    elseif entry.stress >= TIER_2_THRESHOLD then current_tier = 2
+    elseif entry.stress >= TIER_1_THRESHOLD then current_tier = 1 end
+    
+    if entry.tier ~= current_tier then
+        local old_tier = entry.tier
+        entry.tier = current_tier
+        
+        if current_tier == 3 then
+            -- Panic / Blind Fire
+            npc:set_fov(entry.base_fov * 0.2)
+            npc:set_range(entry.base_range * 0.4)
+            
+            -- Push a tiny telepatic hit to trigger engine panic state evaluation
+            local h = hit()
+            h.type = hit.telepatic
+            h.power = 0.05
+            h.impulse = 0
+            h.direction = vector():set(0,0,0)
+            h.draftsman = npc
+            npc:hit(h)
+            
+        elseif current_tier == 2 then
+            -- Suppressed
+            npc:set_fov(entry.base_fov * 0.5)
+            npc:set_range(entry.base_range * 0.7)
+            
+        elseif current_tier == 1 then
+            -- Adrenaline
+            npc:set_fov(entry.base_fov * 0.8)
+            npc:set_range(entry.base_range * 0.9)
+            
+        else
+            -- Normal (0)
+            npc:set_fov(entry.base_fov)
+            npc:set_range(entry.base_range)
+        end
+        
+        local tier_names = { [0] = "NORMAL", [1] = "ADRENALINE", [2] = "SUPPRESSED", [3] = "PANIC" }
+        ama_stress_log(string.format("TIER CHANGE | NPC: %s (id:%d) | Tier %d (%s) -> Tier %d (%s) | Stress: %.1f",
+            npc:character_name() or "unknown", npc:id(), old_tier, tier_names[old_tier], current_tier, tier_names[current_tier], entry.stress))
+    end
+end
+
+local last_update_time = 0
+local function actor_on_update()
+    local tg = time_global()
+    if tg < last_update_time + 500 then return end
+    last_update_time = tg
+    
+    for id, entry in pairs(npc_stress_matrix) do
+        local npc = level.object_by_id(id)
+        if not (npc and IsStalker(npc) and npc:alive()) then
+            -- Only restore FOV/range if the NPC object is still valid and alive
+            if npc and IsStalker(npc) and npc:alive() then
+                npc:set_fov(entry.base_fov)
+                npc:set_range(entry.base_range)
+            end
+            npc_stress_matrix[id] = nil
+        else
+            -- Process Decay
+            if tg > entry.last_spike + STRESS_DECAY_DELAY then
+                entry.stress = math_max(0, entry.stress - (STRESS_DECAY_RATE * 0.5))
+            end
+            
+            -- Apply physiological debuffs based on thresholds
+            apply_stress_tier(npc, entry)
+            
+            if entry.stress == 0 then
+                npc:set_fov(entry.base_fov)
+                npc:set_range(entry.base_range)
+                ama_stress_log(string.format("DECAY EXIT | NPC: %s (id:%d) | Stress fully decayed — returning to baseline FOV:%.1f Range:%.1f",
+                    npc:character_name() or "unknown", id, entry.base_fov, entry.base_range))
+                npc_stress_matrix[id] = nil
+            end
+        end
+    end
+end
+
+local function npc_on_net_destroy(npc)
+    local id = npc:id()
+    if npc_stress_matrix[id] then
+        npc_stress_matrix[id] = nil
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("actor_on_update", actor_on_update)
+    RegisterScriptCallback("npc_on_hear_callback", npc_on_hear_callback)
+    RegisterScriptCallback("npc_on_death_callback", npc_on_death_callback)
+    RegisterScriptCallback("npc_on_net_destroy", npc_on_net_destroy)
+end

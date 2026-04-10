@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<window>
+    <!-- Paperdoll moved to lower-left corner, replacing vanilla health bars -->
+    <!-- 16:9 base: 1024x768. Lower-left corner positioning. -->
+    <paperdoll x="15" y="620" width="80" height="120">
+        
+        <base x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_base</texture>
+        </base>
+        
+        <head x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_head</texture>
+        </head>
+        
+        <torso x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_torso</texture>
+        </torso>
+        
+        <l_up x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_l_upperarm</texture>
+        </l_up>
+        
+        <r_up x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_r_upperarm</texture>
+        </r_up>
+        
+        <l_fo x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_l_forearm</texture>
+        </l_fo>
+        
+        <r_fo x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_r_forearm</texture>
+        </r_fo>
+        
+        <l_th x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_l_thigh</texture>
+        </l_th>
+        
+        <r_th x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_r_thigh</texture>
+        </r_th>
+        
+        <l_ca x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_l_calf</texture>
+        </l_ca>
+        
+        <r_ca x="0" y="0" width="80" height="120" stretch="1">
+            <texture>ui\ui_hud_r_calf</texture>
+        </r_ca>
+
+    </paperdoll>
+	
+	<!-- Plates moved ABOVE the paperdoll (was below at y=330) -->
+	<plates_hud x="15" y="555" width="80" height="60">
+        
+        <front x="18" y="0" width="20" height="26" stretch="1">
+            <texture>ui\ui_hud_front_plate</texture>
+        </front>
+        
+        <back x="42" y="0" width="20" height="26" stretch="1">
+            <texture>ui\ui_hud_back_plate</texture>
+        </back>
+        
+        <left x="18" y="30" width="20" height="26" stretch="1">
+            <texture>ui\ui_hud_left_plate</texture>
+        </left>
+        
+        <right x="42" y="30" width="20" height="26" stretch="1">
+            <texture>ui\ui_hud_right_plate</texture>
+        </right>
+
+    </plates_hud>
+</window>

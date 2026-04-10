@@ -1,0 +1,91 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - DEFINITIVE CONTEXT MENU (FIXED)
+-- ======================================================================
+
+local gui
+
+local function action_router(vest_id, slot, mode, action)
+    local vest = level.object_by_id(vest_id)
+    if not vest then return end
+
+    if action == "all" then
+        if mode == "limb" then 
+            mod_limb_armor.extract_all_limb_armor(vest)
+        elseif mode == "clothing" then 
+            ama_base_layer.extract_all_clothing(vest)
+        else 
+            mod_plate_inventory.extract_all_plates(vest) 
+        end
+    else
+        if mode == "limb" then 
+            mod_limb_armor.extract_limb_armor(vest, slot, false)
+        elseif mode == "clothing" then 
+            ama_base_layer.extract_clothing(vest, slot, false)
+        else 
+            mod_plate_inventory.extract_plate(vest, slot, false) 
+        end
+    end
+    
+    local inventory = ActorMenu.get_actor_menu()
+    if inventory and inventory:IsShown() then
+        inventory:UpdateItems()
+    end
+end
+
+function start(vest, mode)
+    local context_str = {}
+    local context_action = {}
+    local context_params = {}
+
+    local vid = vest:id()
+    local v_data = nil
+    
+    if mode == "limb" then 
+        v_data = mod_limb_armor.installed_limbs[vid]
+    elseif mode == "clothing" then 
+        v_data = ama_base_layer.installed_clothing[vid]
+    else 
+        v_data = mod_plate_inventory.installed_plates[vid]
+    end
+
+    if not v_data then return end
+
+    local count = 0
+    for slot, data in pairs(v_data) do
+        local display_name = ""
+        
+        if mode == "plate" then
+            display_name = "Remove " .. slot:upper() .. " Plate"
+        elseif mode == "clothing" then
+            local formatted_slot = slot:gsub("^%l", string.upper)
+            display_name = "Remove " .. formatted_slot .. " Clothing"
+        else
+            display_name = "Remove " .. slot:upper() .. " Armor"
+        end
+        
+        table.insert(context_str, display_name)
+        table.insert(context_action, "remove_ama_item")
+        table.insert(context_params, {vid, slot, mode, "single"})
+        count = count + 1
+    end
+
+    if count > 0 then
+        local all_text = "Remove All Limb Armor"
+        if mode == "plate" then 
+            all_text = "Remove All Plates"
+        elseif mode == "clothing" then 
+            all_text = "Remove All Clothing" 
+        end
+        
+        table.insert(context_str, all_text)
+        table.insert(context_action, "remove_ama_item")
+        table.insert(context_params, {vid, nil, mode, "all"})
+    end
+
+    if not gui then
+        gui = utils_ui_custom.UICellPropertiesCustom(action_router)
+    end
+
+    gui:Reset(GetCursorPosition(), context_action, context_str, context_params)
+    ui_inventory.GUI:PlaySND(sound_object([[interface\inv_properties_2]]))
+end

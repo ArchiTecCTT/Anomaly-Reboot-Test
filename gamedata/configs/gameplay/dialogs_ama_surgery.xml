@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<game_dialogs>
+    <dialog id="ama_surgery_dialog">
+        <precondition>mod_medical_core.needs_surgery</precondition>
+        <phrase_list>
+            <phrase id="0">
+                <text>st_ama_surgery_0</text>
+                <next>1</next>
+            </phrase>
+            <phrase id="1">
+                <text>st_ama_surgery_1</text>
+                <next>2</next>
+                <next>3</next>
+            </phrase>
+            <phrase id="2">
+                <precondition>mod_medical_core.can_afford_surgery</precondition>
+                <text>st_ama_surgery_2</text>
+                <action>mod_medical_core.perform_surgery</action>
+                <next>4</next>
+            </phrase>
+            <phrase id="3">
+                <text>st_ama_surgery_3</text>
+                <next>5</next>
+            </phrase>
+            <phrase id="4">
+                <text>st_ama_surgery_4</text>
+            </phrase>
+            <phrase id="5">
+                <text>st_ama_surgery_5</text>
+            </phrase>
+        </phrase_list>
+    </dialog>
+</game_dialogs>

@@ -1,0 +1,428 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - INVENTORY TERMINAL UI (DUAL-MODE)
+-- ======================================================================
+-- Armor Mode:  equipment icons + condition % (original)
+-- Medical Mode: organ status bars, actor status, medical log
+-- ======================================================================
+
+ama_terminal_ui = nil
+local terminal_ui = nil
+local terminal_is_hidden = false
+ama_terminal_mode = "armor"
+
+local math_floor = math.floor
+local math_min   = math.min
+local math_max   = math.max
+
+local function get_text_color(cond)
+    if cond >= 0.80 then return GetARGB(255, 0, 255, 0)
+    elseif cond >= 0.50 then return GetARGB(255, 255, 255, 0)
+    elseif cond >= 0.20 then return GetARGB(255, 255, 128, 0)
+    else return GetARGB(255, 255, 0, 0) end
+end
+
+local PAPERDOLL_ATLAS = {
+    ["brain"]            = {x=2, y=2, view=2},
+    ["heart"]            = {x=768, y=706, view=2},
+    ["intestinal_tract"] = {x=1151, y=706, view=2},
+    ["liver"]            = {x=1917, y=1410, view=2},
+    ["left_lung"]        = {x=1151, y=1410, view=2},
+    ["right_lung"]       = {x=2300, y=706, view=2},
+    
+    ["cervical_spine"]   = {x=385, y=2, view=3},
+    ["lower_spine"]      = {x=2, y=2114, view=3},
+    ["sacrum"]           = {x=2683, y=2114, view=3},
+    ["ilium"]            = {x=1151, y=2, view=3},
+    ["skull"]            = {x=385, y=2818, view=3},
+    ["ribs"]             = {x=1151, y=2114, view=3},
+    
+    ["r_humerus"]        = {x=768, y=1410, view=3},
+    ["r_ulna"]           = {x=1917, y=2, view=3},
+    ["r_femur"]          = {x=2, y=1410, view=3},
+    ["r_tibia"]          = {x=1534, y=1410, view=3},
+
+    ["l_humerus"]        = {x=2300, y=2, view=3},
+    ["l_ulna"]           = {x=2683, y=706, view=3},
+    ["l_femur"]          = {x=1534, y=2114, view=3},
+    ["l_tibia"]          = {x=2683, y=2, view=3},
+
+    ["head"]             = {x=768, y=2, view=1},
+    ["torso"]            = {x=768, y=2818, view=1},
+    ["neck"]             = {x=385, y=2114, view=1},
+    ["flesh"]            = {x=768, y=2818, view=1},
+    
+    ["bip01_r_upperarm"] = {x=1917, y=706, view=1},
+    ["bip01_r_forearm"]  = {x=385, y=1410, view=1},
+    ["bip01_r_thigh"]    = {x=1534, y=706, view=1},
+    ["bip01_r_calf"]     = {x=1534, y=2, view=1},
+
+    ["bip01_l_upperarm"] = {x=2683, y=1410, view=1},
+    ["bip01_l_forearm"]  = {x=1917, y=2114, view=1},
+    ["bip01_l_thigh"]    = {x=2300, y=2114, view=1},
+    ["bip01_l_calf"]     = {x=2300, y=1410, view=1},
+}
+
+-- ======================================================================
+-- CLASS
+-- ======================================================================
+class "AMATerminalUI" (CUIScriptWnd)
+
+function AMATerminalUI:__init() super()
+    self:SetAutoDelete(true)
+    ama_terminal_ui = self
+    
+    self.mode = "armor"
+    self.armor_elements = {}
+    self.medical_elements = {}
+    self:InitArmorControls()
+    self:InitMedicalControls()
+end
+
+-- ==================================================
+-- ARMOR MODE INIT (original terminal)
+-- ==================================================
+function AMATerminalUI:InitArmorControls()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    
+    local xml = CScriptXmlInit()
+    xml:ParseFile("ui_hud_ama_terminal.xml")
+    
+    self.armor_main = xml:InitStatic("ama_armor_terminal", self)
+    self.armor_bg = xml:InitStatic("ama_armor_terminal:background", self.armor_main)
+    
+    self.slots = {
+        ["upper_clothing"]  = xml:InitStatic("ama_armor_terminal:upper_clothing", self.armor_main),
+        ["lower_clothing"]  = xml:InitStatic("ama_armor_terminal:lower_clothing", self.armor_main),
+        ["r_up"]            = xml:InitStatic("ama_armor_terminal:r_up", self.armor_main),
+        ["r_fo"]            = xml:InitStatic("ama_armor_terminal:r_fo", self.armor_main),
+        ["r_th"]            = xml:InitStatic("ama_armor_terminal:r_th", self.armor_main),
+        ["r_ca"]            = xml:InitStatic("ama_armor_terminal:r_ca", self.armor_main),
+        ["l_up"]            = xml:InitStatic("ama_armor_terminal:l_up", self.armor_main),
+        ["l_fo"]            = xml:InitStatic("ama_armor_terminal:l_fo", self.armor_main),
+        ["l_th"]            = xml:InitStatic("ama_armor_terminal:l_th", self.armor_main),
+        ["l_ca"]            = xml:InitStatic("ama_armor_terminal:l_ca", self.armor_main),
+        ["front"]           = xml:InitStatic("ama_armor_terminal:front_plate", self.armor_main),
+        ["back"]            = xml:InitStatic("ama_armor_terminal:back_plate", self.armor_main),
+        ["left"]            = xml:InitStatic("ama_armor_terminal:left_plate", self.armor_main),
+        ["right"]           = xml:InitStatic("ama_armor_terminal:right_plate", self.armor_main),
+    }
+    
+    table.insert(self.armor_elements, self.armor_main)
+end
+
+-- ==================================================
+-- MEDICAL MODE INIT
+-- ==================================================
+function AMATerminalUI:InitMedicalControls()
+    local xml = CScriptXmlInit()
+    xml:ParseFile("ui_hud_ama_terminal_medical.xml")
+    
+    self.med_main = xml:InitStatic("ama_medical_terminal", self)
+    
+    -- X-Ray Strict Texture Rendering initialization
+    self.med_bg = xml:InitStatic("ama_medical_terminal:background", self.med_main)
+    self.med_bg:InitTexture("ui\\ui_hud_ama_terminal_medical")
+    self.med_bg:SetTextureRect(Frect():set(304, 128, 304 + 379, 128 + 768))
+    self.med_bg:SetStretchTexture(true)
+    
+    self.flesh_view = xml:InitStatic("ama_medical_terminal:flesh_view", self.med_main)
+    self.flesh_view:InitTexture("ui\\ui_ama_terminal_medical_paperdolls")
+    self.flesh_view:SetTextureRect(Frect():set(385, 706, 385 + 379, 706 + 700))
+    self.flesh_view:SetStretchTexture(true)
+    
+    self.organ_view = xml:InitStatic("ama_medical_terminal:organ_view", self.med_main)
+    self.organ_view:InitTexture("ui\\ui_ama_terminal_medical_paperdolls")
+    self.organ_view:SetTextureRect(Frect():set(768, 2114, 768 + 379, 2114 + 700))
+    self.organ_view:SetStretchTexture(true)
+    
+    self.skeletal_view = xml:InitStatic("ama_medical_terminal:skeletal_view", self.med_main)
+    self.skeletal_view:InitTexture("ui\\ui_ama_terminal_medical_paperdolls")
+    self.skeletal_view:SetTextureRect(Frect():set(2, 2818, 2 + 379, 2818 + 700))
+    self.skeletal_view:SetStretchTexture(true)
+    
+    self.circulatory_view = xml:InitStatic("ama_medical_terminal:circulatory_view", self.med_main)
+    self.circulatory_view:InitTexture("ui\\ui_ama_terminal_medical_paperdolls")
+    self.circulatory_view:SetTextureRect(Frect():set(2, 706, 2 + 379, 706 + 700))
+    self.circulatory_view:SetStretchTexture(true)
+    
+    self.medical_view_mode = 1 -- 1=Flesh, 2=Organ, 3=Skeletal, 4=Circulatory
+    self.medical_overlays = {}
+    for organ_name, data in pairs(PAPERDOLL_ATLAS) do
+        local over = xml:InitStatic("ama_medical_terminal:layer", self.med_main)
+        over:InitTexture("ui\\ui_ama_terminal_medical_paperdolls")
+        over:SetTextureRect(Frect():set(data.x, data.y, data.x + 379, data.y + 700))
+        over:SetStretchTexture(true)
+        over:Show(false)
+        self.medical_overlays[organ_name] = { ui = over, view = data.view }
+    end
+    
+    self:UpdateViewMode()
+    
+    table.insert(self.medical_elements, self.med_main)
+end
+
+function AMATerminalUI:UpdateViewMode()
+    if not self.med_main then return end
+    self.flesh_view:Show(self.medical_view_mode == 1)
+    self.organ_view:Show(self.medical_view_mode == 2)
+    self.skeletal_view:Show(self.medical_view_mode == 3)
+    self.circulatory_view:Show(self.medical_view_mode == 4)
+    self:UpdateMedicalMode()
+end
+
+-- ==================================================
+-- MODE SWITCHING
+-- ==================================================
+function AMATerminalUI:SetMode(new_mode)
+    self.mode = new_mode
+    if new_mode == "medical" then
+        self.armor_main:Show(false)
+        self.med_main:Show(true)
+    else
+        self.armor_main:Show(true)
+        self.med_main:Show(false)
+    end
+end
+
+-- ==================================================
+-- ARMOR MODE UPDATE (original logic)
+-- ==================================================
+
+local function set_item_icon(static, sec)
+    if not sec then
+        static:Show(false) 
+        return
+    end
+    local tex = SYS_GetParam(0, sec, "icons_texture") or "ui\\ui_icon_equipment"
+    local x = (SYS_GetParam(2, sec, "inv_grid_x") or 0) * 50
+    local y = (SYS_GetParam(2, sec, "inv_grid_y") or 0) * 50
+    local w_raw = (SYS_GetParam(2, sec, "inv_grid_width") or 1) * 50
+    local h_raw = (SYS_GetParam(2, sec, "inv_grid_height") or 1) * 50
+    local scale = SYS_GetParam(2, sec, "inv_grid_scale") or 1
+    
+    if aaa_rax_icon_override_mcm and aaa_rax_icon_override_mcm.icon_override then
+        if aaa_rax_icon_override_mcm.icon_override:section_exist(sec) then
+            scale = aaa_rax_icon_override_mcm.icon_override:r_float_ex(sec, "inv_grid_scale") or scale
+        end
+    end
+
+    local w_scaled = math.ceil(w_raw / scale)
+    local h_scaled = math.ceil(h_raw / scale)
+
+    static:Show(true) 
+    static:InitTexture(tex)
+    static:SetTextureRect(Frect():set(x, y, x + w_raw, y + h_raw))
+    static:SetWndSize(vector2():set(w_scaled, h_scaled))
+    static:SetStretchTexture(true)
+end
+
+function AMATerminalUI:UpdateArmorMode()
+    local vest = db.actor:item_in_slot(7)
+    
+    if not vest then
+        for k, static in pairs(self.slots) do
+            static:Show(false)
+            if static.TextControl then
+                static:TextControl():SetText("")
+            end
+        end
+        return
+    end
+
+    local vid = vest:id()
+    
+    local c_data = ama_base_layer and ama_base_layer.installed_clothing and ama_base_layer.installed_clothing[vid]
+    
+    if c_data and c_data.upper then
+        local cond = c_data.upper.cond
+        self.slots["upper_clothing"]:TextControl():SetText(math_floor(cond * 100) .. "%")
+        self.slots["upper_clothing"]:TextControl():SetTextColor(get_text_color(cond))
+        set_item_icon(self.slots["upper_clothing"], c_data.upper.sec)
+    else
+        self.slots["upper_clothing"]:Show(false)
+        self.slots["upper_clothing"]:TextControl():SetText("")
+    end
+
+    if c_data and c_data.lower then
+        local cond = c_data.lower.cond
+        self.slots["lower_clothing"]:TextControl():SetText(math_floor(cond * 100) .. "%")
+        self.slots["lower_clothing"]:TextControl():SetTextColor(get_text_color(cond))
+        set_item_icon(self.slots["lower_clothing"], c_data.lower.sec)
+    else
+        self.slots["lower_clothing"]:Show(false)
+        self.slots["lower_clothing"]:TextControl():SetText("")
+    end
+
+    local limb_map = {
+        ["l_up"] = "l_upperarm", ["r_up"] = "r_upperarm",
+        ["l_fo"] = "l_forearm",  ["r_fo"] = "r_forearm",
+        ["l_th"] = "l_thigh",    ["r_th"] = "r_thigh",
+        ["l_ca"] = "l_calf",    ["r_ca"] = "r_calf"
+    }
+
+    local limbs = mod_limb_armor and mod_limb_armor.installed_limbs and mod_limb_armor.installed_limbs[vid] or {}
+    for ui_k, data_k in pairs(limb_map) do
+        if limbs[data_k] then
+            local cond = limbs[data_k].cond
+            self.slots[ui_k]:TextControl():SetText(math_floor(cond * 100) .. "%")
+            self.slots[ui_k]:TextControl():SetTextColor(get_text_color(cond))
+            set_item_icon(self.slots[ui_k], limbs[data_k].sec)
+        else
+            self.slots[ui_k]:Show(false)
+            self.slots[ui_k]:TextControl():SetText("")
+        end
+    end
+
+    local plates = mod_plate_inventory and mod_plate_inventory.installed_plates and mod_plate_inventory.installed_plates[vid] or {}
+    local plate_map = {"front", "back", "left", "right"}
+    for _, pk in ipairs(plate_map) do
+        if plates[pk] then
+            local cond = plates[pk].cond
+            self.slots[pk]:TextControl():SetText(math_floor(cond * 100) .. "%")
+            self.slots[pk]:TextControl():SetTextColor(get_text_color(cond))
+            set_item_icon(self.slots[pk], plates[pk].sec)
+        else
+            self.slots[pk]:TextControl():SetText("")
+            set_item_icon(self.slots[pk], nil)
+        end
+    end
+end
+
+function AMATerminalUI:UpdateMedicalMode()
+    if not self.medical_overlays then return end
+    for k, v in pairs(self.medical_overlays) do
+        v.ui:Show(false)
+    end
+    
+    if not mod_medical_core or not mod_medical_core.bio_state then return end
+    local wounds = mod_medical_core.bio_state.wounds or {}
+    
+    for i, w in ipairs(wounds) do
+        local org = w.organ
+        if org == "flesh" or org == "limb_flesh" then org = w.limb end
+        local layer = self.medical_overlays[org]
+        
+        if layer and layer.view == self.medical_view_mode then
+            layer.ui:Show(true)
+            local wt = w.type
+            if layer.view == 1 then
+                if wt == "external" then
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 128, 0))
+                else
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))
+                end
+            elseif layer.view == 2 then
+                layer.ui:SetTextureColor(GetARGB(255, 20, 20, 20))
+            elseif layer.view == 3 then
+                layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))
+            end
+        end
+    end
+end
+
+-- ==================================================
+-- UPDATE DISPATCHER
+-- ==================================================
+function AMATerminalUI:Update()
+    CUIScriptWnd.Update(self)
+    
+    if not db.actor or not db.actor:alive() then return end
+    
+    local mode = ama_terminal_mode or "armor"
+    if mode ~= self.mode then
+        self:SetMode(mode)
+    end
+    
+    if self.mode == "medical" then
+        self:UpdateMedicalMode()
+    else
+        self:UpdateArmorMode()
+    end
+end
+
+function AMATerminalUI:push_medical_log(msg)
+    -- Placeholder for future medical log UI element
+    -- This prevents crashes if other scripts try to call it
+end
+
+-- ==================================================
+-- LIFECYCLE
+-- ==================================================
+
+local function clear_hud()
+    if terminal_ui then
+        get_hud():RemoveDialogToRender(terminal_ui)
+        terminal_ui = nil
+    end
+end
+
+local function on_key_press(key)
+    if key == DIK_keys.DIK_TAB then
+        if terminal_ui then
+            if terminal_is_hidden then
+                terminal_is_hidden = false
+                terminal_ui:Show(true)
+            else
+                if ama_terminal_mode == "armor" then
+                    ama_terminal_mode = "medical"
+                else
+                    ama_terminal_mode = "armor"
+                end
+                terminal_ui.mode = ama_terminal_mode
+                terminal_ui:SetMode(ama_terminal_mode)
+                if ama_terminal_mode == "medical" then
+                    terminal_ui:UpdateMedicalMode()
+                else
+                    terminal_ui:UpdateArmorMode()
+                end
+            end
+        end
+    elseif key == DIK_keys.DIK_LCONTROL then
+        if terminal_ui and terminal_ui.mode == "medical" and not terminal_is_hidden then
+            terminal_ui.medical_view_mode = (terminal_ui.medical_view_mode % 4) + 1
+            terminal_ui:UpdateViewMode()
+        end
+    end
+end
+local function on_mode_changed(mode)
+    if mode == 1 then -- Inventory opened
+        if not terminal_ui then
+            terminal_ui = AMATerminalUI()
+            get_hud():AddDialogToRender(terminal_ui)
+            
+            terminal_ui.mode = ama_terminal_mode
+            terminal_ui:SetMode(ama_terminal_mode)
+        end
+        if not terminal_is_hidden then
+            terminal_ui:Show(true)
+        end
+    else -- Inventory closed
+        if terminal_ui then
+            get_hud():RemoveDialogToRender(terminal_ui)
+            terminal_ui = nil
+        end
+    end
+end
+
+local function save_state(mdata)
+    mdata.ama_terminal_hidden = terminal_is_hidden
+    mdata.ama_terminal_mode = ama_terminal_mode
+end
+
+local function load_state(mdata)
+    terminal_is_hidden = mdata.ama_terminal_hidden or false
+    if mdata.ama_terminal_mode then
+        ama_terminal_mode = mdata.ama_terminal_mode
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("actor_on_net_destroy", clear_hud)
+    RegisterScriptCallback("ActorMenu_on_mode_changed", on_mode_changed)
+    RegisterScriptCallback("on_key_press", on_key_press)
+    RegisterScriptCallback("save_state", save_state)
+    RegisterScriptCallback("load_state", load_state)
+end
+
+
+

@@ -1,0 +1,432 @@
+; ======================================================================
+; AMA DIRECTIONAL ARMOR SYSTEM - LIMB ARMOR
+; ======================================================================
+
+[limb_armor_base]:plate_base
+icons_texture                   = ui\ui_icon_limb_armor
+inv_grid_width                  = 2
+inv_grid_height                 = 4
+inv_grid_scale                  = 2
+armor_type                      = limb
+plate_size                      = none
+
+; ----------------------------------------------------------------------
+; ===== TIER 2 - SOFT KEVLAR =====
+; ----------------------------------------------------------------------
+[ama_l_kevlar_dap]:limb_armor_base ; LIMB UPPERARM
+$spawn                          = "devices\ama_l_kevlar_dap"
+inv_name                        = st_kevlar_l_dap_name
+inv_name_short                  = st_kevlar_l_dap_name
+description                     = st_kevlar_dap_descr
+inv_weight                      = 0.9
+inv_grid_x                      = 2
+inv_grid_y                      = 0
+cost                            = 20458
+target_limb                     = l_upperarm
+plate_tier                      = 2
+ama_thickness                   = 15
+ama_hardness                    = 0.35
+ama_material                    = kevlar
+ama_durability_multiplier       = 2.5
+
+[ama_r_kevlar_dap]:ama_l_kevlar_dap ; LIMB UPPERARM
+$spawn                          = "devices\ama_r_kevlar_dap"
+inv_name                        = st_kevlar_r_dap_name
+inv_name_short                  = st_kevlar_r_dap_name
+inv_grid_x                      = 0
+inv_grid_y                      = 0
+target_limb                     = r_upperarm
+
+[ama_l_kevlar_forearm_guard]:ama_l_kevlar_dap ; LIMB FOREARM
+$spawn                          = "devices\ama_l_kevlar_forearm_guard"
+inv_name                        = st_kevlar_l_forearm_guard_name
+inv_name_short                  = st_kevlar_l_forearm_guard_name
+description                     = st_kevlar_forearm_guard_descr
+inv_weight                      = 0.6
+inv_grid_x                      = 4
+inv_grid_y                      = 0
+cost                            = 22347
+target_limb                     = l_forearm
+
+[ama_r_kevlar_forearm_guard]:ama_l_kevlar_forearm_guard ; LIMB FOREARM
+$spawn                          = "devices\ama_r_kevlar_forearm_guard"
+inv_name                        = st_kevlar_r_forearm_guard_name
+inv_name_short                  = st_kevlar_r_forearm_guard_name
+inv_grid_x                      = 6
+inv_grid_y                      = 0
+target_limb                     = r_forearm
+
+[ama_l_kevlar_femoral_protector]:ama_l_kevlar_dap ; LIMB THIGH
+$spawn                          = "devices\ama_l_kevlar_femoral_protector"
+inv_name                        = st_kevlar_l_femoral_protector_name
+inv_name_short                  = st_kevlar_l_femoral_protector_name
+description                     = st_kevlar_femoral_protector_descr
+inv_weight                      = 1.6
+inv_grid_x                      = 8
+inv_grid_y                      = 0
+cost                            = 25368
+target_limb                     = l_thigh
+
+[ama_r_kevlar_femoral_protector]:ama_l_kevlar_femoral_protector ; LIMB THIGH
+$spawn                          = "devices\ama_r_kevlar_femoral_protector"
+inv_name                        = st_kevlar_r_femoral_protector_name
+inv_name_short                  = st_kevlar_r_femoral_protector_name
+inv_grid_x                      = 10
+inv_grid_y                      = 0
+target_limb                     = r_thigh
+
+[ama_l_kevlar_shin_guard]:ama_l_kevlar_dap ; LIMB CALF
+$spawn                          = "devices\ama_l_kevlar_shin_guard"
+inv_name                        = st_kevlar_l_shin_guard_name
+inv_name_short                  = st_kevlar_l_shin_guard_name
+description                     = st_kevlar_shin_guard_descr
+inv_weight                      = 1.2
+inv_grid_x                      = 12
+inv_grid_y                      = 0
+cost                            = 21284
+target_limb                     = l_calf
+
+[ama_r_kevlar_shin_guard]:ama_l_kevlar_shin_guard ; LIMB CALF
+$spawn                          = "devices\ama_r_kevlar_shin_guard"
+inv_name                        = st_kevlar_r_shin_guard_name
+inv_name_short                  = st_kevlar_r_shin_guard_name
+inv_grid_x                      = 14
+inv_grid_y                      = 0
+target_limb                     = r_calf
+
+; ----------------------------------------------------------------------
+; ===== TIER 3 - HARD STEEL =====
+; ----------------------------------------------------------------------
+[ama_l_steel_dap]:limb_armor_base ; LIMB UPPERARM
+$spawn                          = "devices\ama_l_steel_dap"
+inv_name                        = st_steel_l_dap_name
+inv_name_short                  = st_steel_l_dap_name
+description                     = st_steel_dap_descr
+inv_weight                      = 3.5
+inv_grid_x                      = 2
+inv_grid_y                      = 4
+cost                            = 32500
+target_limb                     = l_upperarm
+plate_tier                      = 3
+ama_thickness                   = 25
+ama_hardness                    = 1.0
+ama_material                    = steel
+ama_durability_multiplier       = 0.4
+ama_spall_multiplier            = 0.8
+
+[ama_r_steel_dap]:ama_l_steel_dap ; LIMB UPPERARM
+$spawn                          = "devices\ama_r_steel_dap"
+inv_name                        = st_steel_r_dap_name
+inv_name_short                  = st_steel_r_dap_name
+inv_grid_x                      = 0
+inv_grid_y                      = 4
+target_limb                     = r_upperarm
+
+[ama_l_steel_forearm_guard]:ama_l_steel_dap ; LIMB FOREARM
+$spawn                          = "devices\ama_l_steel_forearm_guard"
+inv_name                        = st_steel_l_forearm_guard_name
+inv_name_short                  = st_steel_l_forearm_guard_name
+description                     = st_steel_forearm_guard_descr
+inv_weight                      = 2.2
+inv_grid_x                      = 4
+inv_grid_y                      = 4
+cost                            = 35000
+target_limb                     = l_forearm
+
+[ama_r_steel_forearm_guard]:ama_l_steel_forearm_guard ; LIMB FOREARM
+$spawn                          = "devices\ama_r_steel_forearm_guard"
+inv_name                        = st_steel_r_forearm_guard_name
+inv_name_short                  = st_steel_r_forearm_guard_name
+inv_grid_x                      = 6
+inv_grid_y                      = 4
+target_limb                     = r_forearm
+
+[ama_l_steel_femoral_protector]:ama_l_steel_dap ; LIMB THIGH
+$spawn                          = "devices\ama_l_steel_femoral_protector"
+inv_name                        = st_steel_l_femoral_protector_name
+inv_name_short                  = st_steel_l_femoral_protector_name
+description                     = st_steel_femoral_protector_descr
+inv_weight                      = 5.5
+inv_grid_x                      = 8
+inv_grid_y                      = 4
+cost                            = 40000
+target_limb                     = l_thigh
+
+[ama_r_steel_femoral_protector]:ama_l_steel_femoral_protector ; LIMB THIGH
+$spawn                          = "devices\ama_r_steel_femoral_protector"
+inv_name                        = st_steel_r_femoral_protector_name
+inv_name_short                  = st_steel_r_femoral_protector_name
+inv_grid_x                      = 10
+inv_grid_y                      = 4
+target_limb                     = r_thigh
+
+[ama_l_steel_shin_guard]:ama_l_steel_dap ; LIMB CALF
+$spawn                          = "devices\ama_l_steel_shin_guard"
+inv_name                        = st_steel_l_shin_guard_name
+inv_name_short                  = st_steel_l_shin_guard_name
+description                     = st_steel_shin_guard_descr
+inv_weight                      = 4.0
+inv_grid_x                      = 12
+inv_grid_y                      = 4
+cost                            = 34000
+target_limb                     = l_calf
+
+[ama_r_steel_shin_guard]:ama_l_steel_shin_guard ; LIMB CALF
+$spawn                          = "devices\ama_r_steel_shin_guard"
+inv_name                        = st_steel_r_shin_guard_name
+inv_name_short                  = st_steel_r_shin_guard_name
+inv_grid_x                      = 14
+inv_grid_y                      = 4
+target_limb                     = r_calf
+
+; ----------------------------------------------------------------------
+; ===== TIER 3+ - POLYETHYLENE =====
+; ----------------------------------------------------------------------
+[ama_l_poly_dap]:limb_armor_base ; LIMB UPPERARM
+$spawn                          = "devices\ama_l_poly_dap"
+inv_name                        = st_poly_l_dap_name
+inv_name_short                  = st_poly_l_dap_name
+description                     = st_poly_dap_descr
+inv_weight                      = 1.8
+inv_grid_x                      = 2
+inv_grid_y                      = 8
+cost                            = 55000
+target_limb                     = l_upperarm
+plate_tier                      = 4
+ama_thickness                   = 20
+ama_hardness                    = 0.70
+ama_material                    = poly
+ama_durability_multiplier       = 0.8
+
+[ama_r_poly_dap]:ama_l_poly_dap ; LIMB UPPERARM
+$spawn                          = "devices\ama_r_poly_dap"
+inv_name                        = st_poly_r_dap_name
+inv_name_short                  = st_poly_r_dap_name
+inv_grid_x                      = 0
+inv_grid_y                      = 8
+target_limb                     = r_upperarm
+
+[ama_l_poly_forearm_guard]:ama_l_poly_dap ; LIMB FOREARM
+$spawn                          = "devices\ama_l_poly_forearm_guard"
+inv_name                        = st_poly_l_forearm_guard_name
+inv_name_short                  = st_poly_l_forearm_guard_name
+description                     = st_poly_forearm_guard_descr
+inv_weight                      = 1.1
+inv_grid_x                      = 4
+inv_grid_y                      = 8
+cost                            = 60000
+target_limb                     = l_forearm
+
+[ama_r_poly_forearm_guard]:ama_l_poly_forearm_guard ; LIMB FOREARM
+$spawn                          = "devices\ama_r_poly_forearm_guard"
+inv_name                        = st_poly_r_forearm_guard_name
+inv_name_short                  = st_poly_r_forearm_guard_name
+inv_grid_x                      = 6
+inv_grid_y                      = 8
+target_limb                     = r_forearm
+
+[ama_l_poly_femoral_protector]:ama_l_poly_dap ; LIMB THIGH
+$spawn                          = "devices\ama_l_poly_femoral_protector"
+inv_name                        = st_poly_l_femoral_protector_name
+inv_name_short                  = st_poly_l_femoral_protector_name
+description                     = st_poly_femoral_protector_descr
+inv_weight                      = 2.8
+inv_grid_x                      = 8
+inv_grid_y                      = 8
+cost                            = 68000
+target_limb                     = l_thigh
+
+[ama_r_poly_femoral_protector]:ama_l_poly_femoral_protector ; LIMB THIGH
+$spawn                          = "devices\ama_r_poly_femoral_protector"
+inv_name                        = st_poly_r_femoral_protector_name
+inv_name_short                  = st_poly_r_femoral_protector_name
+inv_grid_x                      = 10
+inv_grid_y                      = 8
+target_limb                     = r_thigh
+
+[ama_l_poly_shin_guard]:ama_l_poly_dap ; LIMB CALF
+$spawn                          = "devices\ama_l_poly_shin_guard"
+inv_name                        = st_poly_l_shin_guard_name
+inv_name_short                  = st_poly_l_shin_guard_name
+description                     = st_poly_shin_guard_descr
+inv_weight                      = 2.0
+inv_grid_x                      = 12
+inv_grid_y                      = 8
+cost                            = 58000
+target_limb                     = l_calf
+
+[ama_r_poly_shin_guard]:ama_l_poly_shin_guard ; LIMB CALF
+$spawn                          = "devices\ama_r_poly_shin_guard"
+inv_name                        = st_poly_r_shin_guard_name
+inv_name_short                  = st_poly_r_shin_guard_name
+inv_grid_x                      = 14
+inv_grid_y                      = 8
+target_limb                     = r_calf
+
+; ----------------------------------------------------------------------
+; ===== TIER 4 - STANDARD CERAMIC =====
+; ----------------------------------------------------------------------
+[ama_l_ceramic_dap]:limb_armor_base ; LIMB UPPERARM
+$spawn                          = "devices\ama_l_ceramic_dap"
+inv_name                        = st_ceramic_l_dap_name
+inv_name_short                  = st_ceramic_l_dap_name
+description                     = st_ceramic_dap_descr
+inv_weight                      = 2.3
+inv_grid_x                      = 2
+inv_grid_y                      = 12
+cost                            = 80000
+target_limb                     = l_upperarm
+plate_tier                      = 5
+ama_thickness                   = 20
+ama_hardness                    = 0.85
+ama_material                    = ceramic
+ama_durability_multiplier       = 1.0
+
+[ama_r_ceramic_dap]:ama_l_ceramic_dap ; LIMB UPPERARM
+$spawn                          = "devices\ama_r_ceramic_dap"
+inv_name                        = st_ceramic_r_dap_name
+inv_name_short                  = st_ceramic_r_dap_name
+inv_grid_x                      = 0
+inv_grid_y                      = 12
+target_limb                     = r_upperarm
+
+[ama_l_ceramic_forearm_guard]:ama_l_ceramic_dap ; LIMB FOREARM
+$spawn                          = "devices\ama_l_ceramic_forearm_guard"
+inv_name                        = st_ceramic_l_forearm_guard_name
+inv_name_short                  = st_ceramic_l_forearm_guard_name
+description                     = st_ceramic_forearm_guard_descr
+inv_weight                      = 1.4
+inv_grid_x                      = 4
+inv_grid_y                      = 12
+cost                            = 85000
+target_limb                     = l_forearm
+
+[ama_r_ceramic_forearm_guard]:ama_l_ceramic_forearm_guard ; LIMB FOREARM
+$spawn                          = "devices\ama_r_ceramic_forearm_guard"
+inv_name                        = st_ceramic_r_forearm_guard_name
+inv_name_short                  = st_ceramic_r_forearm_guard_name
+inv_grid_x                      = 6
+inv_grid_y                      = 12
+target_limb                     = r_forearm
+
+[ama_l_ceramic_femoral_protector]:ama_l_ceramic_dap ; LIMB THIGH
+$spawn                          = "devices\ama_l_ceramic_femoral_protector"
+inv_name                        = st_ceramic_l_femoral_protector_name
+inv_name_short                  = st_ceramic_l_femoral_protector_name
+description                     = st_ceramic_femoral_protector_descr
+inv_weight                      = 3.5
+inv_grid_x                      = 8
+inv_grid_y                      = 12
+cost                            = 95000
+target_limb                     = l_thigh
+
+[ama_r_ceramic_femoral_protector]:ama_l_ceramic_femoral_protector ; LIMB THIGH
+$spawn                          = "devices\ama_r_ceramic_femoral_protector"
+inv_name                        = st_ceramic_r_femoral_protector_name
+inv_name_short                  = st_ceramic_r_femoral_protector_name
+inv_grid_x                      = 10
+inv_grid_y                      = 12
+target_limb                     = r_thigh
+
+[ama_l_ceramic_shin_guard]:ama_l_ceramic_dap ; LIMB CALF
+$spawn                          = "devices\ama_l_ceramic_shin_guard"
+inv_name                        = st_ceramic_l_shin_guard_name
+inv_name_short                  = st_ceramic_l_shin_guard_name
+description                     = st_ceramic_shin_guard_descr
+inv_weight                      = 2.6
+inv_grid_x                      = 12
+inv_grid_y                      = 12
+cost                            = 82000
+target_limb                     = l_calf
+
+[ama_r_ceramic_shin_guard]:ama_l_ceramic_shin_guard ; LIMB CALF
+$spawn                          = "devices\ama_r_ceramic_shin_guard"
+inv_name                        = st_ceramic_r_shin_guard_name
+inv_name_short                  = st_ceramic_r_shin_guard_name
+inv_grid_x                      = 14
+inv_grid_y                      = 12
+target_limb                     = r_calf
+
+; ----------------------------------------------------------------------
+; ===== TIER 5 - BORON CARBIDE (GOST 6) =====
+; ----------------------------------------------------------------------
+[ama_l_boron_dap]:limb_armor_base ; LIMB UPPERARM
+$spawn                          = "devices\ama_l_boron_dap"
+inv_name                        = st_boron_l_dap_name
+inv_name_short                  = st_boron_l_dap_name
+description                     = st_boron_dap_descr
+inv_weight                      = 4.0
+inv_grid_x                      = 2
+inv_grid_y                      = 16
+cost                            = 120000
+target_limb                     = l_upperarm
+plate_tier                      = 6
+ama_thickness                   = 20
+ama_hardness                    = 0.95
+ama_material                    = ceramic
+ama_durability_multiplier       = 1.2
+
+[ama_r_boron_dap]:ama_l_boron_dap ; LIMB UPPERARM
+$spawn                          = "devices\ama_r_boron_dap"
+inv_name                        = st_boron_r_dap_name
+inv_name_short                  = st_boron_r_dap_name
+inv_grid_x                      = 0
+inv_grid_y                      = 16
+target_limb                     = r_upperarm
+
+[ama_l_boron_forearm_guard]:ama_l_boron_dap ; LIMB FOREARM
+$spawn                          = "devices\ama_l_boron_forearm_guard"
+inv_name                        = st_boron_l_forearm_guard_name
+inv_name_short                  = st_boron_l_forearm_guard_name
+description                     = st_boron_forearm_guard_descr
+inv_weight                      = 2.5
+inv_grid_x                      = 4
+inv_grid_y                      = 16
+cost                            = 130000
+target_limb                     = l_forearm
+
+[ama_r_boron_forearm_guard]:ama_l_boron_forearm_guard ; LIMB FOREARM
+$spawn                          = "devices\ama_r_boron_forearm_guard"
+inv_name                        = st_boron_r_forearm_guard_name
+inv_name_short                  = st_boron_r_forearm_guard_name
+inv_grid_x                      = 6
+inv_grid_y                      = 16
+target_limb                     = r_forearm
+
+[ama_l_boron_femoral_protector]:ama_l_boron_dap ; LIMB THIGH
+$spawn                          = "devices\ama_l_boron_femoral_protector"
+inv_name                        = st_boron_l_femoral_protector_name
+inv_name_short                  = st_boron_l_femoral_protector_name
+description                     = st_boron_femoral_protector_descr
+inv_weight                      = 6.0
+inv_grid_x                      = 8
+inv_grid_y                      = 16
+cost                            = 150000
+target_limb                     = l_thigh
+
+[ama_r_boron_femoral_protector]:ama_l_boron_femoral_protector ; LIMB THIGH
+$spawn                          = "devices\ama_r_boron_femoral_protector"
+inv_name                        = st_boron_r_femoral_protector_name
+inv_name_short                  = st_boron_r_femoral_protector_name
+inv_grid_x                      = 10
+inv_grid_y                      = 16
+target_limb                     = r_thigh
+
+[ama_l_boron_shin_guard]:ama_l_boron_dap ; LIMB CALF
+$spawn                          = "devices\ama_l_boron_shin_guard"
+inv_name                        = st_boron_l_shin_guard_name
+inv_name_short                  = st_boron_l_shin_guard_name
+description                     = st_boron_shin_guard_descr
+inv_weight                      = 4.5
+inv_grid_x                      = 12
+inv_grid_y                      = 16
+cost                            = 125000
+target_limb                     = l_calf
+
+[ama_r_boron_shin_guard]:ama_l_boron_shin_guard ; LIMB CALF
+$spawn                          = "devices\ama_r_boron_shin_guard"
+inv_name                        = st_boron_r_shin_guard_name
+inv_name_short                  = st_boron_r_shin_guard_name
+inv_grid_x                      = 14
+inv_grid_y                      = 16
+target_limb                     = r_calf

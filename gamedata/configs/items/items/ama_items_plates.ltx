@@ -1,0 +1,658 @@
+; ======================================================================
+; AMA DIRECTIONAL ARMOR SYSTEM - PHYSICAL PLATES
+; ======================================================================
+
+[plate_base]:identity_immunities
+GroupControlSection             = spawn_group
+discovery_dependency            = 
+hud                             = artefact_hud
+animation_slot                  = 11
+allow_inertion                  = true
+attach_angle_offset             = 0,0,0
+attach_position_offset          = -0.1,-0.1,0
+attach_bone_name                = bip01_root
+belt                            = true
+slot                            = 10
+default_to_ruck                 = true
+af_actor_properties             = on
+actor_properties                = on
+det_show_particles              = 
+det_hide_particles              = 
+det_show_snd                    = 
+det_hide_snd                    = 
+af_rank                         = 0
+can_be_controlled               = true
+particles_bone                  = link
+lights_enabled                  = false
+trail_light_color               = 0,0,0
+trail_light_range               = 0
+health_restore_speed            = 0
+radiation_restore_speed         = 0
+satiety_restore_speed           = 0
+power_restore_speed             = 0
+bleeding_restore_speed          = 0
+additional_inventory_weight     = 0
+additional_inventory_weight2    = 0
+hit_absorbation_sect            = af_base_absorbation
+particles                       = 
+jump_height                     = 0
+class                           = SCRPTART
+kind                            = i_attach
+cform                           = skeleton
+use_condition                   = true
+cond_part                       = true
+script_binding                  = bind_item.bind
+visual                          = dynamics\equipments\aa\kevlar
+icons_texture                   = ui\ui_icon_ama_plates
+inv_grid_width                  = 4
+inv_grid_height                 = 4
+inv_grid_scale					= 4
+
+; ----------------------------------------------------------------------
+; ===== TIER 1 =====
+; ----------------------------------------------------------------------
+
+; ===== SCAVENGED =====
+[ama_plate_scrap_l1]:plate_base
+$spawn                          = "devices\ama_plate_scrap_l1"
+inv_name                        = st_ama_plate_scrap_l1_name
+inv_name_short                  = st_ama_plate_scrap_l1_name
+description                     = st_ama_plate_scrap_l1_descr
+inv_weight                      = 5.5
+inv_grid_x                      = 0
+inv_grid_y                      = 0
+cost                            = 800
+plate_tier                      = 1
+plate_size                      = large
+ama_thickness                   = 8
+ama_hardness                    = 0.50
+ama_material                    = steel
+ama_durability_multiplier       = 3.5
+ama_spall_multiplier            = 1.2
+
+; ----------------------------------------------------------------------
+; ===== TIER 2 =====
+; ----------------------------------------------------------------------
+
+; ===== ZONE MADE =====
+[ama_plate_lead_l2]:plate_base
+$spawn                          = "devices\ama_plate_lead_l2"
+inv_name                        = st_ama_plate_lead_l2_name
+inv_name_short                  = st_ama_plate_lead_l2_name
+description                     = st_ama_plate_lead_l2_descr
+inv_weight                      = 8.0
+inv_grid_x                      = 4
+inv_grid_y                      = 0
+cost                            = 3500
+plate_tier                      = 2
+plate_size                      = large
+ama_thickness                   = 12
+ama_hardness                    = 0.35
+ama_material                    = steel
+ama_durability_multiplier       = 2.0
+ama_radiation_protection        = 0.05
+ama_spall_multiplier            = 0.6
+
+[ama_plate_rubber_l2]:plate_base
+$spawn                          = "devices\ama_plate_rubber_l2"
+inv_name                        = st_ama_plate_rubber_l2_name
+inv_name_short                  = st_ama_plate_rubber_l2_name
+description                     = st_ama_plate_rubber_l2_descr
+inv_weight                      = 6.5
+inv_grid_x                      = 8
+inv_grid_y                      = 0
+cost                            = 2500
+plate_tier                      = 2
+plate_size                      = large
+ama_thickness                   = 16
+ama_hardness                    = 0.40
+ama_material                    = steel
+ama_durability_multiplier       = 3.0
+ama_spall_multiplier            = 0.0
+ama_trauma_padding              = 0.2
+
+; ===== KEVLAR ARAMID =====
+[ama_plate_kevlar_l2]:plate_base
+$spawn                          = "devices\plate_kevlar_l2"
+inv_name                        = st_plate_kevlar_l2_name
+inv_name_short                  = st_plate_kevlar_l2_name
+description                     = st_plate_kevlar_l2_descr
+inv_weight                      = 1.6
+inv_grid_x                      = 12
+inv_grid_y                      = 0
+inv_grid_scale                  = 4
+cost                            = 8976
+plate_tier                      = 2
+plate_size                      = large
+ama_thickness                   = 15
+ama_hardness                    = 0.35
+ama_material                    = kevlar
+ama_durability_multiplier       = 2.5
+
+; ===== SIDE PLATES =====
+[ama_plate_kevlar_side_l2]:ama_plate_kevlar_l2
+inv_name                        = st_plate_kevlar_side_l2_name
+inv_name_short                  = st_plate_kevlar_side_l2_name
+description                     = st_plate_kevlar_side_l2_descr
+inv_weight                      = 0.8
+inv_grid_x                      = 16
+inv_grid_y                      = 0
+cost                            = 4646
+plate_size                      = small
+ama_thickness                   = 15
+ama_hardness                    = 0.35
+ama_material                    = kevlar
+ama_durability_multiplier       = 2.5
+
+; ----------------------------------------------------------------------
+; ===== TIER 3 =====
+; ----------------------------------------------------------------------
+
+; ===== SCAVENGED =====
+[ama_plate_frankenstein_l3]:plate_base
+$spawn                          = "devices\ama_plate_frankenstein_l3"
+inv_name                        = st_ama_plate_frankenstein_l3_name
+inv_name_short                  = st_ama_plate_frankenstein_l3_name
+description                     = st_ama_plate_frankenstein_l3_descr
+inv_weight                      = 5.0
+inv_grid_x                      = 20
+inv_grid_y                      = 0
+cost                            = 6000
+plate_tier                      = 3
+plate_size                      = large
+ama_thickness                   = 20
+ama_hardness                    = 0.70
+ama_material                    = ceramic
+ama_durability_multiplier       = 2.5
+ama_spall_multiplier            = 0.5
+
+; ===== STEEL (AR500 / AR600) =====
+[ama_plate_steel_l3]:plate_base
+$spawn                          = "devices\ama_plate_steel_l3"
+inv_name                        = st_ama_plate_steel_l3_name
+inv_name_short                  = st_ama_plate_steel_l3_name
+description                     = st_ama_plate_steel_l3_descr
+inv_weight                      = 4.0
+inv_grid_x                      = 24
+inv_grid_y                      = 0
+cost                            = 12500
+plate_tier                      = 3
+plate_size                      = large
+ama_thickness                   = 10
+ama_hardness                    = 1.0
+ama_material                    = steel
+ama_durability_multiplier       = 0.4
+ama_spall_multiplier            = 0.8
+
+[ama_plate_steel_naked_l3]:ama_plate_steel_l3
+inv_name                        = st_ama_plate_steel_naked_l3_name
+inv_name_short                  = st_ama_plate_steel_naked_l3_name
+description                     = st_ama_plate_steel_naked_l3_descr
+inv_weight                      = 3.8
+inv_grid_x                      = 28
+inv_grid_y                      = 0
+cost                            = 8500
+ama_spall_multiplier            = 1.2 ; Extreme spall risk
+
+[ama_plate_steel_linex_l3]:ama_plate_steel_l3
+inv_name                        = st_ama_plate_steel_linex_l3_name
+inv_name_short                  = st_ama_plate_steel_linex_l3_name
+description                     = st_ama_plate_steel_linex_l3_descr
+inv_weight                      = 4.5
+inv_grid_x                      = 32
+inv_grid_y                      = 0
+cost                            = 18500
+ama_thickness                   = 13  ; Liner adds effective thickness
+ama_spall_multiplier            = 0.2 ; Liner catches fragmentation
+
+[ama_plate_steel_hardened_l3]:ama_plate_steel_l3
+inv_name                        = st_ama_plate_steel_hardened_l3_name
+inv_name_short                  = st_ama_plate_steel_hardened_l3_name
+description                     = st_ama_plate_steel_hardened_l3_descr
+inv_grid_x                      = 36
+inv_grid_y                      = 0
+cost                            = 22000
+ama_hardness                    = 1.15 ; Higher ricochet chance
+ama_durability_multiplier       = 0.7  ; More brittle due to hardening
+
+; ===== POLYETHYLENE (UHMWPE) =====
+[ama_plate_poly_l3]:plate_base
+$spawn                          = "devices\ama_plate_poly_l3"
+inv_name                        = st_ama_plate_poly_l3_name
+inv_name_short                  = st_ama_plate_poly_l3_name
+description                     = st_ama_plate_poly_l3_descr
+inv_weight                      = 1.2
+inv_grid_x                      = 0
+inv_grid_y                      = 4
+cost                            = 45000
+plate_tier                      = 3
+plate_size                      = large
+ama_thickness                   = 30
+ama_hardness                    = 0.05 ; Absorbs impact, no ricochet
+ama_material                    = poly
+ama_durability_multiplier       = 0.8
+ama_spall_multiplier            = 0.0
+
+[ama_plate_poly_pressed_l3]:ama_plate_poly_l3
+inv_name                        = st_ama_plate_poly_pressed_l3_name
+inv_name_short                  = st_ama_plate_poly_pressed_l3_name
+description                     = st_ama_plate_poly_pressed_l3_descr
+inv_weight                      = 1.5
+inv_grid_x                      = 4
+inv_grid_y                      = 4
+cost                            = 55000
+ama_thickness                   = 25
+ama_hardness                    = 0.2
+ama_durability_multiplier       = 0.6
+
+; ===== SIDE PLATES =====
+[plate_steel_side_l3]:ama_plate_steel_l3
+inv_name                        = st_plate_steel_side_l3_name
+inv_name_short                  = st_plate_steel_side_l3_name
+description                     = st_plate_steel_side_l3_descr
+inv_weight                      = 3.2
+inv_grid_x                      = 8
+inv_grid_y                      = 4
+cost                            = 7543
+plate_size                      = small
+ama_thickness                   = 10
+ama_hardness                    = 1.0
+ama_material                    = steel
+ama_durability_multiplier       = 0.4
+ama_spall_multiplier            = 0.8
+
+[ama_plate_poly_side_l3]:ama_plate_poly_l3
+inv_name                        = st_plate_poly_side_l3_name
+inv_name_short                  = st_plate_poly_side_l3_name
+description                     = st_plate_poly_side_l3_descr
+inv_weight                      = 1.5
+inv_grid_x                      = 36
+inv_grid_y                      = 4
+cost                            = 15764
+plate_size                      = small
+ama_thickness                   = 30
+ama_hardness                    = 0.05
+ama_material                    = poly
+ama_durability_multiplier       = 0.8
+ama_spall_multiplier            = 0.0
+
+; ----------------------------------------------------------------------
+; ===== TIER 4 =====
+; ----------------------------------------------------------------------
+
+; ===== CERAMIC & ALUMINA CERAMIC =====
+[ama_plate_ceramic_l4]:plate_base
+$spawn                          = "devices\plate_ceramic_l4"
+inv_name                        = st_plate_ceramic_l4_name
+inv_name_short                  = st_plate_ceramic_l4_name
+description                     = st_plate_ceramic_l4_descr
+inv_weight                      = 4.5
+inv_grid_x                      = 12
+inv_grid_y                      = 4
+cost                            = 45731
+plate_tier                      = 5
+plate_size                      = large
+ama_thickness                   = 20
+ama_hardness                    = 0.85
+ama_material                    = ceramic
+ama_durability_multiplier       = 1.0
+
+[ama_plate_alumina_l4]:plate_base
+$spawn                          = "devices\ama_plate_alumina_l4"
+inv_name                        = st_ama_plate_alumina_l4_name
+inv_name_short                  = st_ama_plate_alumina_l4_name
+description                     = st_ama_plate_alumina_l4_descr
+inv_weight                      = 4.5
+inv_grid_x                      = 16
+inv_grid_y                      = 4
+cost                            = 35000
+plate_tier                      = 4
+plate_size                      = large
+ama_thickness                   = 25
+ama_hardness                    = 0.85
+ama_material                    = ceramic
+ama_durability_multiplier       = 1.5 ; Breaks fast
+
+[ama_plate_alumina_reinforced_l4]:ama_plate_alumina_l4
+inv_name                        = st_ama_plate_alumina_reinforced_l4_name
+inv_name_short                  = st_ama_plate_alumina_reinforced_l4_name
+description                     = st_ama_plate_alumina_reinforced_l4_descr
+inv_weight                      = 5.2
+inv_grid_x                      = 20
+inv_grid_y                      = 4
+cost                            = 48000
+ama_thickness                   = 28
+ama_durability_multiplier       = 1.1 ; Kevlar wrap holds it together longer
+
+; ===== SOVIET 6B TITANIUM SERIES =====
+[ama_plate_titanium_old_l3]:plate_base
+$spawn                          = "devices\ama_plate_titanium_old_l3"
+inv_name                        = st_ama_plate_titanium_old_l3_name
+inv_name_short                  = st_ama_plate_titanium_old_l3_name
+description                     = st_ama_plate_titanium_old_l3_descr
+inv_weight                      = 3.2
+inv_grid_x                      = 24
+inv_grid_y                      = 4
+cost                            = 18000
+plate_tier                      = 3
+plate_size                      = large
+ama_thickness                   = 12
+ama_hardness                    = 0.80
+ama_material                    = steel
+ama_durability_multiplier       = 0.6
+ama_spall_multiplier            = 0.5
+
+[ama_plate_titanium_polished_l4]:ama_plate_titanium_old_l3
+inv_name                        = st_ama_plate_titanium_polished_l4_name
+inv_name_short                  = st_ama_plate_titanium_polished_l4_name
+description                     = st_ama_plate_titanium_polished_l4_descr
+inv_weight                      = 3.5
+inv_grid_x                      = 28
+inv_grid_y                      = 4
+cost                            = 42000
+plate_tier                      = 4
+ama_thickness                   = 15
+ama_hardness                    = 0.85
+ama_durability_multiplier       = 0.5
+
+; ===== RUSSIAN CERAMIC (GOST 4) =====
+[ama_plate_granit_l4]:plate_base
+$spawn                          = "devices\ama_plate_granit_l4"
+inv_name                        = st_ama_plate_granit_l4_name
+inv_name_short                  = st_ama_plate_granit_l4_name
+description                     = st_ama_plate_granit_l4_descr
+inv_weight                      = 4.0
+inv_grid_x                      = 32
+inv_grid_y                      = 4
+cost                            = 38000
+plate_tier                      = 4
+plate_size                      = large
+ama_thickness                   = 25
+ama_hardness                    = 0.90
+ama_material                    = ceramic
+ama_durability_multiplier       = 0.9
+
+; ===== SIDE PLATES =====
+[ama_plate_ceramic_side_l4]:ama_plate_ceramic_l4
+inv_name                        = st_plate_ceramic_side_l4_name
+inv_name_short                  = st_plate_ceramic_side_l4_name
+description                     = st_plate_ceramic_side_l4_descr
+inv_weight                      = 2.2
+inv_grid_x                      = 0
+inv_grid_y                      = 8
+cost                            = 20653
+plate_size                      = small
+ama_thickness                   = 20
+ama_hardness                    = 0.85
+ama_material                    = ceramic
+ama_durability_multiplier       = 1.0
+
+; ----------------------------------------------------------------------
+; ===== TIER 5 =====
+; ----------------------------------------------------------------------
+
+; ===== RUSSIAN CERAMIC (GOST 5) =====
+[ama_plate_granit_l5]:ama_plate_granit_l4
+inv_name                        = st_ama_plate_granit_l5_name
+inv_name_short                  = st_ama_plate_granit_l5_name
+description                     = st_ama_plate_granit_l5_descr
+inv_weight                      = 4.5
+inv_grid_x                      = 4
+inv_grid_y                      = 8
+cost                            = 75000
+plate_tier                      = 5
+ama_thickness                   = 28
+ama_hardness                    = 0.95
+ama_durability_multiplier       = 0.8
+
+; ===== LIQUID ARMOR =====
+[ama_plate_stf_l5]:plate_base
+$spawn                          = "devices\ama_plate_stf_l5"
+inv_name                        = st_ama_plate_stf_l5_name
+inv_name_short                  = st_ama_plate_stf_l5_name
+description                     = st_ama_plate_stf_l5_descr
+inv_weight                      = 2.5
+inv_grid_x                      = 8
+inv_grid_y                      = 8
+cost                            = 110000
+plate_tier                      = 5
+plate_size                      = large
+ama_thickness                   = 15
+ama_hardness                    = 0.80
+ama_material                    = kevlar
+ama_durability_multiplier       = 1.0
+ama_trauma_padding              = 0.6  ; Liquid immediately hardens to absorb thump
+
+; ===== SILICON CARBIDE =====
+[ama_plate_sic_l5]:plate_base
+$spawn                          = "devices\ama_plate_sic_l5"
+inv_name                        = st_ama_plate_sic_l5_name
+inv_name_short                  = st_ama_plate_sic_l5_name
+description                     = st_ama_plate_sic_l5_descr
+inv_weight                      = 3.2
+inv_grid_x                      = 12
+inv_grid_y                      = 8
+cost                            = 65000
+plate_tier                      = 5
+plate_size                      = large
+ama_thickness                   = 18
+ama_hardness                    = 0.90
+ama_material                    = ceramic
+ama_durability_multiplier       = 1.2
+
+[ama_plate_sic_multihit_l5]:ama_plate_sic_l5
+inv_name                        = st_ama_plate_sic_multihit_l5_name
+inv_name_short                  = st_ama_plate_sic_multihit_l5_name
+description                     = st_ama_plate_sic_multihit_l5_descr
+inv_weight                      = 3.8
+inv_grid_x                      = 16
+inv_grid_y                      = 8
+cost                            = 85000
+ama_thickness                   = 22
+ama_durability_multiplier       = 0.85 ; Designed for sustained firefights
+
+; ===== CARBON NANOTUBE PLATES =====
+[ama_plate_cnt_l5]:plate_base
+$spawn                          = "devices\ama_plate_cnt_l5"
+inv_name                        = st_ama_plate_cnt_l5_name
+inv_name_short                  = st_ama_plate_cnt_l5_name
+description                     = st_ama_plate_cnt_l5_descr
+inv_weight                      = 0.5
+inv_grid_x                      = 20
+inv_grid_y                      = 8
+cost                            = 150000
+plate_tier                      = 5
+plate_size                      = large
+ama_thickness                   = 5    ; Razor thin
+ama_hardness                    = 0.60
+ama_material                    = kevlar
+ama_durability_multiplier       = 0.5
+ama_trauma_padding              = 0.4  ; Material naturally disperses shock
+
+; ===== ARTIFACT-INFUSED =====
+[ama_plate_soul_l5]:plate_base
+$spawn                          = "devices\ama_plate_soul_l5"
+inv_name                        = st_ama_plate_soul_l5_name
+inv_name_short                  = st_ama_plate_soul_l5_name
+description                     = st_ama_plate_soul_l5_descr
+inv_weight                      = 1.0
+inv_grid_x                      = 24
+inv_grid_y                      = 8
+cost                            = 180000
+plate_tier                      = 5
+plate_size                      = large
+ama_thickness                   = 10
+ama_hardness                    = 0.30
+ama_material                    = kevlar
+ama_durability_multiplier       = 2.0
+power_restore_speed             = 0.002 ; Massive stamina recovery boost
+
+; ----------------------------------------------------------------------
+; ===== TIER 6 =====
+; ----------------------------------------------------------------------
+
+; ===== RUSSIAN CERAMIC (GOST 6A) =====
+[ama_plate_granit_l6]:ama_plate_granit_l4
+inv_name                        = st_ama_plate_granit_l6_name
+inv_name_short                  = st_ama_plate_granit_l6_name
+description                     = st_ama_plate_granit_l6_descr
+inv_weight                      = 5.2
+inv_grid_x                      = 28
+inv_grid_y                      = 8
+cost                            = 140000
+plate_tier                      = 6
+ama_thickness                   = 32
+ama_hardness                    = 1.0
+ama_durability_multiplier       = 0.7
+
+; ===== ARTIFACT-INFUSED =====
+[ama_plate_mamasbeads_l6]:plate_base
+$spawn                          = "devices\ama_plate_mamasbeads_l6"
+inv_name                        = st_ama_plate_mamasbeads_l6_name
+inv_name_short                  = st_ama_plate_mamasbeads_l6_name
+description                     = st_ama_plate_mamasbeads_l6_descr
+inv_weight                      = 4.0
+inv_grid_x                      = 32
+inv_grid_y                      = 8
+cost                            = 280000
+plate_tier                      = 6
+plate_size                      = large
+ama_thickness                   = 20
+ama_hardness                    = 0.85
+ama_material                    = ceramic
+ama_durability_multiplier       = 3.0 ; Very fragile artifact housing
+health_restore_speed            = 0.0005 ; Passive healing
+
+[ama_plate_kolobok_l6]:plate_base
+$spawn                          = "devices\ama_plate_kolobok_l6"
+inv_name                        = st_ama_plate_kolobok_l6_name
+inv_name_short                  = st_ama_plate_kolobok_l6_name
+description                     = st_ama_plate_kolobok_l6_descr
+inv_weight                      = 3.5
+inv_grid_x                      = 36
+inv_grid_y                      = 8
+cost                            = 320000
+plate_tier                      = 6
+plate_size                      = large
+ama_thickness                   = 15
+ama_hardness                    = 0.90
+ama_material                    = steel
+ama_durability_multiplier       = 1.0
+ama_spall_multiplier            = -0.5 ; Mathematically negates other spall sources
+
+; ===== BORON CARBIDE =====
+[ama_plate_boron_l6]:plate_base
+$spawn                          = "devices\ama_plate_boron_l6"
+inv_name                        = st_ama_plate_boron_l6_name
+inv_name_short                  = st_ama_plate_boron_l6_name
+description                     = st_ama_plate_boron_l6_descr
+inv_weight                      = 1.8
+inv_grid_x                      = 0
+inv_grid_y                      = 12
+cost                            = 120000
+plate_tier                      = 6
+plate_size                      = large
+ama_thickness                   = 15
+ama_hardness                    = 1.1
+ama_material                    = ceramic
+ama_durability_multiplier       = 2.0 ; Glass cannon
+
+[ama_plate_boron_operator_l6]:ama_plate_boron_l6
+inv_name                        = st_ama_plate_boron_operator_l6_name
+inv_name_short                  = st_ama_plate_boron_operator_l6_name
+description                     = st_ama_plate_boron_operator_l6_descr
+inv_weight                      = 2.4
+inv_grid_x                      = 4
+inv_grid_y                      = 12
+cost                            = 165000
+ama_thickness                   = 18
+ama_durability_multiplier       = 1.3 ; Thicker backing prevents immediate shattering
+
+; ===== GRAPHENE-CERAMIC HYBRID =====
+[ama_plate_graphene_l6]:plate_base
+$spawn                          = "devices\ama_plate_graphene_l6"
+inv_name                        = st_ama_plate_graphene_l6_name
+inv_name_short                  = st_ama_plate_graphene_l6_name
+description                     = st_ama_plate_graphene_l6_descr
+inv_weight                      = 1.5
+inv_grid_x                      = 8
+inv_grid_y                      = 12
+cost                            = 250000
+plate_tier                      = 6
+plate_size                      = large
+ama_thickness                   = 10
+ama_hardness                    = 1.1
+ama_material                    = ceramic
+ama_durability_multiplier       = 0.4
+ama_spall_multiplier            = 0.0
+
+; ===== SIDE PLATES =====
+[ama_plate_boron_side_l6]:ama_plate_boron_l6
+inv_name                        = st_plate_boron_side_l5_name
+inv_name_short                  = st_plate_boron_side_l5_name
+description                     = st_plate_boron_side_l5_descr
+inv_weight                      = 3.5
+inv_grid_x                      = 12
+inv_grid_y                      = 12
+cost                            = 50853
+plate_size                      = small
+ama_thickness                   = 15
+ama_hardness                    = 1.1
+ama_material                    = ceramic
+ama_durability_multiplier       = 2.0
+
+; ----------------------------------------------------------------------
+; ===== TIER 7 =====
+; ----------------------------------------------------------------------
+
+; ===== MONOCRYSTAL =====
+[ama_plate_monocrystal_l7]:plate_base
+$spawn                          = "devices\ama_plate_monocrystal_l7"
+inv_name                        = st_ama_plate_monocrystal_l7_name
+inv_name_short                  = st_ama_plate_monocrystal_l7_name
+description                     = st_ama_plate_monocrystal_l7_descr
+inv_weight                      = 1.5
+inv_grid_x                      = 20
+inv_grid_y                      = 12
+cost                            = 400000
+plate_tier                      = 7
+plate_size                      = large
+ama_thickness                   = 30
+ama_hardness                    = 1.6
+ama_material                    = steel
+ama_durability_multiplier       = 0.1
+ama_spall_multiplier            = 0.1
+
+; ===== ARTIFACT-INFUSED =====
+[ama_plate_empty_l7]:plate_base
+$spawn                          = "devices\ama_plate_empty_l7"
+inv_name                        = st_ama_plate_empty_l7_name
+inv_name_short                  = st_ama_plate_empty_l7_name
+description                     = st_ama_plate_empty_l7_descr
+inv_weight                      = 5.0
+inv_grid_x                      = 24
+inv_grid_y                      = 12
+cost                            = 500000
+plate_tier                      = 7
+plate_size                      = large
+ama_thickness                   = 25
+ama_hardness                    = 1.0
+ama_material                    = ceramic
+ama_durability_multiplier       = 0.5
+ama_trauma_padding              = 0.95 ; Swallows kinetic shock into the void
+
+; ===== SIDE PLATES =====
+[ama_plate_monocrystal_side_l7]:ama_plate_monocrystal_l7
+inv_name                        = st_plate_monocrystal_side_l6_name
+inv_name_short                  = st_plate_monocrystal_side_l6_name
+description                     = st_plate_monocrystal_side_l6_descr
+inv_weight                      = 2.2
+inv_grid_x                      = 16
+inv_grid_y                      = 12
+cost                            = 123356
+plate_size                      = small
+ama_thickness                   = 30
+ama_hardness                    = 1.4
+ama_material                    = steel
+ama_durability_multiplier       = 0.2
+ama_spall_multiplier            = 0.2

@@ -1,0 +1,196 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - DYNAMIC TRADER INJECTION
+-- ======================================================================
+
+local last_restock = {}
+local restock_cooldown = 172800
+
+-- ----------------------------------------------------------------------
+-- ARMOR & HELMET SUPPLY MATRIX
+-- ----------------------------------------------------------------------
+local custom_armor_supply = {
+    ["isg"] = {
+        ["unisg_ranger_vest"]  = { qty = 1, prob = 1.00 },
+        ["unisg_specter_helm"] = { qty = 1, prob = 1.00 }
+    },
+    ["killer"] = {
+        ["unisg_ranger_vest"]  = { qty = 1, prob = 0.10 },
+        ["unisg_specter_helm"] = { qty = 1, prob = 0.10 }
+    }
+}
+
+-- ----------------------------------------------------------------------
+-- PLATE & LIMB SUPPLY MATRIX
+-- ----------------------------------------------------------------------
+local plate_supply_tiers = {
+    ["elite"] = {
+        -- Main Plates (High-End Industrial & Military)
+        ["ama_plate_steel_linex_l3"]       = { 2, 0.70 },
+        ["ama_plate_poly_pressed_l3"]      = { 2, 0.75 },
+        ["ama_plate_titanium_polished_l4"] = { 2, 0.80 },
+        ["ama_plate_ceramic_l4"]           = { 3, 0.85 },
+        ["ama_plate_alumina_l4"]           = { 2, 0.75 },
+        ["ama_plate_alumina_reinforced_l4"]= { 2, 0.65 },
+        ["ama_plate_granit_l4"]            = { 3, 0.80 },
+        ["ama_plate_granit_l5"]            = { 2, 0.60 },
+        ["ama_plate_stf_l5"]               = { 1, 0.40 },
+        ["ama_plate_sic_l5"]               = { 2, 0.50 },
+        ["ama_plate_sic_multihit_l5"]      = { 1, 0.40 },
+        ["ama_plate_cnt_l5"]               = { 1, 0.25 },
+        ["ama_plate_granit_l6"]            = { 1, 0.35 },
+        ["ama_plate_boron_l6"]             = { 1, 0.30 },
+        ["ama_plate_boron_operator_l6"]    = { 1, 0.20 },
+        ["ama_plate_graphene_l6"]          = { 1, 0.15 },
+        
+        -- Artifact/Supernatural Tier (Extremely Rare)
+        ["ama_plate_soul_l5"]              = { 1, 0.05 },
+        ["ama_plate_mamasbeads_l6"]        = { 1, 0.03 },
+        ["ama_plate_kolobok_l6"]           = { 1, 0.03 },
+        ["ama_plate_monocrystal_l7"]       = { 1, 0.01 },
+        ["ama_plate_empty_l7"]             = { 1, 0.01 },
+
+        -- Side Plates
+        ["ama_plate_kevlar_side_l2"]       = { 3, 0.90 },
+        ["plate_steel_side_l3"]            = { 2, 0.60 },
+        ["ama_plate_poly_side_l3"]         = { 2, 0.70 },
+        ["ama_plate_ceramic_side_l4"]      = { 2, 0.80 },
+        ["ama_plate_boron_side_l6"]        = { 1, 0.30 },
+        ["ama_plate_monocrystal_side_l6"]  = { 1, 0.01 },
+        
+        -- Kevlar Limbs
+        ["ama_l_kevlar_dap"]               = { 1, 0.80 }, ["ama_r_kevlar_dap"]               = { 1, 0.80 },
+        ["ama_l_kevlar_forearm_guard"]     = { 1, 0.80 }, ["ama_r_kevlar_forearm_guard"]     = { 1, 0.80 },
+        ["ama_l_kevlar_femoral_protector"] = { 1, 0.80 }, ["ama_r_kevlar_femoral_protector"] = { 1, 0.80 },
+        ["ama_l_kevlar_shin_guard"]        = { 1, 0.80 }, ["ama_r_kevlar_shin_guard"]        = { 1, 0.80 },
+        -- Steel Limbs
+        ["ama_l_steel_dap"]                = { 1, 0.70 }, ["ama_r_steel_dap"]                = { 1, 0.70 },
+        ["ama_l_steel_forearm_guard"]      = { 1, 0.70 }, ["ama_r_steel_forearm_guard"]      = { 1, 0.70 },
+        ["ama_l_steel_femoral_protector"]  = { 1, 0.70 }, ["ama_r_steel_femoral_protector"]  = { 1, 0.70 },
+        ["ama_l_steel_shin_guard"]         = { 1, 0.70 }, ["ama_r_steel_shin_guard"]         = { 1, 0.70 },
+        -- Poly Limbs
+        ["ama_l_poly_dap"]                 = { 1, 0.50 }, ["ama_r_poly_dap"]                 = { 1, 0.50 },
+        ["ama_l_poly_forearm_guard"]       = { 1, 0.50 }, ["ama_r_poly_forearm_guard"]       = { 1, 0.50 },
+        ["ama_l_poly_femoral_protector"]   = { 1, 0.50 }, ["ama_r_poly_femoral_protector"]   = { 1, 0.50 },
+        ["ama_l_poly_shin_guard"]          = { 1, 0.50 }, ["ama_r_poly_shin_guard"]          = { 1, 0.50 },
+        -- Ceramic Limbs
+        ["ama_l_ceramic_dap"]              = { 1, 0.30 }, ["ama_r_ceramic_dap"]              = { 1, 0.30 },
+        ["ama_l_ceramic_forearm_guard"]    = { 1, 0.30 }, ["ama_r_ceramic_forearm_guard"]    = { 1, 0.30 },
+        ["ama_l_ceramic_femoral_protector"]= { 1, 0.30 }, ["ama_r_ceramic_femoral_protector"]= { 1, 0.30 },
+        ["ama_l_ceramic_shin_guard"]       = { 1, 0.30 }, ["ama_r_ceramic_shin_guard"]       = { 1, 0.30 },
+        -- Boron Limbs
+        ["ama_l_boron_dap"]                = { 1, 0.10 }, ["ama_r_boron_dap"]                = { 1, 0.10 },
+        ["ama_l_boron_forearm_guard"]      = { 1, 0.10 }, ["ama_r_boron_forearm_guard"]      = { 1, 0.10 },
+        ["ama_l_boron_femoral_protector"]  = { 1, 0.10 }, ["ama_r_boron_femoral_protector"]  = { 1, 0.10 },
+        ["ama_l_boron_shin_guard"]         = { 1, 0.10 }, ["ama_r_boron_shin_guard"]         = { 1, 0.10 }
+    },
+    ["established"] = {
+        -- Main Plates (Standard Military & Common)
+        ["ama_plate_kevlar_l2"]            = { 4, 1.00 },
+        ["ama_plate_lead_l2"]              = { 1, 0.40 },
+        ["ama_plate_rubber_l2"]            = { 1, 0.50 },
+        ["ama_plate_frankenstein_l3"]      = { 2, 0.60 },
+        ["ama_plate_steel_l3"]             = { 3, 0.85 },
+        ["ama_plate_steel_naked_l3"]       = { 2, 0.70 },
+        ["ama_plate_steel_hardened_l3"]    = { 1, 0.40 },
+        ["ama_plate_titanium_old_l3"]      = { 2, 0.60 },
+        ["ama_plate_poly_l3"]              = { 2, 0.50 },
+        ["ama_plate_ceramic_l4"]           = { 1, 0.35 },
+        ["ama_plate_alumina_l4"]           = { 1, 0.25 },
+        ["ama_plate_granit_l4"]            = { 1, 0.30 },
+        
+        -- Side Plates
+        ["ama_plate_kevlar_side_l2"]       = { 4, 0.90 },
+        ["plate_steel_side_l3"]            = { 2, 0.50 },
+        ["ama_plate_poly_side_l3"]         = { 1, 0.30 },
+
+        -- Kevlar Limbs
+        ["ama_l_kevlar_dap"]               = { 1, 0.60 }, ["ama_r_kevlar_dap"]               = { 1, 0.60 },
+        ["ama_l_kevlar_forearm_guard"]     = { 1, 0.60 }, ["ama_r_kevlar_forearm_guard"]     = { 1, 0.60 },
+        ["ama_l_kevlar_femoral_protector"] = { 1, 0.60 }, ["ama_r_kevlar_femoral_protector"] = { 1, 0.60 },
+        ["ama_l_kevlar_shin_guard"]        = { 1, 0.60 }, ["ama_r_kevlar_shin_guard"]        = { 1, 0.60 },
+        -- Steel Limbs
+        ["ama_l_steel_dap"]                = { 1, 0.40 }, ["ama_r_steel_dap"]                = { 1, 0.40 },
+        ["ama_l_steel_forearm_guard"]      = { 1, 0.40 }, ["ama_r_steel_forearm_guard"]      = { 1, 0.40 },
+        ["ama_l_steel_femoral_protector"]  = { 1, 0.40 }, ["ama_r_steel_femoral_protector"]  = { 1, 0.40 },
+        ["ama_l_steel_shin_guard"]         = { 1, 0.40 }, ["ama_r_steel_shin_guard"]         = { 1, 0.40 },
+        -- Poly Limbs
+        ["ama_l_poly_dap"]                 = { 1, 0.20 }, ["ama_r_poly_dap"]                 = { 1, 0.20 },
+        ["ama_l_poly_forearm_guard"]       = { 1, 0.20 }, ["ama_r_poly_forearm_guard"]       = { 1, 0.20 },
+        ["ama_l_poly_femoral_protector"]   = { 1, 0.20 }, ["ama_r_poly_femoral_protector"]   = { 1, 0.20 },
+        ["ama_l_poly_shin_guard"]          = { 1, 0.20 }, ["ama_r_poly_shin_guard"]          = { 1, 0.20 }
+    },
+    ["fringe"] = {
+        -- Main Plates (Makeshift & Scavenged)
+        ["ama_plate_scrap_l1"]             = { 4, 0.90 },
+        ["ama_plate_lead_l2"]              = { 2, 0.70 },
+        ["ama_plate_rubber_l2"]            = { 2, 0.65 },
+        ["ama_plate_kevlar_l2"]            = { 2, 0.50 },
+        ["ama_plate_frankenstein_l3"]      = { 1, 0.35 },
+        ["ama_plate_steel_naked_l3"]       = { 1, 0.20 },
+        
+        -- Side Plates
+        ["ama_plate_kevlar_side_l2"]       = { 2, 0.40 },
+
+        -- Kevlar Limbs
+        ["ama_l_kevlar_dap"]               = { 1, 0.30 }, ["ama_r_kevlar_dap"]               = { 1, 0.30 },
+        ["ama_l_kevlar_forearm_guard"]     = { 1, 0.30 }, ["ama_r_kevlar_forearm_guard"]     = { 1, 0.30 },
+        ["ama_l_kevlar_femoral_protector"] = { 1, 0.30 }, ["ama_r_kevlar_femoral_protector"] = { 1, 0.30 },
+        ["ama_l_kevlar_shin_guard"]        = { 1, 0.30 }, ["ama_r_kevlar_shin_guard"]        = { 1, 0.30 },
+        -- Steel Limbs
+        ["ama_l_steel_dap"]                = { 1, 0.10 }, ["ama_r_steel_dap"]                = { 1, 0.10 },
+        ["ama_l_steel_forearm_guard"]      = { 1, 0.10 }, ["ama_r_steel_forearm_guard"]      = { 1, 0.10 },
+        ["ama_l_steel_femoral_protector"]  = { 1, 0.10 }, ["ama_r_steel_femoral_protector"]  = { 1, 0.10 },
+        ["ama_l_steel_shin_guard"]         = { 1, 0.10 }, ["ama_r_steel_shin_guard"]         = { 1, 0.10 }
+    }
+}
+
+-- ----------------------------------------------------------------------
+-- INJECTION LOGIC
+-- ----------------------------------------------------------------------
+local function inject_items(npc)
+    local npc_id = npc:id()
+    local current_time = game.get_game_time()
+    
+    if last_restock[npc_id] and current_time:diffSec(last_restock[npc_id]) < restock_cooldown then 
+        return 
+    end
+    
+    last_restock[npc_id] = current_time
+    local faction = character_community(npc)
+
+    local armor_stock = custom_armor_supply[faction]
+    if armor_stock then
+        for sec, data in pairs(armor_stock) do
+            for i = 1, data.qty do
+                if math.random() <= data.prob then
+                    alife_create(sec, npc:position(), npc:level_vertex_id(), npc:game_vertex_id(), npc_id)
+                end
+            end
+        end
+    end
+
+    local supply_tier = faction_to_tier[faction]
+    if supply_tier then
+        local plate_stock = plate_supply_tiers[supply_tier]
+        for sec, data in pairs(plate_stock) do
+            local max_qty = data[1]
+            local probability = data[2]
+            
+            for i = 1, max_qty do
+                if math.random() <= probability then
+                    alife_create(sec, npc:position(), npc:level_vertex_id(), npc:game_vertex_id(), npc_id)
+                end
+            end
+        end
+    end
+end
+
+local function actor_on_trade_started(npc)
+    if npc and IsStalker(npc) then
+        inject_items(npc)
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("ActorMenu_on_trade_started", actor_on_trade_started)
+end

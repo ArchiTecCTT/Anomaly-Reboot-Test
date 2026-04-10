@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+    <string id="st_ama_surgery_0">
+        <text>Doc, I'm dying. I need major surgery, immediately. (Surgery Cost is determined by wound severity)</text>
+    </string>
+    <string id="st_ama_surgery_1">
+        <text>Let me look... God, what a mess. This is going to cost you. Do you have the money?</text>
+    </string>
+    <string id="st_ama_surgery_2">
+        <text>I have the money. Do it.</text>
+    </string>
+    <string id="st_ama_surgery_3">
+        <text>I can't afford it right now...</text>
+    </string>
+    <string id="st_ama_surgery_4">
+        <text>Lie back and bite down on this. You're going to sleep for a while.</text>
+    </string>
+    <string id="st_ama_surgery_5">
+        <text>Then I suggest you write your will, Stalker. Come back when you can pay.</text>
+    </string>
+</string_table>

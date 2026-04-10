@@ -1,0 +1,66 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - UI STAT BAR INJECTION
+-- ======================================================================
+
+local original_update_stats = ui_inventory.UIInventory.UpdateStats
+
+function ui_inventory.UIInventory:UpdateStats()
+    
+    original_update_stats(self)
+
+    local vest = db.actor:item_in_slot(7)
+    if not vest then return end
+
+    local vid = vest:id()
+    local c_data = ama_base_layer.installed_clothing and ama_base_layer.installed_clothing[vid]
+    if not c_data then return end
+
+    local extra = {
+        ["fire"]  = 0,
+        ["shock"] = 0,
+        ["acid"]  = 0,
+        ["radia"] = 0,
+        ["wound"] = 0,
+        ["power"] = 0 
+    }
+    
+    for _, data in pairs(c_data) do
+        extra["fire"]  = extra["fire"]  + (SYS_GetParam(2, data.sec, "ama_burn_protection") or 0)
+        extra["shock"] = extra["shock"] + (SYS_GetParam(2, data.sec, "ama_shock_protection") or 0)
+        extra["acid"]  = extra["acid"]  + (SYS_GetParam(2, data.sec, "ama_chemical_burn_protection") or 0)
+        extra["radia"] = extra["radia"] + (SYS_GetParam(2, data.sec, "ama_radiation_protection") or 0)
+        extra["wound"] = extra["wound"] + (SYS_GetParam(2, data.sec, "ama_wound_protection") or 0)
+        
+        extra["power"] = extra["power"] + (SYS_GetParam(2, data.sec, "ama_power_restore_speed") or 0)
+    end
+
+    for stat_name, raw_val in pairs(extra) do
+        if raw_val > 0 then
+            local current_stat = self.stat and self.stat[stat_name]
+            
+            if current_stat and current_stat.base and current_stat.base:IsShown() then
+                
+                local percentage = 0
+                
+                if stat_name == "power" then
+                    local max_power = SYS_GetParam(2, "actor_condition", "max_power_restore_speed") or 0.020
+                    percentage = raw_val / max_power
+                else
+                    local v_max = self.stat_list[stat_name].max or 1.0
+                    percentage = raw_val / v_max
+                end
+                
+                current_stat.value = math.min(current_stat.value + percentage, 1.0)
+                
+                if current_stat.bar then
+                    current_stat.bar:SetProgressPos(current_stat.value)
+                end
+                
+                if current_stat.txt_val then
+                    local val = math.floor((current_stat.value * 100) + 0.5)
+                    current_stat.txt_val:SetText(tostring(val) .. "%")
+                end
+            end
+        end
+    end
+end

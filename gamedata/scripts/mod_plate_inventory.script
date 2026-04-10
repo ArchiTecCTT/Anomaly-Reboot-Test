@@ -1,0 +1,208 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - INVENTORY, WEIGHT & EXTRACTION
+-- ======================================================================
+
+local gc = game.translate_string
+
+installed_plates = {}
+
+function update_vest_weight(vest_obj)
+    if not (vest_obj and IsOutfit(vest_obj)) then return end
+    
+    local sec = vest_obj:section()
+    local base_weight = SYS_GetParam(2, sec, "inv_weight") or 0
+    local added_weight = 0
+    local vid = vest_obj:id()
+    
+    local p_data = installed_plates[vid]
+    if p_data then
+        if p_data.front then added_weight = added_weight + (SYS_GetParam(2, p_data.front.sec, "inv_weight") or 0) end
+        if p_data.back  then added_weight = added_weight + (SYS_GetParam(2, p_data.back.sec, "inv_weight") or 0) end
+        if p_data.left  then added_weight = added_weight + (SYS_GetParam(2, p_data.left.sec, "inv_weight") or 0) end
+        if p_data.right then added_weight = added_weight + (SYS_GetParam(2, p_data.right.sec, "inv_weight") or 0) end
+    end
+
+    local l_data = mod_limb_armor.installed_limbs and mod_limb_armor.installed_limbs[vid]
+    if l_data then
+        for slot, data in pairs(l_data) do
+            added_weight = added_weight + (SYS_GetParam(2, data.sec, "inv_weight") or 0)
+        end
+    end
+    
+    vest_obj:set_weight(base_weight + added_weight)
+end
+
+local function on_item_before_move(flags, npc_id, obj, mode, bag)
+    if obj and IsOutfit(obj) then
+        update_vest_weight(obj)
+    end
+end
+
+local function on_item_drag_dropped(plate_item, vest_item, slot_from, slot_to)
+    if not (slot_from == EDDListType.iActorBag and (slot_to == EDDListType.iActorBag or slot_to == EDDListType.iActorSlot)) then return end
+
+   local plate_sec = plate_item:section()
+    local vest_sec = vest_item:section()
+
+    if not SYS_GetParam(0, plate_sec, "plate_tier") then return end
+    
+    if SYS_GetParam(0, plate_sec, "armor_type") == "limb" then return end 
+    
+    if not IsOutfit(vest_item) then return end
+
+    local plate_tier = SYS_GetParam(2, plate_sec, "plate_tier")
+    local plate_size = SYS_GetParam(0, plate_sec, "plate_size")
+
+    local max_f = SYS_GetParam(2, vest_sec, "max_front_plate") or 0
+    local max_b = SYS_GetParam(2, vest_sec, "max_back_plate") or 0
+    local max_l = SYS_GetParam(2, vest_sec, "max_left_plate") or 0
+    local max_r = SYS_GetParam(2, vest_sec, "max_right_plate") or 0
+
+    local vid = vest_item:id()
+    if not installed_plates[vid] then installed_plates[vid] = {} end
+    local v_data = installed_plates[vid]
+
+    local target_slot = ""
+
+    if plate_size == "large" then
+         if not v_data.front and plate_tier <= max_f then target_slot = "front"
+        elseif not v_data.back and plate_tier <= max_b then target_slot = "back"
+        end
+    elseif plate_size == "small" then
+        if not v_data.left and plate_tier <= max_l then target_slot = "left"
+        elseif not v_data.right and plate_tier <= max_r then target_slot = "right"
+        end
+    end
+
+    if target_slot ~= "" then
+        v_data[target_slot] = {
+            sec = plate_sec,
+            tier = plate_tier,
+            cond = plate_item:condition(),
+			id = plate_item:id()
+        }
+        
+       utils_obj.play_sound("interface\\inv_iam_open") 
+        actor_menu.set_msg(1, "Installed plate into " .. target_slot .. " slot.", 3)
+        alife_release_id(plate_item:id()) 
+        
+        update_vest_weight(vest_item)
+        
+        local inventory = ActorMenu.get_actor_menu()
+        if inventory and inventory:IsShown() then
+            inventory:UpdateItems()
+        end
+    else
+        actor_menu.set_msg(1, "Plate does not fit or slots are full.", 3)
+    end
+end
+
+function extract_plate(vest_obj, slot_name, silent)
+    local vid = vest_obj:id()
+    local v_data = installed_plates[vid]
+    if not (v_data and v_data[slot_name]) then return end
+
+    local plate_data = v_data[slot_name]
+    
+    alife_create_item(plate_data.sec, db.actor, {cond = plate_data.cond})
+
+    installed_plates[vid][slot_name] = nil
+    update_vest_weight(vest_obj)
+    
+    if not silent then
+        utils_obj.play_sound("interface\\inv_iam_open")
+        actor_menu.set_msg(1, "Removed " .. slot_name:upper() .. " plate.", 3)
+    end
+end
+
+function extract_all_plates(vest_obj)
+    local vid = vest_obj:id()
+    local v_data = installed_plates[vid]
+    if not v_data then return end
+
+    for slot_name, _ in pairs(v_data) do
+        extract_plate(vest_obj, slot_name, true)
+    end
+    
+    utils_obj.play_sound("interface\\inv_iam_open")
+    actor_menu.set_msg(1, "All ballistic plates removed.", 3)
+end
+
+local clr_w = utils_xml.get_color("ui_white")
+local clr_gray = utils_xml.get_color("ui_gray_1")
+
+BuildFooter = ui_item.build_desc_footer
+function ui_item.build_desc_footer(obj, sec, str)
+    str = str or gc(SYS_GetParam(0, sec, "description"))
+    if (not str) then return "" end
+    str = BuildFooter(obj, sec, str)
+
+    if IsOutfit(obj) then
+        local max_f = SYS_GetParam(2, sec, "max_front_plate") or 0
+        local max_b = SYS_GetParam(2, sec, "max_back_plate") or 0
+        local max_l = SYS_GetParam(2, sec, "max_left_plate") or 0
+        local max_r = SYS_GetParam(2, sec, "max_right_plate") or 0
+
+        if max_f > 0 or max_b > 0 or max_l > 0 or max_r > 0 then
+            local vid = obj:id()
+            local v_data = installed_plates[vid] or {}
+
+            local function format_slot(name, data, max_tier)
+                if max_tier == 0 then return "" end
+                local prefix = "\n " .. "\\n" .. name .. ": "
+                if data then
+                    local cnd = math.floor(data.cond * 100)
+                    local clr = utils_xml.get_color_con(cnd)
+                    return prefix .. clr .. gc(SYS_GetParam(0, data.sec, "inv_name_short")) .. " (" .. cnd .. "%)" .. clr_w
+                else
+                    return prefix .. clr_gray .. "EMPTY (Max Level " .. max_tier .. ")" .. clr_w
+                 end
+            end
+
+            local header = "\n \n" .. "\\n" .. clr_w .. "==== Ballistic Plates ====" .. "\\n"
+            
+            str = str .. header .. format_slot("Front", v_data.front, max_f) .. format_slot("Left", v_data.left, max_l) .. format_slot("Right", v_data.right, max_r) .. format_slot("Back", v_data.back, max_b)
+        end
+    end
+    return str
+end
+
+local function on_item_to_belt(obj)
+    if SYS_GetParam(0, obj:section(), "plate_tier") then
+        db.actor:move_to_ruck(obj)
+        actor_menu.set_msg(1, "Plates must be installed in a vest.", 3)
+    end
+end
+
+local function save_state(mdata) mdata.installed_plates = installed_plates end
+local function load_state(mdata) installed_plates = mdata.installed_plates or {} end
+local function server_entity_on_unregister(se_obj, typ) installed_plates[se_obj.id] = nil end
+local function on_item_move(obj) if IsOutfit(obj) then update_vest_weight(obj) end end
+
+local function cond_manage_plates(obj)  
+    local v = installed_plates[obj:id()] 
+    return v and next(v) and true or false 
+end
+
+local function name_manage_plates(obj)
+    return "Manage Ballistic Plates" 
+end
+
+local function func_manage_plates(obj)  
+    ui_ama_context.start(obj, "plate") 
+end
+
+function on_game_start()
+    RegisterScriptCallback("ActorMenu_on_item_drag_drop", on_item_drag_dropped)
+    RegisterScriptCallback("ActorMenu_on_item_before_move", on_item_before_move) 
+    RegisterScriptCallback("actor_on_item_take", update_vest_weight) 
+    
+    RegisterScriptCallback("actor_item_to_belt", on_item_to_belt)
+    RegisterScriptCallback("save_state", save_state)
+    RegisterScriptCallback("load_state", load_state)
+    RegisterScriptCallback("server_entity_on_unregister", server_entity_on_unregister)
+
+    if custom_functor_autoinject then
+        custom_functor_autoinject.add_functor("manage_plates", cond_manage_plates, name_manage_plates, nil, func_manage_plates, true)
+    end
+end

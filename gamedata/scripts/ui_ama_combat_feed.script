@@ -1,0 +1,153 @@
+-- ======================================================================
+-- AMA COMBAT TELEMETRY HUD - SCROLLING MESSAGE QUEUE
+-- ======================================================================
+
+local HUD = nil
+local MAX_MSGS = 7
+local MSG_LIFETIME_MS = 10000 
+
+local BASE_X = 20           -- The final X position on the screen
+local BASE_Y = 220          -- The Y position of the newest message (Bottom)
+local SPACING = 25          -- Pixels between messages
+local SLIDE_OFFSET = 150    -- Distance to slide in/out
+local LERP_SPEED = 0.12     -- How fast the animations snap to place
+
+class "AMA_CombatFeed" (CUIScriptWnd)
+
+function AMA_CombatFeed:__init() super()
+    self.messages = {}
+    self:InitControls()
+end
+
+function AMA_CombatFeed:__finalize() end
+
+function AMA_CombatFeed:InitControls()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    local xml = CScriptXmlInit()
+    xml:ParseFile("ui_hud_ama_feed.xml")
+    self.dialog = xml:InitStatic("combat_feed_window", self)
+end
+
+function AMA_CombatFeed:AddMessage(text, msg_type)
+    local xml = CScriptXmlInit()
+    xml:ParseFile("ui_hud_ama_feed.xml")
+    local ui_text = xml:InitTextWnd("msg_item", self.dialog)
+    
+    local c = {r = 200, g = 200, b = 200} -- Default
+    if msg_type == "ricochet" then c = {r = 100, g = 255, b = 100}
+    elseif msg_type == "stopped" then c = {r = 255, g = 255, b = 100}
+    elseif msg_type == "critical" then c = {r = 255, g = 50, b = 50}
+    elseif msg_type == "flesh" then c = {r = 220, g = 20, b = 20}
+    end
+
+    ui_text:SetText(text)
+    ui_text:SetTextColor(GetARGB(0, c.r, c.g, c.b)) -- Spawn completely transparent
+    ui_text:SetWndPos(vector2():set(BASE_X + SLIDE_OFFSET, BASE_Y))
+
+    table.insert(self.messages, { 
+        ui = ui_text, 
+        spawn_time = time_global(),
+        target_x = BASE_X, current_x = BASE_X + SLIDE_OFFSET,
+        target_y = BASE_Y, current_y = BASE_Y,
+        target_alpha = 255, alpha = 0,
+        color = c,
+        state = "active"
+    })
+end
+
+function AMA_CombatFeed:Update()
+    CUIScriptWnd.Update(self)
+    local tg = time_global()
+    local active_msgs = {}
+
+    -- 1. Check lifetimes and sort active vs fading messages
+    for i, msg in ipairs(self.messages) do
+        if msg.state == "active" then
+            if (tg - msg.spawn_time) > MSG_LIFETIME_MS then
+                msg.state = "fading"
+                msg.target_x = BASE_X + SLIDE_OFFSET
+                msg.target_alpha = 0
+            else
+                table.insert(active_msgs, msg)
+            end
+        end
+    end
+
+    -- 2. Enforce the Max Message Limit
+    if #active_msgs > MAX_MSGS then
+        local limit_diff = #active_msgs - MAX_MSGS
+        for i = 1, limit_diff do
+            local msg = active_msgs[i]
+            msg.state = "fading"
+            msg.target_x = BASE_X + SLIDE_OFFSET
+            msg.target_alpha = 0
+        end
+        -- Rebuild active list without the deleted top messages
+        local temp = {}
+        for i = limit_diff + 1, #active_msgs do table.insert(temp, active_msgs[i]) end
+        active_msgs = temp
+    end
+
+    -- 3. Calculate target Y positions for active messages
+    -- Newest message is always at BASE_Y. Older messages stack above it.
+    local active_count = #active_msgs
+    for i, msg in ipairs(active_msgs) do
+        local index_from_newest = active_count - i 
+        msg.target_y = BASE_Y - (index_from_newest * SPACING)
+    end
+
+    -- 4. Animate everything (Lerp physics) and cleanup
+    for i = #self.messages, 1, -1 do
+        local msg = self.messages[i]
+        
+        msg.current_x = msg.current_x + ((msg.target_x - msg.current_x) * LERP_SPEED)
+        msg.current_y = msg.current_y + ((msg.target_y - msg.current_y) * LERP_SPEED)
+        msg.alpha = msg.alpha + ((msg.target_alpha - msg.alpha) * LERP_SPEED)
+        
+        msg.ui:SetWndPos(vector2():set(msg.current_x, msg.current_y))
+        local safe_alpha = math.max(0, math.min(255, math.floor(msg.alpha)))
+        msg.ui:SetTextColor(GetARGB(safe_alpha, msg.color.r, msg.color.g, msg.color.b))
+        
+        if msg.state == "fading" and msg.alpha <= 5 then
+            self.dialog:DetachChild(msg.ui)
+            table.remove(self.messages, i)
+        end
+    end
+end
+
+-- ==========================================================
+-- GLOBAL CALLS & ANTI-SPAM THROTTLE
+-- ==========================================================
+local last_msg = ""
+local last_msg_time = 0
+
+function push_msg(text, msg_type)
+    local tg = time_global()
+    -- Anti-Spam: Block identical messages within 0.5 seconds (Shotgun fix)
+    if text == last_msg and (tg - last_msg_time) < 500 then return end
+    
+    last_msg = text
+    last_msg_time = tg
+
+    -- Relay to medical terminal log (automatic mirror)
+    if ui_ama_terminal and ui_ama_terminal.push_medical_log then
+        ui_ama_terminal.push_medical_log(text)
+    end
+
+    local hud_obj = get_hud()
+    if hud_obj then
+        if not HUD then
+            HUD = AMA_CombatFeed()
+            hud_obj:AddDialogToRender(HUD)
+        end
+        HUD:AddMessage(text, msg_type)
+    end
+end
+
+function clear_hud()
+    if HUD then get_hud():RemoveDialogToRender(HUD); HUD = nil end
+end
+
+function on_game_start()
+    RegisterScriptCallback("actor_on_net_destroy", clear_hud)
+end

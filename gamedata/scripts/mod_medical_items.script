@@ -1,0 +1,561 @@
+-- ======================================================================
+-- AMA MEDICAL OVERHAUL - ITEM LOGIC (TIERED SYSTEM)
+-- ======================================================================
+
+local math_min    = math.min
+local math_max    = math.max
+local math_random = math.random
+
+-- Persistent state for temporary item effects
+item_effects = {
+    tourniquet_timer        = 0,
+    tourniquet_active       = false,
+    ischemic_pain_active    = false,
+    coagulant_timer         = 0,
+    coagulant_active        = false,
+    coagulant_power         = 0.30,
+    antibiotic_timer        = 0,
+    antibiotic_active       = false,
+    adrenaline_timer        = 0,
+    adrenaline_active       = false,
+    cns_stimulant_timer     = 0,
+    cns_stimulant_active    = false,
+    narcotic_timer          = 0,
+    narcotic_active         = false,
+    narcotic_stamina_cap    = 0.40,
+}
+
+-- ==========================================================
+-- ITEM CATEGORY MAP (TIERED MEDICAL SYSTEM)
+-- ==========================================================
+--
+-- TIER 1 - Basic Field Care:
+--   bandage       → hemostatic (flesh wounds only, 50% bleed reduction)
+--   jgut          → tourniquet (limb arterials, full stop, ischemia timer)
+--
+-- TIER 2 - Wound Treatment:
+--   medkit        → field dressing (flesh 70%, organ 40% bleed reduction)
+--   medkit_army   → trauma kit (flesh 85%, organ 60%, arterial 70%, chest seal)
+--   drug_coagulant → systemic coagulant (passive bleed reduction for duration)
+--
+-- TIER 3 - Critical / Field Surgery:
+--   medkit_scientic → surgical kit (closes wounds below threshold + IV blood)
+--   survival_kit    → splint (removes fractures)
+--
+-- CHEMICAL: analgesics, narcotics, antibiotics, purge
+-- EMERGENCY: epinephrine, CNS stimulants
+-- VOLUME: IV saline
+--
+local item_map = {
+    -- Tier 1: Basic Field Care
+    ["bandage"]        = { type = "hemostatic", power = 0.50, sepsis_risk = 0.25 },
+    ["jgut"]           = { type = "tourniquet", power = 1.00 },
+
+    -- Tier 2: Wound Treatment
+    ["medkit"]         = { type = "field_dressing", flesh_power = 0.70, organ_power = 0.40, anim_time = 10 },
+    ["medkit_army"]    = { type = "trauma_kit", flesh_power = 0.85, organ_power = 0.60, arterial_power = 0.70, anim_time = 12 },
+    ["drug_coagulant"] = { type = "systemic_coagulant", duration = 180, power = 0.30 },
+
+    -- Tier 3: Critical Care / Field Surgery
+    ["medkit_scientic"]= { type = "surgical_kit", close_threshold = 5.0, blood_restore = 1000, anim_time = 45 },
+    ["survival_kit"]   = { type = "splint", anim_time = 15 },
+
+    -- Chemical Management (Pain & Sepsis)
+    ["analgetic"]      = { type = "analgesic", pain_reduction = 20 },
+    ["salicidic_acid"] = { type = "analgesic", pain_reduction = 15 },
+    ["yadylin"]        = { type = "narcotic", pain_reduction = 100, stamina_cap = 0.40, duration = 300 },
+    ["morphine"]       = { type = "narcotic", pain_reduction = 100, stamina_cap = 0.40, duration = 300 },
+    ["antibio_sulfad"] = { type = "antibiotic", duration = 14400 },
+    ["antibio_chlor"]  = { type = "antibiotic", duration = 28800 },
+    ["tetanus"]        = { type = "purge", power = 0.50 },
+    ["akvatab"]        = { type = "purge", power = 0.30 },
+
+    -- Emergency Stimulants
+    ["adrenalin"]      = { type = "epinephrine", duration = 60 },
+    ["stimpack"]       = { type = "epinephrine", duration = 30 },
+    ["stimpack_army"]  = { type = "epinephrine", duration = 45 },
+    ["stimpack_scientic"] = { type = "epinephrine", duration = 60 },
+    ["cocaine"]        = { type = "cns_stimulant", duration = 300 },
+    ["caffeine"]       = { type = "cns_stimulant", duration = 180 },
+
+    -- Volume Replacement
+    ["glucose"]        = { type = "iv_saline", volume = 500, anim_time = 20 },
+    ["glucose_s"]      = { type = "iv_saline", volume = 750, anim_time = 25 },
+}
+
+-- ==========================================================
+-- ITEM EXECUTION LOGIC
+-- ==========================================================
+
+-- ==========================================================
+-- TARGETED ITEM EXECUTION LOGIC
+-- ==========================================================
+
+local function is_wound_in_target(w, t)
+    if not w then return false end
+    local wo = w.organ or ""
+    local wl = w.limb or ""
+    if t == "head" then
+        return string.find(wo, "head") or string.find(wo, "jaw") or string.find(wo, "eye") or string.find(wo, "neck") or string.find(wo, "jugular") or string.find(wo, "trachea") or wl == "head" or (wl == "torso" and (string.find(wo, "neck") or string.find(wo, "jugular")))
+    elseif t == "torso" then
+        return string.find(wo, "torso") or string.find(wo, "spine") or string.find(wo, "heart") or string.find(wo, "lung") or string.find(wo, "liver") or string.find(wo, "pelvis") or string.find(wo, "clavicle") or wl == "torso"
+    elseif t == "l_arm" then
+        return string.find(wo, "l_arm") or string.find(wo, "l_brachial") or string.find(wo, "l_radial") or wl == "l_arm" or wl == "l_upperarm" or wl == "l_forearm"
+    elseif t == "r_arm" then
+        return string.find(wo, "r_arm") or string.find(wo, "r_brachial") or string.find(wo, "r_radial") or wl == "r_arm" or wl == "r_upperarm" or wl == "r_forearm"
+    elseif t == "l_leg" then
+        return string.find(wo, "l_leg") or string.find(wo, "l_femoral") or string.find(wo, "l_tibial") or wl == "l_leg" or wl == "l_thigh" or wl == "l_calf"
+    elseif t == "r_leg" then
+        return string.find(wo, "r_leg") or string.find(wo, "r_femoral") or string.find(wo, "r_tibial") or wl == "r_leg" or wl == "r_thigh" or wl == "r_calf"
+    end
+    return false
+end
+
+local function process_hemostatic(item_data, t_limb)
+    if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
+    local treated = false
+    for _, w in ipairs(mod_medical_core.bio_state.wounds) do
+        if w.type == "external" and w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
+            w.bleed_rate = w.bleed_rate * (1.0 - item_data.power)
+            treated = true
+        end
+    end
+    if not treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO APPLICABLE WOUNDS", "critical") end
+    return treated
+end
+
+local function process_tourniquet(item_data, t_limb)
+    if t_limb == "head" or t_limb == "torso" then return false end
+    if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
+    local applied = false
+    for _, w in ipairs(mod_medical_core.bio_state.wounds) do
+        if (w.type == "internal" or w.type == "external" or w.type == "fracture") and is_wound_in_target(w, t_limb) then
+            w.bleed_rate = 0
+            applied = true
+        end
+    end
+    if applied then
+        item_effects.tourniquet_active = true
+        item_effects.tourniquet_timer = time_global() + 600000
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("TOURNIQUET APPLIED - ARTERIAL BLEEDING STOPPED", "flesh") end
+    else
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO EXTREMITY WOUNDS", "critical") end
+    end
+    return applied
+end
+
+local function process_field_dressing(item_data, t_limb)
+    if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
+    local treated = false
+    for _, w in ipairs(mod_medical_core.bio_state.wounds) do
+        if w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
+            if w.type == "external" then
+                w.bleed_rate = w.bleed_rate * (1.0 - item_data.flesh_power); treated = true
+            elseif w.type == "internal" then
+                w.bleed_rate = w.bleed_rate * (1.0 - item_data.organ_power); treated = true
+            end
+        end
+    end
+    if treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("WOUND PACKED", "flesh") end
+    if not treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO TREATABLE WOUNDS", "critical") end
+    return treated
+end
+
+local function process_trauma_kit(item_data, t_limb)
+    if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
+    local treated, sealed = false, false
+    for _, w in ipairs(mod_medical_core.bio_state.wounds) do
+        if w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
+            if w.type == "external" then w.bleed_rate = w.bleed_rate * (1.0 - item_data.flesh_power); treated = true
+            elseif w.type == "internal" then
+                w.bleed_rate = w.bleed_rate * (1.0 - item_data.organ_power); treated = true
+                if string.find(w.organ or "", "lungs") or string.find(w.organ or "", "trachea") then sealed = true end
+            elseif w.type == "internal" then w.bleed_rate = w.bleed_rate * (1.0 - item_data.arterial_power); treated = true
+            end
+        end
+    end
+    if sealed then db.actor.power = 1.0; if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CHEST SEALED", "flesh") end end
+    if treated and not sealed and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("TRAUMA KIT APPLIED", "flesh") end
+    if not treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO TREATABLE WOUNDS", "critical") end
+    return treated
+end
+
+local function process_surgical_kit(item_data, t_limb)
+    if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
+    local wounds = mod_medical_core.bio_state.wounds
+    local closed = false
+    for i = #wounds, 1, -1 do
+        local w = wounds[i]
+        if w.bleed_rate and w.bleed_rate <= item_data.close_threshold and is_wound_in_target(w, t_limb) then
+            table.remove(wounds, i)
+            closed = true
+        end
+    end
+    if closed then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FIELD SURGERY COMPLETE", "flesh") end
+    else
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - WOUNDS BLEEDING TOO FAST", "critical") end
+    end
+    return closed
+end
+
+local function process_splint(item_data, t_limb)
+    if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
+    local wounds = mod_medical_core.bio_state.wounds
+    local applied = false
+    for i = #wounds, 1, -1 do
+        local w = wounds[i]
+        if w.type == "fracture" and is_wound_in_target(w, t_limb) then
+            table.remove(wounds, i)
+            applied = true
+        end
+    end
+    if applied then
+        db.actor.power = 1.0
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("SPLINT APPLIED - FRACTURES STABILIZED", "flesh") end
+    else
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO FRACTURES", "critical") end
+    end
+    return applied
+end
+local function process_coagulant(item_data)
+    item_effects.coagulant_active = true
+    item_effects.coagulant_timer = time_global() + (item_data.duration * 1000)
+    item_effects.coagulant_power = item_data.power
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("SYSTEMIC COAGULANT ADMINISTERED", "flesh") end
+end
+
+local function process_analgesic(item_data)
+    if not mod_medical_core then return end
+    local current_pain = mod_medical_core.get_pain_level()
+    mod_medical_core.set_pain_level(math_max(0, current_pain - item_data.pain_reduction))
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ANALGESIC ADMINISTERED - PAIN REDUCED", "flesh") end
+end
+
+-- BUG-12 fix: narcotic now sets persistent flag + stamina cap
+local function process_narcotic(item_data)
+    if not mod_medical_core then return end
+    mod_medical_core.set_pain_level(0)
+    level.add_pp_effector("yantar_underground_psi.ppe", 2050, false)
+    level.set_pp_effector_factor(2050, 0.5)
+    
+    item_effects.narcotic_active = true
+    item_effects.narcotic_timer = time_global() + (item_data.duration * 1000)
+    item_effects.narcotic_stamina_cap = item_data.stamina_cap or 0.40
+    
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("HEAVY NARCOTIC ADMINISTERED - CNS SUPPRESSED", "flesh") end
+end
+
+local function process_epinephrine(item_data)
+    item_effects.adrenaline_active = true
+    item_effects.adrenaline_timer = time_global() + (item_data.duration * 1000)
+    level.add_pp_effector("blink.ppe", 2051, false)
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("EPINEPHRINE ADMINISTERED - SYSTEM SHOCK", "critical") end
+end
+
+local function process_cns_stimulant(item_data)
+    item_effects.cns_stimulant_active = true
+    item_effects.cns_stimulant_timer = time_global() + (item_data.duration * 1000)
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CNS STIMULANT ADMINISTERED - SHOCK THRESHOLD LOWERED", "flesh") end
+end
+
+local function process_antibiotic(item_data)
+    item_effects.antibiotic_active = true
+    item_effects.antibiotic_timer = time_global() + (item_data.duration * 1000)
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("BROAD-SPECTRUM ANTIBIOTICS - SEPSIS PAUSED", "flesh") end
+end
+
+-- BUG-06 fix: purge is now percentage-based, scales with severity
+local function process_purge(item_data)
+    if mod_medical_core then
+        local current = mod_medical_core.get_sepsis_timer()
+        local purge_power = item_data.power or 0.50
+        local reduction = current * purge_power
+        mod_medical_core.set_sepsis_timer(math_max(0, current - reduction))
+    end
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ACUTE INFECTION PURGED", "flesh") end
+end
+
+local function process_iv(item_data)
+    if not mod_medical_core then return end
+    mod_medical_core.bio_state.blood_volume = math_min(5000, mod_medical_core.bio_state.blood_volume + item_data.volume)
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg(string.format("INTRAVENOUS THERAPY - +%dml VOLUME", item_data.volume), "flesh") end
+end
+
+-- ==========================================================
+-- ENGINE CALLBACKS
+-- ==========================================================
+
+local localized_types = {
+    hemostatic = true, tourniquet = true, field_dressing = true,
+    trauma_kit = true, surgical_kit = true, splint = true
+}
+
+local function actor_on_item_before_use(item, flags)
+    local sec = item:section()
+    local data = item_map[sec]
+    if not data then return end
+    
+    if localized_types[data.type] then
+        flags.ret_value = false
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - USE TARGETED MENU (RIGHT CLICK)", "critical") end
+    end
+end
+local function actor_on_item_use(item)
+    local sec = item:section()
+    local data = item_map[sec]
+    
+    if not data then return end
+
+    if data.type == "hemostatic" then
+        process_hemostatic(data)
+    elseif data.type == "tourniquet" then
+        process_tourniquet(data)
+    elseif data.type == "field_dressing" then
+        process_field_dressing(data)
+    elseif data.type == "trauma_kit" then
+        process_trauma_kit(data)
+    elseif data.type == "surgical_kit" then
+        process_surgical_kit(data)
+    elseif data.type == "splint" then
+        process_splint(data)
+    elseif data.type == "systemic_coagulant" then
+        process_coagulant(data)
+    elseif data.type == "analgesic" then
+        process_analgesic(data)
+    elseif data.type == "narcotic" then
+        process_narcotic(data)
+    elseif data.type == "epinephrine" then
+        process_epinephrine(data)
+    elseif data.type == "cns_stimulant" then
+        process_cns_stimulant(data)
+    elseif data.type == "antibiotic" then
+        process_antibiotic(data)
+    elseif data.type == "purge" then
+        process_purge(data)
+    elseif data.type == "iv_saline" then
+        process_iv(data)
+    end
+end
+
+-- BUG-13 fix: tick-throttled update loop for item effect timers
+local ITEM_TICK_RATE = 200
+local last_item_tick = 0
+
+local function actor_on_update()
+    local tg = time_global()
+    if tg < last_item_tick + ITEM_TICK_RATE then return end
+    local dt = (tg - last_item_tick) / 1000.0
+    last_item_tick = tg
+    
+    -- Ischemic Pain (BUG-13 fix: now dt-scaled instead of per-frame)
+    if item_effects.tourniquet_active and tg > item_effects.tourniquet_timer then
+        if not item_effects.ischemic_pain_active then
+            item_effects.ischemic_pain_active = true
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ISCHEMIC PAIN - NERVE DEATH IMMINENT", "critical") end
+        end
+        if mod_medical_core then
+            mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + (0.5 * dt))
+        end
+    end
+    
+    -- Coagulant Timer
+    if item_effects.coagulant_active and tg > item_effects.coagulant_timer then
+        item_effects.coagulant_active = false
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("SYSTEMIC COAGULANT METABOLIZED", "critical") end
+    end
+    
+    -- CNS Stimulant Timer
+    if item_effects.cns_stimulant_active and tg > item_effects.cns_stimulant_timer then
+        item_effects.cns_stimulant_active = false
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CNS STIMULANT METABOLIZED", "critical") end
+    end
+    
+    -- Antibiotic Timer
+    if item_effects.antibiotic_active and tg > item_effects.antibiotic_timer then
+        item_effects.antibiotic_active = false
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ANTIBIOTICS METABOLIZED - INFECTION RISK RESUMED", "critical") end
+    end
+    
+    -- Narcotic Timer (BUG-12 fix: pain rebounds when narcotic wears off)
+    if item_effects.narcotic_active and tg > item_effects.narcotic_timer then
+        item_effects.narcotic_active = false
+        if mod_medical_core and mod_medical_core.bio_state.wounds then
+            local wound_count = #mod_medical_core.bio_state.wounds
+            if wound_count > 0 then
+                mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + (wound_count * 10))
+                if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NARCOTIC METABOLIZED - PAIN REBOUNDING", "critical") end
+            else
+                if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NARCOTIC METABOLIZED", "flesh") end
+            end
+        end
+    end
+    
+    -- Adrenaline Crash
+    if item_effects.adrenaline_active and tg > item_effects.adrenaline_timer then
+        item_effects.adrenaline_active = false
+        if mod_medical_core then
+            mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + 50)
+        end
+        db.actor.power = -1.0
+        level.add_pp_effector("snd_shock.ppe", 2052, false)
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("EPINEPHRINE CRASH - MASSIVE SHOCK CRASH", "critical") end
+    end
+end
+
+-- ==========================================================
+-- SAVE & LOAD (BUG-07 fix: persist all item effect timers)
+-- ==========================================================
+local function save_state(m_data)
+    if not m_data.ama_item_effects then
+        m_data.ama_item_effects = {}
+    end
+    
+    local tg = time_global()
+    local d = m_data.ama_item_effects
+    
+    d.tourniquet_active       = item_effects.tourniquet_active
+    d.tourniquet_remaining    = item_effects.tourniquet_active and math_max(0, item_effects.tourniquet_timer - tg) or 0
+    d.ischemic_pain_active    = item_effects.ischemic_pain_active
+    d.coagulant_active        = item_effects.coagulant_active
+    d.coagulant_remaining     = item_effects.coagulant_active and math_max(0, item_effects.coagulant_timer - tg) or 0
+    d.coagulant_power         = item_effects.coagulant_power
+    d.antibiotic_active       = item_effects.antibiotic_active
+    d.antibiotic_remaining    = item_effects.antibiotic_active and math_max(0, item_effects.antibiotic_timer - tg) or 0
+    d.adrenaline_active       = item_effects.adrenaline_active
+    d.adrenaline_remaining    = item_effects.adrenaline_active and math_max(0, item_effects.adrenaline_timer - tg) or 0
+    d.cns_stimulant_active    = item_effects.cns_stimulant_active
+    d.cns_stimulant_remaining = item_effects.cns_stimulant_active and math_max(0, item_effects.cns_stimulant_timer - tg) or 0
+    d.narcotic_active         = item_effects.narcotic_active
+    d.narcotic_remaining      = item_effects.narcotic_active and math_max(0, item_effects.narcotic_timer - tg) or 0
+    d.narcotic_stamina_cap    = item_effects.narcotic_stamina_cap
+end
+
+local function load_state(m_data)
+    if m_data.ama_item_effects then
+        local tg = time_global()
+        local d = m_data.ama_item_effects
+        
+        item_effects.tourniquet_active    = d.tourniquet_active or false
+        item_effects.tourniquet_timer     = tg + (d.tourniquet_remaining or 0)
+        item_effects.ischemic_pain_active = d.ischemic_pain_active or false
+        item_effects.coagulant_active     = d.coagulant_active or false
+        item_effects.coagulant_timer      = tg + (d.coagulant_remaining or 0)
+        item_effects.coagulant_power      = d.coagulant_power or 0.30
+        item_effects.antibiotic_active    = d.antibiotic_active or false
+        item_effects.antibiotic_timer     = tg + (d.antibiotic_remaining or 0)
+        item_effects.adrenaline_active    = d.adrenaline_active or false
+        item_effects.adrenaline_timer     = tg + (d.adrenaline_remaining or 0)
+        item_effects.cns_stimulant_active    = d.cns_stimulant_active or false
+        item_effects.cns_stimulant_timer     = tg + (d.cns_stimulant_remaining or 0)
+        item_effects.narcotic_active         = d.narcotic_active or false
+        item_effects.narcotic_timer          = tg + (d.narcotic_remaining or 0)
+        item_effects.narcotic_stamina_cap    = d.narcotic_stamina_cap or 0.40
+    end
+end
+
+-- ==========================================================
+-- REGISTRATION
+-- ==========================================================
+function on_game_start()
+    RegisterScriptCallback("actor_on_item_use", actor_on_item_use)
+    RegisterScriptCallback("actor_on_item_before_use", actor_on_item_before_use)
+    RegisterScriptCallback("actor_on_update", actor_on_update)
+    RegisterScriptCallback("save_state", save_state)
+    RegisterScriptCallback("load_state", load_state)
+end
+
+-- ==========================================================
+-- CONTEXT MENUS (RIGHT CLICK)
+-- ==========================================================
+local contextual_targets = {
+    { id = "head", name = "Apply to Head" },
+    { id = "torso", name = "Apply to Torso" },
+    { id = "l_arm", name = "Apply to Left Arm" },
+    { id = "r_arm", name = "Apply to Right Arm" },
+    { id = "l_leg", name = "Apply to Left Leg" },
+    { id = "r_leg", name = "Apply to Right Leg" },
+}
+
+local function apply_localized_item(item, t_limb)
+    local sec = item:section()
+    local data = item_map[sec]
+    if not data then return end
+    
+    local success = false
+    if data.type == "hemostatic" then success = process_hemostatic(data, t_limb)
+    elseif data.type == "tourniquet" then success = process_tourniquet(data, t_limb)
+    elseif data.type == "field_dressing" then success = process_field_dressing(data, t_limb)
+    elseif data.type == "trauma_kit" then success = process_trauma_kit(data, t_limb)
+    elseif data.type == "surgical_kit" then success = process_surgical_kit(data, t_limb)
+    elseif data.type == "splint" then success = process_splint(data, t_limb)
+    end
+    
+    if success then
+        utils_obj.play_sound("interface\\inv_iam_open")
+        alife_release_id(item:id())
+    end
+end
+
+if custom_functor_autoinject then
+    for i, target in ipairs(contextual_targets) do
+        local cond = function(item)
+            local data = item_map[item:section()]
+            if not data or not localized_types[data.type] then return false end
+            if data.type == "tourniquet" and (target.id == "head" or target.id == "torso") then return false end
+            return true
+        end
+        local name = function(item) return target.name end
+        local func = function(item) apply_localized_item(item, target.id) end
+        
+        custom_functor_autoinject.add_functor("ama_med_" .. target.id, cond, name, nil, func, true)
+    end
+end
+
+-- ==========================================================
+-- CONTEXT MENUS (RIGHT CLICK)
+-- ==========================================================
+local contextual_targets = {
+    { id = "head", name = "Apply to Head" },
+    { id = "torso", name = "Apply to Torso" },
+    { id = "l_arm", name = "Apply to Left Arm" },
+    { id = "r_arm", name = "Apply to Right Arm" },
+    { id = "l_leg", name = "Apply to Left Leg" },
+    { id = "r_leg", name = "Apply to Right Leg" },
+}
+
+local function apply_localized_item(item, t_limb)
+    local sec = item:section()
+    local data = item_map[sec]
+    if not data then return end
+    
+    local success = false
+    if data.type == "hemostatic" then success = process_hemostatic(data, t_limb)
+    elseif data.type == "tourniquet" then success = process_tourniquet(data, t_limb)
+    elseif data.type == "field_dressing" then success = process_field_dressing(data, t_limb)
+    elseif data.type == "trauma_kit" then success = process_trauma_kit(data, t_limb)
+    elseif data.type == "surgical_kit" then success = process_surgical_kit(data, t_limb)
+    elseif data.type == "splint" then success = process_splint(data, t_limb)
+    end
+    
+    if success then
+        utils_obj.play_sound("interface\\inv_iam_open")
+        alife_release_id(item:id())
+    end
+end
+
+if custom_functor_autoinject then
+    for i, target in ipairs(contextual_targets) do
+        local cond = function(item)
+            local data = item_map[item:section()]
+            if not data or not localized_types[data.type] then return false end
+            if data.type == "tourniquet" and (target.id == "head" or target.id == "torso") then return false end
+            return true
+        end
+        local name = function(item) return target.name end
+        local func = function(item) apply_localized_item(item, target.id) end
+        
+        custom_functor_autoinject.add_functor("ama_med_" .. target.id, cond, name, nil, func, true)
+    end
+end
+

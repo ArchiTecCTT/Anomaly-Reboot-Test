@@ -1,0 +1,691 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - NPC VIRTUAL LOADOUTS & SCAVENGING
+-- ======================================================================
+
+local math_abs   = math.abs
+local math_min   = math.min
+local math_max   = math.max
+local math_cos   = math.cos
+local math_acos  = math.acos
+local math_deg   = math.deg
+local math_rad   = math.rad
+
+local npc_virtual_plates = {}
+
+-- ==========================================================
+-- TELEMETRY ENGINE (DEBUG FEED)
+-- ==========================================================
+
+local function log_telemetry(data)
+    if not mod_directional_armor.AMA_DEBUG_MODE then return end
+    
+    log(string.format("[AMA BALLISTICS] ----------------------------------------------"))
+    log(string.format("[TARGET]      : %s", data.target or "db.actor (SKY)"))
+    log(string.format("[HIT BONE]    : %s (%s)", data.bone or "UNKNOWN", data.zone or "UNKNOWN"))
+    log(string.format("[PROJECTILE]  : %s", data.ammo or "Mutant / Melee"))
+    log(string.format("[KINETIC]     : Power: %.2f | Impulse: %.2f | k_ap: %.2f", data.power or 0, data.impulse or 0, data.kap or 0))
+    log(string.format("[GEOMETRY]    : Angle: %.1f deg | Cos_Val: %.2f", data.angle or 0, data.cos_val or 0))
+    
+    if data.plate_sec then
+        log(string.format("[PLATE]       : %s (%.1fmm @ %d%%) | Hardness: %.2f", data.plate_sec, data.nom_thick or 0, (data.cond or 0) * 100, data.hardness or 0))
+        if data.soft_mm then
+            log(string.format("[CALC]        : Eff_Thick: %.2fmm | soft_armor_mm: %.1fmm", data.eff_thick or 0, data.soft_mm))
+        else
+            log(string.format("[CALC]        : Eff_Thick: %.2fmm | Pen_Ratio: %.2f", data.eff_thick or 0, data.pen_ratio or 0))
+        end
+    else
+        log(string.format("[PLATE]       : NONE"))
+    end
+    
+    log(string.format("[RESULT]      : %s", data.phase or "UNKNOWN"))
+    log(string.format("[FINAL DMG]   : %s", data.final_dmg_str or "N/A"))
+    log(string.format("[--------------------------------------------------------------]"))
+end
+
+local plate_secs = {
+    [1] = { 
+        main = {"ama_plate_scrap_l1"}, 
+        side = {"ama_plate_kevlar_side_l2"} 
+    },
+    [2] = { 
+        main = {"ama_plate_lead_l2", "ama_plate_rubber_l2", "ama_plate_kevlar_l2"}, 
+        side = {"ama_plate_kevlar_side_l2"} 
+    },
+    [3] = { 
+        main = {"ama_plate_frankenstein_l3", "ama_plate_steel_l3", "ama_plate_steel_naked_l3", "ama_plate_steel_linex_l3", "ama_plate_steel_hardened_l3", "ama_plate_poly_l3", "ama_plate_poly_pressed_l3", "ama_plate_titanium_old_l3"}, 
+        side = {"plate_steel_side_l3", "ama_plate_poly_side_l3"} 
+    },
+    [4] = { 
+        main = {"ama_plate_alumina_l4", "ama_plate_alumina_reinforced_l4", "ama_plate_titanium_polished_l4", "ama_plate_granit_l4"}, 
+        side = {"ama_plate_ceramic_side_l4"} 
+    },
+    [5] = { 
+        main = {"ama_plate_ceramic_l4", "ama_plate_granit_l5", "ama_plate_stf_l5", "ama_plate_sic_l5", "ama_plate_sic_multihit_l5", "ama_plate_cnt_l5", "ama_plate_soul_l5"}, 
+        side = {"ama_plate_ceramic_side_l4"} 
+    },
+    [6] = { 
+        main = {"ama_plate_granit_l6", "ama_plate_mamasbeads_l6", "ama_plate_kolobok_l6", "ama_plate_boron_l6", "ama_plate_boron_operator_l6", "ama_plate_graphene_l6"}, 
+        side = {"ama_plate_boron_side_l6", "ama_plate_monocrystal_side_l6"} 
+    },
+    [7] = { 
+        main = {"ama_plate_monocrystal_l7", "ama_plate_empty_l7"}, 
+        side = {"ama_plate_monocrystal_side_l6"} 
+    }
+}
+
+local limb_secs = {
+    [2] = { l_up = "ama_l_kevlar_dap", r_up = "ama_r_kevlar_dap", l_fo = "ama_l_kevlar_forearm_guard", r_fo = "ama_r_kevlar_forearm_guard", l_th = "ama_l_kevlar_femoral_protector", r_th = "ama_r_kevlar_femoral_protector", l_ca = "ama_l_kevlar_shin_guard", r_ca = "ama_r_kevlar_shin_guard" },
+    [3] = { l_up = "ama_l_steel_dap", r_up = "ama_r_steel_dap", l_fo = "ama_l_steel_forearm_guard", r_fo = "ama_r_steel_forearm_guard", l_th = "ama_l_steel_femoral_protector", r_th = "ama_r_steel_femoral_protector", l_ca = "ama_l_steel_shin_guard", r_ca = "ama_r_steel_shin_guard" },
+    [4] = { l_up = "ama_l_poly_dap", r_up = "ama_r_poly_dap", l_fo = "ama_l_poly_forearm_guard", r_fo = "ama_r_poly_forearm_guard", l_th = "ama_l_poly_femoral_protector", r_th = "ama_r_poly_femoral_protector", l_ca = "ama_l_poly_shin_guard", r_ca = "ama_r_poly_shin_guard" },
+    [5] = { l_up = "ama_l_ceramic_dap", r_up = "ama_r_ceramic_dap", l_fo = "ama_l_ceramic_forearm_guard", r_fo = "ama_r_ceramic_forearm_guard", l_th = "ama_l_ceramic_femoral_protector", r_th = "ama_r_ceramic_femoral_protector", l_ca = "ama_l_ceramic_shin_guard", r_ca = "ama_r_ceramic_shin_guard" },
+    [6] = { l_up = "ama_l_boron_dap", r_up = "ama_r_boron_dap", l_fo = "ama_l_boron_forearm_guard", r_fo = "ama_r_boron_forearm_guard", l_th = "ama_l_boron_femoral_protector", r_th = "ama_r_boron_femoral_protector", l_ca = "ama_l_boron_shin_guard", r_ca = "ama_r_boron_shin_guard" }
+}
+
+local b_nato = {"poly", "kevlar", "stf", "sic", "cnt", "alumina"}
+local b_rus  = {"steel", "granit", "titanium", "alumina", "rubber"}
+local b_scav = {"scrap", "lead", "rubber", "frankenstein", "kevlar"}
+local b_mono = {"ceramic", "monocrystal", "boron", "empty", "soul", "granit"}
+local b_sci  = {"poly", "stf", "lead", "rubber", "cnt", "soul"}
+
+local loadout_weights = {
+    ["monolith"] = {
+        ["novice"]       = { c=100, l=15, min=2, max=3, cov="front", cond={0.50, 0.80}, asym=false, t7=0, bias=b_mono },
+        ["trainee"]      = { c=100, l=25, min=2, max=4, cov="dual",  cond={0.55, 0.85}, asym=false, t7=0, bias=b_mono },
+        ["experienced"]  = { c=100, l=40, min=3, max=5, cov="dual",  cond={0.60, 0.90}, asym=false, t7=0, bias=b_mono },
+        ["professional"] = { c=100, l=55, min=4, max=5, cov="dual",  cond={0.65, 0.95}, asym=false, t7=0, bias=b_mono },
+        ["veteran"]      = { c=100, l=75, min=4, max=6, cov="full",  cond={0.70, 1.00}, asym=false, t7=0, bias=b_mono },
+        ["expert"]       = { c=100, l=85, min=5, max=6, cov="full",  cond={0.75, 1.00}, asym=false, t7=1, bias=b_mono },
+        ["master"]       = { c=100, l=95, min=5, max=7, cov="full",  cond={0.80, 1.00}, asym=false, t7=3, bias=b_mono },
+        ["legend"]       = { c=100, l=100,min=6, max=7, cov="full",  cond={0.90, 1.00}, asym=false, t7=8, bias=b_mono },
+    },
+    ["killer"] = {
+        ["novice"]       = { c=100, l=20, min=2, max=3, cov="front", cond={0.60, 0.85}, asym=false, t7=0, bias=b_nato },
+        ["trainee"]      = { c=100, l=35, min=3, max=4, cov="dual",  cond={0.65, 0.90}, asym=false, t7=0, bias=b_nato },
+        ["experienced"]  = { c=100, l=50, min=3, max=4, cov="dual",  cond={0.70, 0.95}, asym=false, t7=0, bias=b_nato },
+        ["professional"] = { c=100, l=65, min=4, max=5, cov="dual",  cond={0.75, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["veteran"]      = { c=100, l=80, min=4, max=5, cov="full",  cond={0.80, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["expert"]       = { c=100, l=90, min=5, max=6, cov="full",  cond={0.85, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["master"]       = { c=100, l=95, min=5, max=6, cov="full",  cond={0.90, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["legend"]       = { c=100, l=100,min=6, max=6, cov="full",  cond={0.95, 1.00}, asym=false, t7=0, bias=b_nato },
+    },
+    ["isg"] = {
+        ["novice"]       = { c=100, l=40, min=3, max=4, cov="dual",  cond={0.70, 0.95}, asym=false, t7=0, bias=b_nato },
+        ["trainee"]      = { c=100, l=55, min=3, max=4, cov="dual",  cond={0.75, 0.95}, asym=false, t7=0, bias=b_nato },
+        ["experienced"]  = { c=100, l=70, min=4, max=5, cov="full",  cond={0.80, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["professional"] = { c=100, l=85, min=4, max=5, cov="full",  cond={0.85, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["veteran"]      = { c=100, l=95, min=5, max=6, cov="full",  cond={0.90, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["expert"]       = { c=100, l=100,min=5, max=6, cov="full",  cond={0.90, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["master"]       = { c=100, l=100,min=6, max=6, cov="full",  cond={0.95, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["legend"]       = { c=100, l=100,min=6, max=6, cov="full",  cond={0.95, 1.00}, asym=false, t7=0, bias=b_nato },
+    },
+    ["army"] = {
+        ["novice"]       = { c=100, l=10, min=2, max=2, cov="front", cond={0.40, 0.70}, asym=false, t7=0, bias=b_rus },
+        ["trainee"]      = { c=100, l=20, min=2, max=3, cov="dual",  cond={0.50, 0.80}, asym=false, t7=0, bias=b_rus },
+        ["experienced"]  = { c=100, l=35, min=3, max=4, cov="dual",  cond={0.55, 0.85}, asym=false, t7=0, bias=b_rus },
+        ["professional"] = { c=100, l=50, min=3, max=4, cov="dual",  cond={0.60, 0.90}, asym=false, t7=0, bias=b_rus },
+        ["veteran"]      = { c=100, l=65, min=4, max=5, cov="full",  cond={0.65, 0.95}, asym=false, t7=0, bias=b_rus },
+        ["expert"]       = { c=100, l=80, min=4, max=5, cov="full",  cond={0.70, 0.95}, asym=false, t7=0, bias=b_rus },
+        ["master"]       = { c=100, l=90, min=5, max=6, cov="full",  cond={0.80, 1.00}, asym=false, t7=0, bias=b_rus },
+        ["legend"]       = { c=100, l=95, min=5, max=6, cov="full",  cond={0.85, 1.00}, asym=false, t7=0, bias=b_rus },
+    },
+    ["dolg"] = {
+        ["novice"]       = { c=100, l=15, min=2, max=3, cov="front", cond={0.50, 0.80}, asym=false, t7=0, bias=b_rus },
+        ["trainee"]      = { c=100, l=25, min=2, max=3, cov="dual",  cond={0.55, 0.85}, asym=false, t7=0, bias=b_rus },
+        ["experienced"]  = { c=100, l=40, min=3, max=4, cov="dual",  cond={0.60, 0.90}, asym=false, t7=0, bias=b_rus },
+        ["professional"] = { c=100, l=55, min=3, max=5, cov="dual",  cond={0.65, 0.95}, asym=false, t7=0, bias=b_rus },
+        ["veteran"]      = { c=100, l=70, min=4, max=5, cov="full",  cond={0.70, 1.00}, asym=false, t7=0, bias=b_rus },
+        ["expert"]       = { c=100, l=85, min=4, max=6, cov="full",  cond={0.75, 1.00}, asym=false, t7=0, bias=b_rus },
+        ["master"]       = { c=100, l=95, min=5, max=6, cov="full",  cond={0.85, 1.00}, asym=false, t7=0, bias=b_rus },
+        ["legend"]       = { c=100, l=100,min=5, max=6, cov="full",  cond={0.90, 1.00}, asym=false, t7=0, bias=b_rus },
+    },
+    ["freedom"] = {
+        ["novice"]       = { c=60,  l=5,  min=2, max=2, cov="front", cond={0.40, 0.70}, asym=true,  t7=0, bias=b_nato },
+        ["trainee"]      = { c=70,  l=15, min=2, max=3, cov="front", cond={0.45, 0.75}, asym=true,  t7=0, bias=b_nato },
+        ["experienced"]  = { c=80,  l=25, min=3, max=4, cov="dual",  cond={0.50, 0.80}, asym=false, t7=0, bias=b_nato },
+        ["professional"] = { c=85,  l=40, min=3, max=4, cov="dual",  cond={0.55, 0.85}, asym=false, t7=0, bias=b_nato },
+        ["veteran"]      = { c=90,  l=55, min=4, max=5, cov="dual",  cond={0.65, 0.90}, asym=false, t7=0, bias=b_nato },
+        ["expert"]       = { c=95,  l=70, min=4, max=5, cov="full",  cond={0.70, 0.95}, asym=false, t7=0, bias=b_nato },
+        ["master"]       = { c=95,  l=85, min=5, max=6, cov="full",  cond={0.80, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["legend"]       = { c=100, l=95, min=5, max=6, cov="full",  cond={0.85, 1.00}, asym=false, t7=0, bias=b_nato },
+    },
+    ["ecolog"] = {
+        ["novice"]       = { c=40,  l=5,  min=2, max=3, cov="front", cond={0.60, 0.90}, asym=false, t7=0, bias=b_sci },
+        ["trainee"]      = { c=50,  l=10, min=2, max=3, cov="front", cond={0.65, 0.95}, asym=false, t7=0, bias=b_sci },
+        ["experienced"]  = { c=60,  l=20, min=3, max=4, cov="dual",  cond={0.70, 0.95}, asym=false, t7=0, bias=b_sci },
+        ["professional"] = { c=70,  l=35, min=3, max=4, cov="dual",  cond={0.75, 1.00}, asym=false, t7=0, bias=b_sci },
+        ["veteran"]      = { c=80,  l=50, min=4, max=5, cov="dual",  cond={0.80, 1.00}, asym=false, t7=0, bias=b_sci },
+        ["expert"]       = { c=90,  l=70, min=4, max=5, cov="full",  cond={0.85, 1.00}, asym=false, t7=0, bias=b_sci },
+        ["master"]       = { c=95,  l=85, min=5, max=5, cov="full",  cond={0.90, 1.00}, asym=false, t7=0, bias=b_sci },
+        ["legend"]       = { c=100, l=95, min=5, max=6, cov="full",  cond={0.95, 1.00}, asym=false, t7=0, bias=b_sci },
+    },
+    ["csky"] = {
+        ["novice"]       = { c=60,  l=5,  min=2, max=2, cov="front", cond={0.45, 0.75}, asym=true,  t7=0, bias=b_nato },
+        ["trainee"]      = { c=70,  l=15, min=2, max=3, cov="front", cond={0.50, 0.80}, asym=true,  t7=0, bias=b_nato },
+        ["experienced"]  = { c=75,  l=25, min=3, max=4, cov="dual",  cond={0.55, 0.85}, asym=false, t7=0, bias=b_nato },
+        ["professional"] = { c=80,  l=40, min=3, max=4, cov="dual",  cond={0.60, 0.90}, asym=false, t7=0, bias=b_nato },
+        ["veteran"]      = { c=85,  l=55, min=4, max=5, cov="dual",  cond={0.65, 0.95}, asym=false, t7=0, bias=b_nato },
+        ["expert"]       = { c=90,  l=70, min=4, max=5, cov="full",  cond={0.75, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["master"]       = { c=95,  l=85, min=5, max=6, cov="full",  cond={0.80, 1.00}, asym=false, t7=0, bias=b_nato },
+        ["legend"]       = { c=100, l=95, min=5, max=6, cov="full",  cond={0.85, 1.00}, asym=false, t7=0, bias=b_nato },
+    },
+    ["stalker"] = {
+        ["novice"]       = { c=15,  l=0,  min=1, max=2, cov="front", cond={0.20, 0.50}, asym=true,  t7=0, bias=b_scav },
+        ["trainee"]      = { c=25,  l=5,  min=1, max=3, cov="front", cond={0.30, 0.60}, asym=true,  t7=0, bias=b_scav },
+        ["experienced"]  = { c=40,  l=15, min=2, max=3, cov="front", cond={0.40, 0.70}, asym=true,  t7=0, bias=b_scav },
+        ["professional"] = { c=55,  l=25, min=2, max=4, cov="dual",  cond={0.45, 0.75}, asym=false, t7=0, bias=b_scav },
+        ["veteran"]      = { c=65,  l=40, min=3, max=5, cov="dual",  cond={0.55, 0.85}, asym=false, t7=0, bias=b_scav },
+        ["expert"]       = { c=75,  l=55, min=3, max=5, cov="dual",  cond={0.65, 0.90}, asym=false, t7=0, bias=b_scav },
+        ["master"]       = { c=85,  l=70, min=4, max=6, cov="full",  cond={0.75, 0.95}, asym=false, t7=0, bias=b_scav },
+        ["legend"]       = { c=95,  l=85, min=4, max=6, cov="full",  cond={0.80, 1.00}, asym=false, t7=0, bias=b_scav },
+    },
+    ["greh"] = {
+        ["novice"]       = { c=20,  l=5,  min=1, max=2, cov="front", cond={0.30, 0.60}, asym=true,  t7=0, bias=b_mono },
+        ["trainee"]      = { c=35,  l=10, min=2, max=3, cov="front", cond={0.35, 0.65}, asym=true,  t7=0, bias=b_mono },
+        ["experienced"]  = { c=45,  l=20, min=2, max=4, cov="dual",  cond={0.40, 0.70}, asym=true,  t7=0, bias=b_mono },
+        ["professional"] = { c=55,  l=35, min=3, max=4, cov="dual",  cond={0.45, 0.75}, asym=false, t7=0, bias=b_mono },
+        ["veteran"]      = { c=65,  l=50, min=3, max=5, cov="dual",  cond={0.50, 0.80}, asym=false, t7=0, bias=b_mono },
+        ["expert"]       = { c=75,  l=65, min=4, max=5, cov="full",  cond={0.60, 0.90}, asym=false, t7=0, bias=b_mono },
+        ["master"]       = { c=85,  l=80, min=4, max=6, cov="full",  cond={0.70, 0.95}, asym=false, t7=1, bias=b_mono },
+        ["legend"]       = { c=90,  l=90, min=5, max=7, cov="full",  cond={0.75, 1.00}, asym=false, t7=2, bias=b_mono },
+    },
+    ["bandit"] = {
+        ["novice"]       = { c=10,  l=0,  min=1, max=2, cov="front", cond={0.15, 0.45}, asym=true,  t7=0, bias=b_scav },
+        ["trainee"]      = { c=20,  l=5,  min=1, max=2, cov="front", cond={0.20, 0.50}, asym=true,  t7=0, bias=b_scav },
+        ["experienced"]  = { c=30,  l=10, min=1, max=3, cov="front", cond={0.25, 0.55}, asym=true,  t7=0, bias=b_scav },
+        ["professional"] = { c=40,  l=20, min=2, max=3, cov="dual",  cond={0.30, 0.60}, asym=true,  t7=0, bias=b_scav },
+        ["veteran"]      = { c=50,  l=30, min=2, max=4, cov="dual",  cond={0.40, 0.70}, asym=false, t7=0, bias=b_scav },
+        ["expert"]       = { c=60,  l=45, min=3, max=4, cov="dual",  cond={0.50, 0.80}, asym=false, t7=0, bias=b_scav },
+        ["master"]       = { c=70,  l=60, min=3, max=5, cov="dual",  cond={0.60, 0.85}, asym=false, t7=0, bias=b_scav },
+        ["legend"]       = { c=80,  l=70, min=4, max=5, cov="dual",  cond={0.65, 0.90}, asym=false, t7=0, bias=b_scav },
+    },
+    ["renegade"] = {
+        ["novice"]       = { c=5,   l=0,  min=1, max=1, cov="front", cond={0.10, 0.35}, asym=true,  t7=0, bias=b_scav },
+        ["trainee"]      = { c=10,  l=0,  min=1, max=2, cov="front", cond={0.15, 0.40}, asym=true,  t7=0, bias=b_scav },
+        ["experienced"]  = { c=20,  l=5,  min=1, max=2, cov="front", cond={0.20, 0.45}, asym=true,  t7=0, bias=b_scav },
+        ["professional"] = { c=25,  l=10, min=1, max=3, cov="front", cond={0.25, 0.50}, asym=true,  t7=0, bias=b_scav },
+        ["veteran"]      = { c=35,  l=20, min=2, max=3, cov="front", cond={0.30, 0.55}, asym=true,  t7=0, bias=b_scav },
+        ["expert"]       = { c=45,  l=30, min=2, max=4, cov="dual",  cond={0.35, 0.65}, asym=false, t7=0, bias=b_scav },
+        ["master"]       = { c=55,  l=40, min=3, max=4, cov="dual",  cond={0.45, 0.75}, asym=false, t7=0, bias=b_scav },
+        ["legend"]       = { c=65,  l=50, min=3, max=5, cov="dual",  cond={0.50, 0.80}, asym=false, t7=0, bias=b_scav },
+    },
+    ["zombied"] = {
+        ["novice"]       = { c=15,  l=0,  min=1, max=2, cov="front", cond={0.05, 0.30}, asym=true,  t7=0, bias=b_scav },
+        ["trainee"]      = { c=20,  l=5,  min=1, max=3, cov="front", cond={0.05, 0.30}, asym=true,  t7=0, bias=b_scav },
+        ["experienced"]  = { c=25,  l=10, min=2, max=4, cov="dual",  cond={0.10, 0.35}, asym=true,  t7=0, bias=b_scav },
+        ["professional"] = { c=30,  l=15, min=2, max=4, cov="dual",  cond={0.10, 0.35}, asym=true,  t7=0, bias=b_scav },
+        ["veteran"]      = { c=35,  l=20, min=3, max=5, cov="dual",  cond={0.15, 0.40}, asym=false, t7=0, bias=b_scav },
+        ["expert"]       = { c=40,  l=25, min=3, max=5, cov="full",  cond={0.15, 0.40}, asym=false, t7=0, bias=b_scav },
+        ["master"]       = { c=45,  l=35, min=4, max=6, cov="full",  cond={0.20, 0.45}, asym=false, t7=0, bias=b_scav },
+        ["legend"]       = { c=50,  l=45, min=4, max=6, cov="full",  cond={0.25, 0.50}, asym=false, t7=0, bias=b_scav },
+    }
+}
+
+-- ==========================================================
+-- HELPER FUNCTIONS
+-- ==========================================================
+
+local function roll_cond(cond_range)
+    local c_min = math.floor(cond_range[1] * 100)
+    local c_max = math.floor(cond_range[2] * 100)
+    return math.random(c_min, c_max) / 100.0
+end
+
+local function pick_biased_plate(pool, bias_table)
+    if not bias_table or #bias_table == 0 then return pool[math.random(#pool)] end
+ 
+    local valid_choices = {}
+    for _, sec in ipairs(pool) do
+        for _, kw in ipairs(bias_table) do
+            if string.find(sec, kw) then
+                table.insert(valid_choices, sec)
+                break
+            end
+        end
+    end
+    if #valid_choices == 0 then return pool[math.random(#pool)] end
+    return valid_choices[math.random(#valid_choices)]
+end
+
+-- ==========================================================
+-- NPC SPAWN & VIRTUAL LOADOUTS
+-- ==========================================================
+local function npc_on_net_spawn(obj)
+    if not (obj and IsStalker(obj) and obj:alive()) then return end
+    if obj:id() == db.actor:id() then return end
+    
+    local id = obj:id()
+    if npc_virtual_plates[id] then return end
+
+    local faction = character_community(obj)
+    local rank = ranks.get_obj_rank_name(obj)
+    
+    local faction_cfg = loadout_weights[faction] or loadout_weights["stalker"]
+    local rank_cfg = faction_cfg[rank] or faction_cfg["novice"]
+
+    if math.random(100) <= rank_cfg.c then
+        local max_allowed_tier = rank_cfg.max
+        local visual = string.lower(obj:get_visual_name() or "")
+        local is_heavy = string.find(visual, "exo") or string.find(visual, "nosorog") or string.find(visual, "heavy")
+        
+        if not is_heavy and max_allowed_tier > 5 then max_allowed_tier = 5 end
+
+        local min_tier = math_min(rank_cfg.min, max_allowed_tier)
+        local tier = math.random(min_tier, max_allowed_tier)
+        
+        if tier == 7 then
+            if math.random(1, 100) > rank_cfg.t7 then
+                tier = 6
+            end
+        end
+
+        local cov = rank_cfg.cov
+        npc_virtual_plates[id] = { is_heavy = is_heavy }
+        
+        local main_pool = plate_secs[tier].main
+        local side_pool = plate_secs[tier].side
+        local bias = rank_cfg.bias
+        
+        if cov == "front" or cov == "dual" or cov == "full" then
+            npc_virtual_plates[id].front = { sec = pick_biased_plate(main_pool, bias), cond = roll_cond(rank_cfg.cond), tier = tier }
+        end
+        if cov == "dual" or cov == "full" then
+            npc_virtual_plates[id].back = { sec = pick_biased_plate(main_pool, bias), cond = roll_cond(rank_cfg.cond), tier = tier }
+        end
+        if cov == "full" then
+            npc_virtual_plates[id].left = { sec = pick_biased_plate(side_pool, bias), cond = roll_cond(rank_cfg.cond), tier = tier }
+            npc_virtual_plates[id].right = { sec = pick_biased_plate(side_pool, bias), cond = roll_cond(rank_cfg.cond), tier = tier }
+        end
+        
+        if math.random(100) <= rank_cfg.l then
+            local limb_tier = math_max(2, math_min(6, tier))
+            local asym = rank_cfg.asym
+            
+            if math.random(100) <= 70 then
+                npc_virtual_plates[id].l_up = { sec = limb_secs[limb_tier].l_up, cond = roll_cond(rank_cfg.cond), tier = limb_tier }
+                if not asym then npc_virtual_plates[id].r_up = { sec = limb_secs[limb_tier].r_up, cond = roll_cond(rank_cfg.cond), tier = limb_tier } end
+            end
+            if math.random(100) <= 60 then
+                npc_virtual_plates[id].l_fo = { sec = limb_secs[limb_tier].l_fo, cond = roll_cond(rank_cfg.cond), tier = limb_tier }
+                if not asym then npc_virtual_plates[id].r_fo = { sec = limb_secs[limb_tier].r_fo, cond = roll_cond(rank_cfg.cond), tier = limb_tier } end
+            end
+            if math.random(100) <= 80 then
+                npc_virtual_plates[id].l_th = { sec = limb_secs[limb_tier].l_th, cond = roll_cond(rank_cfg.cond), tier = limb_tier }
+                if not asym then npc_virtual_plates[id].r_th = { sec = limb_secs[limb_tier].r_th, cond = roll_cond(rank_cfg.cond), tier = limb_tier } end
+            end
+            if math.random(100) <= 70 then
+                npc_virtual_plates[id].l_ca = { sec = limb_secs[limb_tier].l_ca, cond = roll_cond(rank_cfg.cond), tier = limb_tier }
+                if not asym then npc_virtual_plates[id].r_ca = { sec = limb_secs[limb_tier].r_ca, cond = roll_cond(rank_cfg.cond), tier = limb_tier } end
+            end
+        end
+    end
+end
+
+-- ==========================================================
+-- 3D AUDIO ENGINE FOR NPCS
+-- ==========================================================
+local sound_map = { ["steel"]="metal", ["metal"]="metal", ["ceramic"]="ceramic", ["kevlar"]="kevlar", ["poly"]="kevlar", ["titanium"]="metal" }
+
+local function play_npc_sound(npc, material, state)
+    if not db.actor then return end
+    local dist = npc:position():distance_to(db.actor:position())
+    if dist > 60 then return end
+
+    local s_mat = sound_map[material] or "kevlar"
+    local path = "attachments\\"
+
+    if state == "broken" then
+        sound_object(path .. s_mat .. "_break"):play_at_pos(npc, npc:position(), 0, sound_object.s3d)
+        sound_object(path .. "flesh_" .. math.random(1, 6)):play_at_pos(npc, npc:position(), 0, sound_object.s3d)
+    elseif state == "penetrated" then
+        sound_object(path .. s_mat .. "_pierce_" .. math.random(1, 3)):play_at_pos(npc, npc:position(), 0, sound_object.s3d)
+        sound_object(path .. "flesh_" .. math.random(1, 6)):play_at_pos(npc, npc:position(), 0, sound_object.s3d)
+    elseif state == "stopped" then
+        sound_object(path .. s_mat .. "_hit_" .. math.random(1, 3)):play_at_pos(npc, npc:position(), 0, sound_object.s3d)
+    elseif state == "ricochet" then
+        sound_object("material\\bullet\\collide\\metal\\ext_metal_hit_" .. math.random(1, 4)):play_at_pos(npc, npc:position(), 0, sound_object.s3d)
+        sound_object(path .. "ricochet_" .. math.random(1, 6)):play_at_pos(npc, npc:position(), 0, sound_object.s3d)
+    end
+end
+
+-- ==========================================================
+-- GEOMETRY & HIT LOGIC
+-- ==========================================================
+local function get_curved_impact_angle(radius_mm)
+    local distance_from_center = math.random() * radius_mm
+    local sine_ratio = math_max(0, math_min(1.0, distance_from_center / radius_mm))
+    return math_deg(math.asin(sine_ratio))
+end
+
+local function get_npc_hit_direction(npc, shit)
+    local n_dir = npc:direction()
+    local nx, nz = n_dir.x, n_dir.z
+    local n_len = math.sqrt(nx^2 + nz^2)
+    if n_len == 0 then return "front" end
+    nx, nz = nx / n_len, nz / n_len
+
+    local h_dir = shit.direction
+    local hx, hz = h_dir.x, h_dir.z
+    local h_len = math.sqrt(hx^2 + hz^2)
+    if h_len == 0 then return "front" end 
+    hx, hz = hx / h_len, hz / h_len 
+
+    local dot = (nx * hx) + (nz * hz)
+
+    if dot <= -0.5 then return "front"
+    elseif dot >= 0.5 then return "back"
+    else
+        local cross = (nx * hz) - (nz * hx)
+        if cross > 0 then return "right" else return "left" end
+    end
+end
+
+local function armor_npc_on_before_hit(npc, shit, bone_id)
+    if not (shit.type == hit.fire_wound or shit.type == hit.wound or shit.type == hit.strike) then return end
+    
+    local v_data = npc_virtual_plates[npc:id()]
+    if not v_data then return end
+    
+    local bone_name = npc:bone_name(bone_id)
+    if not bone_name then return end
+
+    local hit_zone = nil
+    local impact_angle_deg = 0
+
+    if string.find(bone_name, "spine") then
+        hit_zone = get_npc_hit_direction(npc, shit)
+        local nx, nz = npc:direction().x, npc:direction().z
+        local hx, hz = shit.direction.x, shit.direction.z
+        local dot = math_max(-1, math_min(1, (nx * hx) + (nz * hz)))
+        impact_angle_deg = math_deg(math_acos(math_abs(dot)))
+    
+    elseif string.find(bone_name, "pelvis") or string.find(bone_name, "neck") or string.find(bone_name, "head") then
+        return
+    else
+        if string.find(bone_name, "l_upperarm") then hit_zone = "l_up"; impact_angle_deg = get_curved_impact_angle(65)
+        elseif string.find(bone_name, "r_upperarm") then hit_zone = "r_up"; impact_angle_deg = get_curved_impact_angle(65)
+        elseif string.find(bone_name, "l_forearm") then hit_zone = "l_fo"; impact_angle_deg = get_curved_impact_angle(45)
+        elseif string.find(bone_name, "r_forearm") then hit_zone = "r_fo"; impact_angle_deg = get_curved_impact_angle(45)
+        elseif string.find(bone_name, "l_thigh") then hit_zone = "l_th"; impact_angle_deg = get_curved_impact_angle(110)
+        elseif string.find(bone_name, "r_thigh") then hit_zone = "r_th"; impact_angle_deg = get_curved_impact_angle(110)
+        elseif string.find(bone_name, "l_calf") then hit_zone = "l_ca"; impact_angle_deg = get_curved_impact_angle(75)
+        elseif string.find(bone_name, "r_calf") then hit_zone = "r_ca"; impact_angle_deg = get_curved_impact_angle(75)
+        end
+    end
+
+    if not hit_zone then return end
+    local active_plate = v_data[hit_zone]
+    if not active_plate or active_plate.cond < 0.05 then return end
+
+    -- ==========================================================
+    -- 2. FETCH AMMO OR SYNTHESIZE MUTANT KINETICS
+    -- ==========================================================
+    local bullet_pen = 0.1
+    local bullet_bite = 0
+    local bullet_impulse = 0.5
+    local k_ap = 0.10
+    local is_mutant_attack = false
+    local mass_mult = 1.0
+    local ammo_sec = "Unknown/Mutant"
+
+    local shooter = shit.draftsman
+    if not shooter then return end
+
+    if shit.type == hit.wound or shit.type == hit.strike then
+        is_mutant_attack = true
+        local d_sec = shooter:section()
+        
+        if string.find(d_sec, "tushkano") or string.find(d_sec, "rat") or string.find(d_sec, "zombie") then mass_mult = 0.5
+        elseif string.find(d_sec, "dog") or string.find(d_sec, "cat") or string.find(d_sec, "fracture") then mass_mult = 1.5
+        elseif string.find(d_sec, "boar") or string.find(d_sec, "snork") or string.find(d_sec, "flesh") then mass_mult = 3.5
+        elseif string.find(d_sec, "chimera") or string.find(d_sec, "gigant") or string.find(d_sec, "bloodsucker") then mass_mult = 8.0 end
+        
+        if string.find(d_sec, "burer") or string.find(d_sec, "poltergeist") then
+            mass_mult = math_max(1.0, shit.power * 6.0)
+            bullet_pen = 2.0
+            bullet_bite = 0
+            bullet_impulse = mass_mult * 2.0
+            k_ap = 0.0
+        else
+            bullet_pen = math_max(0.1, (shit.power * 25) * mass_mult)
+            bullet_bite = 25
+            bullet_impulse = mass_mult
+            k_ap = 0.05
+        end
+    else
+        if shit.weapon_id then
+            local wpn = level.object_by_id(shit.weapon_id)
+            if wpn and IsWeapon(wpn) then
+                local ammo_type = wpn:get_ammo_type()
+                local ammo_class = SYS_GetParam(0, wpn:section(), "ammo_class")
+                if ammo_class then
+                    local ammo_table = str_explode(ammo_class, ",")
+                    ammo_sec = ammo_table[ammo_type + 1] or "Unknown/Mutant"
+                end
+            end
+        end
+        
+        bullet_pen     = math_max(0.1, SYS_GetParam(2, ammo_sec, "ama_penetration") or 5)
+        bullet_bite    = SYS_GetParam(2, ammo_sec, "ama_bullet_bite") or 0
+        bullet_impulse = SYS_GetParam(2, ammo_sec, "k_imp") or 0.5
+        k_ap           = SYS_GetParam(2, ammo_sec, "k_ap") or 0.10
+    end
+    
+    local kinetic_shock = shit.power * bullet_impulse
+
+    -- ==========================================================
+    -- 3. FETCH PLATE DATA
+    -- ==========================================================
+    local nom_thickness = SYS_GetParam(2, active_plate.sec, "ama_thickness") or 10
+    local hardness      = SYS_GetParam(2, active_plate.sec, "ama_hardness") or 1.0
+    local material      = SYS_GetParam(0, active_plate.sec, "ama_material") or "ceramic"
+    local durability    = SYS_GetParam(2, active_plate.sec, "ama_durability_multiplier") or 1.0
+    
+    local padding_mult = v_data.is_heavy and 0.5 or 0.8 
+    -- FIXED: Higher value means higher armor rating / protection
+    local safe_koeff    = v_data.is_heavy and 0.45 or 0.10
+
+    -- ==========================================================
+    -- 4. MATERIAL MODIFIERS
+    -- ==========================================================
+    local is_shear_plug = false
+    local is_monocrystal = string.find(active_plate.sec, "monocrystal")
+
+    if is_mutant_attack then
+        if material == "steel" or material == "metal" then
+            if string.find(active_plate.sec, "scrap") and shooter.health then
+                shooter.health = math_max(0, shooter.health - 0.15)
+            else
+                nom_thickness = nom_thickness * 10.0
+                padding_mult = padding_mult * 1.5 
+            end
+        elseif material == "ceramic" then
+            durability = durability * (2.0 * mass_mult)
+        elseif material == "poly" or material == "kevlar" then
+            padding_mult = padding_mult * 0.5
+            durability = durability * 1.5
+        end
+    else
+        if material == "poly" and k_ap > 0.40 then nom_thickness = nom_thickness * 0.5 end
+        if material == "ceramic" then
+            if active_plate.cond < 0.40 then hardness = 0.1 end
+            durability = durability * (1.0 + bullet_impulse)
+        end
+    end
+
+    if string.find(active_plate.sec, "stf") then
+        if kinetic_shock > 0.3 then hardness = 0.85; padding_mult = padding_mult * 1.5 else hardness = 0.20 end
+    end
+    if string.find(active_plate.sec, "titanium") then material = "metal"; is_shear_plug = true end
+
+    local current_strength = (nom_thickness * hardness) * active_plate.cond
+
+    -- TELEMETRY DATA OBJ
+    local t_data = {
+        target = npc:name(), id = npc:id(), bone = bone_name, zone = hit_zone, ammo = ammo_sec,
+        power = shit.power, impulse = bullet_impulse, kap = k_ap, angle = impact_angle_deg,
+        plate_sec = active_plate.sec, nom_thick = nom_thickness, cond = active_plate.cond, hardness = hardness
+    }
+
+    -- ==========================================================
+    -- 5. PHASE 1: Geometry & Ricochet
+    -- ==========================================================
+    local effective_angle_deg = math_max(0, impact_angle_deg - bullet_bite)
+    local cos_val = math_max(0.1, math_cos(math_rad(effective_angle_deg)))
+    
+    t_data.cos_val = cos_val
+    t_data.eff_thick = current_strength / cos_val
+    
+    local ricochet_threshold = 75 - (hardness * 5)
+    if is_monocrystal then ricochet_threshold = math_max(0, ricochet_threshold - 25) end
+    
+    if impact_angle_deg > ricochet_threshold then
+        if not is_mutant_attack then play_npc_sound(npc, material, "ricochet") end
+        shit.power = 0
+        active_plate.cond = math_max(0, active_plate.cond - (0.005 * durability))
+        
+        t_data.phase = "PHASE 1 - RICOCHET"
+        t_data.final_dmg_str = string.format("Power: 0.0 | Plate_Cond: -%.4f", 0.005 * durability)
+        log_telemetry(t_data)
+        return
+    end
+
+    -- ==========================================================
+    -- 6. PHASE 2: Hard Plate Check & THE PENETRATION BRANCHES
+    -- ==========================================================
+    local effective_thickness = current_strength / cos_val
+    t_data.pen_ratio = math_min(1.0, bullet_pen / effective_thickness)
+
+    local spall_dmg = 0
+    if not is_mutant_attack and (material == "metal" or material == "steel") then
+        local spall_risk = SYS_GetParam(2, active_plate.sec, "ama_spall_multiplier") or 0.8
+        local soft_armor_spall_reduction = math_max(0.1, 1.0 - safe_koeff)
+        spall_dmg = (shit.power * bullet_impulse) * spall_risk * t_data.pen_ratio * soft_armor_spall_reduction
+    end
+
+    if bullet_pen >= effective_thickness then
+        local kinetic_ratio = 1.0 - (effective_thickness / bullet_pen)
+        local residual_k_ap = k_ap * kinetic_ratio
+        
+        if residual_k_ap <= safe_koeff then
+            -- PHASE 4: SOFT CATCH
+            local deformation_severity = residual_k_ap / safe_koeff
+            local blunt_dmg = ((kinetic_shock * 0.5) * (1.0 + (deformation_severity * 1.5))) * padding_mult
+            
+            if is_shear_plug and not is_mutant_attack then blunt_dmg = blunt_dmg + (spall_dmg * 2.0); spall_dmg = 0 end
+            
+            shit.power = math_max(0, blunt_dmg + spall_dmg)
+            
+            local plate_dmg = (kinetic_shock * 0.4) * durability
+            active_plate.cond = math_max(0, active_plate.cond - plate_dmg)
+            
+            if not is_mutant_attack then play_npc_sound(npc, material, "penetrated") end
+            
+            if mod_npc_stress and mod_npc_stress.add_stress then
+                local source_is_actor = (shooter and shooter:id() == 0)
+                mod_npc_stress.add_stress(npc:id(), kinetic_shock * 1.5, source_is_actor)
+            end
+
+            t_data.phase = "PHASE 4 - SOFT CATCH"
+            t_data.final_dmg_str = string.format("Blunt: %.2f | Spall: %.2f", blunt_dmg, spall_dmg)
+            log_telemetry(t_data)
+            return "BLUNT"
+        else
+            -- PHASE 5: OVER-PENETRATION
+            local soft_armor_mm = safe_koeff * 40
+            local total_material_drag = effective_thickness + soft_armor_mm
+            t_data.soft_mm = soft_armor_mm
+            
+            local consumed_energy_ratio = math_min(1.0, total_material_drag / bullet_pen)
+            local blunt_dmg = (kinetic_shock * 0.3) * consumed_energy_ratio
+            local piercing_dmg = shit.power * math_max(0.05, 1.0 - (total_material_drag / bullet_pen))
+            
+            if is_shear_plug and not is_mutant_attack then blunt_dmg = blunt_dmg + (spall_dmg * 2.0); spall_dmg = 0 end
+            
+            shit.power = math_max(0, piercing_dmg + blunt_dmg + spall_dmg)
+            
+            local plate_dmg = (kinetic_shock * 0.4) * durability
+            active_plate.cond = math_max(0, active_plate.cond - plate_dmg)
+            
+            if active_plate.cond < 0.05 then
+                if not is_mutant_attack then play_npc_sound(npc, material, "broken") end
+            end
+            
+            t_data.phase = "PHASE 5 - LETHAL BREACH"
+            t_data.final_dmg_str = string.format("Piercing: %.2f | Blunt: %.2f | Spall: %.2f", piercing_dmg, blunt_dmg, spall_dmg)
+            log_telemetry(t_data)
+            return "PENETRATING"
+        end
+    else
+        -- PHASE 3: CLEAN STOP
+        local blunt_dmg = (kinetic_shock * math_min(0.8, 0.2 + (hardness * 0.2))) * padding_mult
+        
+        local stamina_penalty = (kinetic_shock * 0.25) * padding_mult
+        if stamina_penalty > 0.5 then blunt_dmg = blunt_dmg + (stamina_penalty * 0.2) end
+
+        shit.power = math_max(0, blunt_dmg + spall_dmg)
+        
+        local plate_dmg = (kinetic_shock * 0.15) * durability
+        active_plate.cond = math_max(0, active_plate.cond - plate_dmg)
+        
+        if not is_mutant_attack then play_npc_sound(npc, material, "stopped") end
+        
+        if mod_npc_stress and mod_npc_stress.add_stress then
+            local source_is_actor = (shooter and shooter:id() == 0)
+            mod_npc_stress.add_stress(npc:id(), kinetic_shock * 1.5, source_is_actor)
+        end
+
+        t_data.phase = "PHASE 3 - CLEAN STOP"
+        t_data.final_dmg_str = string.format("Blunt: %.2f | Spall: %.2f | Stamina Pen: %.2f", blunt_dmg, spall_dmg, stamina_penalty)
+        log_telemetry(t_data)
+        return "BLUNT"
+    end
+end
+
+-- ==========================================================
+-- MASTER PIPELINE CONTROLLER (THE ROUTER)
+-- ==========================================================
+local function npc_on_before_hit(npc, shit, bone_id)
+    if not (npc and IsStalker(npc)) then return end
+    local impact_type = armor_npc_on_before_hit(npc, shit, bone_id) or "PENETRATING"
+    if mod_flesh_math and mod_flesh_math.process_flesh_hit then
+        mod_flesh_math.process_flesh_hit(npc, shit, bone_id, impact_type)
+    end
+end
+
+-- ==========================================================
+-- SCAVENGING
+-- ==========================================================
+local function npc_on_death(npc, killer)
+    local id = npc:id()
+    local v_data = npc_virtual_plates[id]
+    if not v_data then return end
+
+    local armor_dropped = 0
+    local max_drops = math.random(0, 3) 
+
+    local function spawn_armor(data)
+        if armor_dropped >= max_drops then return end
+        if data and data.cond > 0.10 then
+            local extract_cond = data.cond - (math.random(15, 35) / 100)
+            if extract_cond > 0.05 then
+                alife_create_item(data.sec, npc, {cond = extract_cond})
+                armor_dropped = armor_dropped + 1
+            end
+        end
+    end
+
+    local slots = {"front", "back", "left", "right", "l_up", "r_up", "l_fo", "r_fo", "l_th", "r_th", "l_ca", "r_ca"}
+    for i = #slots, 2, -1 do
+        local j = math.random(i)
+        slots[i], slots[j] = slots[j], slots[i]
+    end
+
+    for _, slot in ipairs(slots) do spawn_armor(v_data[slot]) end
+    npc_virtual_plates[id] = nil
+end
+
+function on_game_start()
+    RegisterScriptCallback("npc_on_net_spawn", npc_on_net_spawn)
+    RegisterScriptCallback("npc_on_before_hit", npc_on_before_hit)
+    RegisterScriptCallback("npc_on_death_callback", npc_on_death)
+end

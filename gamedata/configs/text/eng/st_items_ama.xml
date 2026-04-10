@@ -1,0 +1,706 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+
+	<string id="st_unisg_ranger_vest_name">
+		<text>UNISG Ranger Plate Carrier</text>
+</string>
+
+	<string id="st_unisg_ranger_vest_desc">
+		<text>The preferred choice for elite UNISG operatives, the Ranger Plate Carrier is a versatile medium-heavy armor system designed for high-intensity field performance. It acts as a specialized ballistic platform, prioritizing protections through a modular architecture that accepts up to Level IV ballistic plates. While the base carrier is categorized as medium armor, the addition of multiple protective modules will transition the suit into the heavy weight class. Even in its lightest configuration, the carrier's structural weight imposes a minor penalty to the user's mobility.\n \nA recovered field log notes this minimalist setup was initially favored by an operative known only as "Ghost," who claimed that passive armor only slowed him down when hunting.\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_vest_lap_desc">
+		<text>The preferred choice for elite UNISG operatives, the Ranger Plate Carrier is a versatile medium-heavy armor system designed for high-intensity field performance. It acts as a specialized ballistic platform, prioritizing protections through a modular architecture that accepts up to Level IV ballistic plates. While the base carrier is categorized as medium armor, the addition of multiple protective modules will transition the suit into the heavy weight class. Even in its lightest configuration, the carrier's structural weight imposes a minor penalty to the user's mobility.\n \nBlood-stained requisitions bearing Ghost's signature suggest this panel was strictly attached before descending into the bloodsucker-infested Agroprom tunnels.\n \n%c[green]Modules:\n LAP Panel%c[default]\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_vest_gorget_desc">
+		<text>The preferred choice for elite UNISG operatives, the Ranger Plate Carrier is a versatile medium-heavy armor system designed for high-intensity field performance. It acts as a specialized ballistic platform, prioritizing protections through a modular architecture that accepts up to Level IV ballistic plates. While the base carrier is categorized as medium armor, the addition of multiple protective modules will transition the suit into the heavy weight class. Even in its lightest configuration, the carrier's structural weight imposes a minor penalty to the user's mobility.\n \nIt is whispered among ISG quartermasters that Ghost personally requested this neck modification after surviving a near-fatal Snork ambush in the Red Forest.\n \n%c[green]Modules:\n Gorget%c[default]\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_vest_pauldrons_desc">
+		<text>The preferred choice for elite UNISG operatives, the Ranger Plate Carrier is a versatile medium-heavy armor system designed for high-intensity field performance. It acts as a specialized ballistic platform, prioritizing protections through a modular architecture that accepts up to Level IV ballistic plates. While the base carrier is categorized as medium armor, the addition of multiple protective modules will transition the suit into the heavy weight class. Even in its lightest configuration, the carrier's structural weight imposes a minor penalty to the user's mobility.\n \nA heavily-scarred pauldron, supposedly belonging to Ghost, was found embedded in a Pripyat concrete wall, having successfully stopped a Gauss round from severing his arm.\n \n%c[green]Modules:\n Pauldrons%c[default]\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_vest_lap_gorget_desc">
+		<text>The preferred choice for elite UNISG operatives, the Ranger Plate Carrier is a versatile medium-heavy armor system designed for high-intensity field performance. It acts as a specialized ballistic platform, prioritizing protections through a modular architecture that accepts up to Level IV ballistic plates. While the base carrier is categorized as medium armor, the addition of multiple protective modules will transition the suit into the heavy weight class. Even in its lightest configuration, the carrier's structural weight imposes a minor penalty to the user's mobility.\n \nGhost purportedly utilized this exact centerline configuration when he held the entrance of Laboratory X-8 alone for three hours.\n \n%c[green]Modules:\n LAP Panel\n Gorget%c[default]\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_vest_lap_pauldrons_desc">
+		<text>The preferred choice for elite UNISG operatives, the Ranger Plate Carrier is a versatile medium-heavy armor system designed for high-intensity field performance. It acts as a specialized ballistic platform, prioritizing protections through a modular architecture that accepts up to Level IV ballistic plates. While the base carrier is categorized as medium armor, the addition of multiple protective modules will transition the suit into the heavy weight class. Even in its lightest configuration, the carrier's structural weight imposes a minor penalty to the user's mobility.\n \nUrban legends say Ghost wore this while wading through a waist-deep sea of flesh anomalies in the Jupiter Underground.\n \n%c[green]Modules:\n LAP Panel\n Pauldrons%c[default]\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_vest_gorget_pauldrons_desc">
+		<text>The preferred choice for elite UNISG operatives, the Ranger Plate Carrier is a versatile medium-heavy armor system designed for high-intensity field performance. It acts as a specialized ballistic platform, prioritizing protections through a modular architecture that accepts up to Level IV ballistic plates. While the base carrier is categorized as medium armor, the addition of multiple protective modules will transition the suit into the heavy weight class. Even in its lightest configuration, the carrier's structural weight imposes a minor penalty to the user's mobility.\n \nThe few Monolith survivors of the Hospital massacre reported a 'phantom' wearing this heavy configuration shrugging off point-blank shotgun blasts.\n \n%c[green]Modules:\n Gorget\n Pauldrons%c[default]\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_rhino_name">
+		<text>UNISG Ranger "Rhino" Vest</text>
+</string>
+
+	<string id="st_unisg_ranger_rhino_desc">
+		<text>The ultimate manifestation of the Ranger tactical system, designed for high-threat urban breaching and heavy anomalies. This "Full System" configuration mounts every available supplemental armor module onto the base plate carrier. It features a Kevlar-reinforced gorget for critical cervical protection, articulated pauldrons to shield the clavicles during corner-peeking, and a lower-abdominal pelvic (LAP) panel to cover the vital belt-line gap.\n\nWhile the sheer mass of the overlapping ceramic and ballistic fibers severely restricts the operator's stamina and agility, it effectively turns a UNISG operative into a walking dreadnought. Standard issue for special assault teams operating deep within the Zone's most hostile sectors.\n \nThe last known sighting of Ghost described him marching toward the Sarcophagus encased entirely in this hulking armor, moving with unnatural silence.\n \n%c[green]Modules:\n Gorget\n LAP Panel\n Pauldrons%c[default]\n \n</text>
+</string>
+
+
+	<string id="st_helm_unisg_specter">
+		<text>UNISG "Specter" Combat Helmet</text>
+</string>
+
+	<string id="st_helm_unisg_specter_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nGhost's initial deployments were characterized by this bare-bones configuration, prioritizing hearing the subtle static of a Controller over physical defense.\n \n</text>
+</string>
+	
+	<string id="st_helm_unisg_specter_visor_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nA shattered visor, etched with Ghost’s callsign, was found near a scorched Controller corpse deep in the Swamps.\n \n%c[green]Modules:\n Visor%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_mandible_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nRumors suggest Ghost bolted this jaw guard on after a violent encounter with an undocumented mutant that tried to crush his skull.\n \n%c[green]Modules:\n Mandible%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_slaap_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nISG snipers pass around a myth that Ghost used a SLAAP plate to intentionally ricochet a Monolith sniper's bullet, though the physics are impossible.\n \n%c[green]Modules:\n SLAAP Plate%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_ear_cover_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nA heavily classified document notes Ghost survived a direct, point-blank psy-emission in Yantar wearing these exact acoustic baffles.\n \n%c[green]Modules:\n Ear Covers%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_v_m_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nThis enclosed setup was Ghost's preferred loadout when clearing the claustrophobic corridors of the Dead City.\n \n%c[green]Modules:\n Visor\n Mandible%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_v_s_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nTranscripts of Ghost's radio chatter, entirely devoid of panic while under heavy fire, often mention this exact configuration.\n \n%c[green]Modules:\n Visor\n SLAAP Plate%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_v_e_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nGhost reportedly used this configuration to observe the heart of the Brain Scorcher for three days without sleep.\n \n%c[green]Modules:\n Visor\n Ear Covers%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_m_s_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nGhost's infamous night raids on Duty outposts were always conducted wearing this brutalist silhouette to accommodate his thermal optics.\n \n%c[green]Modules:\n Mandible\n SLAAP Plate%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_m_e_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nA terrified Bandit survivor once described a 'faceless demon' in this helmet executing his entire camp in pitch darkness.\n \n%c[green]Modules:\n Mandible\n Ear Covers%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_s_e_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nGhost purportedly wore this while sprinting backward through the Red Forest, continuously firing a PKM at a pursuing Chimera pack.\n \n%c[green]Modules:\n SLAAP Plate\n Ear Covers%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_v_m_s_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nThe dents on Ghost's personal heavy-assault helmet were said to map out the exact caliber of every weapon Monolith fielded.\n \n%c[green]Modules:\n Visor\n Mandible\n SLAAP Plate%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_v_m_e_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nGhost favored this environmental seal when extracting high-value artifacts from the heart of the Zaton toxic bogs.\n \n%c[green]Modules:\n Visor\n Mandible\n Ear Covers%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_v_s_e_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nDespite operating alone, Ghost was once seen wearing this command variant while orchestrating the simultaneous execution of three Mercenary squad leaders.\n \n%c[green]Modules:\n Visor\n SLAAP Plate\n Ear Covers%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_m_s_e_desc">
+		<text>The "Specter" Advanced Tactical System represents the pinnacle of Western ballistics technology, specifically optimized for the unique hazards of the Chornobyl Exclusion Zone. Built on a reinforced high-cut ballistic shell, the Specter utilizes a proprietary carbon-aramid weave designed to dissipate kinetic energy across its surface area. The true value of the Specter lies in its adaptability: it features a 360-degree integration rail system allowing for the mounting of SLAAP ballistic plates, mandibles, and ear protectors without compromising the user's field of view or acoustic awareness.\n \nWhen Ghost decided stealth was no longer an option, this was the silhouette seen emerging from the fog just before the explosions started.\n \n%c[green]Modules:\n Mandible\n SLAAP Plate\n Ear Covers%c[default]\n \n</text>
+</string>
+
+	<string id="st_helm_unisg_specter_deceiver_name">
+		<text>UNISG Specter "Deceiver" Helmet</text>
+</string>
+
+	<string id="st_helm_unisg_specter_full_desc">
+		<text>The ultimate manifestation of the Specter system. Mounting the Visor, Mandible, SLAAP plate, and Ear Covers, it completely encases the operator's head in advanced Western composites. While it significantly restricts peripheral vision and induces claustrophobia during extended wear, it renders the operative virtually immune to standard Zone hazards.\n \nRenamed "The Deceiver" after Ghost's final known loadout, the helmet completely masks the wearer's humanity. It is said he walked into the heart of the Sarcophagus wearing this exact system, indistinguishable from a machine, and was never seen again.\n \n%c[green]Modules:\n Visor\n Mandible\n SLAAP Plate\n Ear Covers%c[default]\n \n</text>
+</string>
+
+
+	<string id="st_module_installed">
+		<text>Module Successfully Integrated</text>
+</string>
+
+	<string id="st_unisg_ranger_module_lap_name">
+		<text>UNISG Mk.IV Pelvic Baffle</text>
+</string>
+
+	<string id="st_unisg_ranger_module_lap_desc">
+		<text>A modular groin protection panel tailored for the UNISG Ranger series. It utilizes densely woven aramid fibers backed by a flexible ceramic strike face, designed to protect the lower abdomen and major femoral arteries from low-velocity shrapnel and pistol-caliber impacts without heavily impeding operator mobility.\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_module_gorget_name">
+		<text>UNISG Mk.IV Ballistic Gorget</text>
+</string>
+
+	<string id="st_unisg_ranger_module_gorget_desc">
+		<text>A wraparound ballistic collar engineered for high-threat environments. This module easily integrates into the Ranger vest chassis, providing critical fragmentation and spall mitigation to the neck, throat, and upper clavicle while maintaining an acceptable range of head articulation for CQB target acquisition.\n \n</text>
+</string>
+
+	<string id="st_unisg_ranger_module_pauldrons_name">
+		<text>UNISG Mk.IV Deltoid Guards</text>
+</string>
+
+	<string id="st_unisg_ranger_module_pauldrons_desc">
+		<text>Heavy-duty deltoid protectors featuring articulated UHMWPE (Ultra-High-Molecular-Weight Polyethylene) inserts. These contoured pauldrons shield the upper arms and vulnerable shoulder joints during lateral engagements, significantly increasing survivability against flanking fire in urban operations.\n \n</text>
+</string>
+
+	<string id="st_unisg_specter_module_slaap_name">
+		<text>UNISG Specter SLAAP Plate</text>
+</string>
+
+	<string id="st_unisg_specter_module_slaap_desc">
+		<text>High-density ballistic plating that significantly reinforces frontal protection against high-velocity rifle rounds.\n \n</text>
+</string>
+
+	<string id="st_unisg_specter_module_visor_name">
+		<text>UNISG Specter Visor</text>
+</string>
+
+	<string id="st_unisg_specter_module_visor_desc">
+		<text>An impact-resistant transparent shield providing face protection against fragmentation and debris without sacrificing visibility.\n \n</text>
+</string>
+
+	<string id="st_unisg_specter_module_ear_cover_name">
+		<text>UNISG Specter Ear Covers</text>
+</string>
+
+	<string id="st_unisg_specter_module_ear_cover_desc">
+		<text>Reinforced side modules providing ballistic protection for the ears and integrated shielding against psy-attacks.\n \n</text>
+</string>
+
+	<string id="st_unisg_specter_module_mandible_name">
+		<text>UNISG Specter Mandible</text>
+</string>
+
+	<string id="st_unisg_specter_module_mandible_desc">
+		<text>A rigid lower-face guard offering vital ballistic coverage for the jaw and throat area.\n \n</text>
+</string>
+
+    <string id="st_ama_plate_scrap_l1_name">
+        <text>Scrap Metal Shim Plate</text>
+</string>
+    <string id="st_ama_plate_scrap_l1_descr">
+        <text>A crude, heavy slab of salvaged steel, likely cut from an abandoned tractor or rusted bunker door. It offers rudimentary protection against low-caliber rounds but threatens to spray lethal spall directly into your chin upon impact.</text>
+</string>
+
+    <string id="st_ama_plate_lead_l2_name">
+        <text>Lead-Lined Metal Plate</text>
+</string>
+    <string id="st_ama_plate_lead_l2_descr">
+        <text>A dense, makeshift steel shim coated in lead, designed primarily by desperate diggers to ward off radiation. It will deform terribly if shot, but the lead core provides a crucial buffer against the Zone's invisible killer.</text>
+</string>
+
+    <string id="st_ama_plate_rubber_l2_name">
+        <text>Rubber-Coated Scrap Plate</text>
+</string>
+    <string id="st_ama_plate_rubber_l2_descr">
+        <text>An industrial metal offcut sandwiched tightly in thick tire rubber and sealed with caulk. The rubber acts as a poor man's spall liner, catching fragmentation and softening blunt trauma, but the overall plate remains heavy and structurally unreliable.</text>
+</string>
+
+    <string id="st_plate_kevlar_l2_name">
+        <text>Kevlar Aramid Plate</text>
+</string>
+    <string id="st_plate_kevlar_l2_descr">
+        <text>A standard pressed aramid fiber panel. Lightweight and flexible, it is highly effective against pistol calibers and shrapnel, but will do almost nothing to stop high-velocity rifle rounds.</text>
+</string>
+
+    <string id="st_plate_kevlar_side_l2_name">
+        <text>Kevlar Aramid Side Plate</text>
+</string>
+    <string id="st_plate_kevlar_side_l2_descr">
+        <text>A smaller pressed Kevlar plate designed to fit into the lateral pouches of a tactical rig, offering basic flank protection against sidearms and fragmentation.</text>
+</string>
+
+    <string id="st_ama_plate_frankenstein_l3_name">
+        <text>"Frankenstein" Composite Plate</text>
+</string>
+    <string id="st_ama_plate_frankenstein_l3_descr">
+        <text>A mosaic of cracked ceramic tiles and Kevlar scraps, epoxied together over a steel backing by a mechanic in the Garbage. Unpredictable in a firefight; it might catch an AP round flawlessly or shatter from a glancing blow.</text>
+</string>
+
+    <string id="st_ama_plate_steel_l3_name">
+        <text>Hard Steel Plate</text>
+</string>
+    <string id="st_ama_plate_steel_l3_descr">
+        <text>A standard, cold-rolled AR500 steel plate. Extremely durable and capable of bouncing rounds at shallow angles, but it is incredibly heavy and poses a major spall risk to the wearer.</text>
+</string>
+
+    <string id="st_ama_plate_steel_naked_l3_name">
+        <text>Naked Steel Plate</text>
+</string>
+    <string id="st_ama_plate_steel_naked_l3_descr">
+        <text>A bare AR500 steel plate completely stripped of any anti-spall coating. It relies entirely on your vest's soft armor to catch the deadly fragmentation generated when a bullet shatters against the strike face.</text>
+</string>
+
+    <string id="st_ama_plate_steel_linex_l3_name">
+        <text>Line-X Coated Steel Plate</text>
+</string>
+    <string id="st_ama_plate_steel_linex_l3_descr">
+        <text>A standard AR500 plate dipped in a thick, industrial elastomer coating. The added bulk completely nullifies spall risk, making it a highly reliable, if extremely heavy, workhorse for extended firefights.</text>
+</string>
+
+    <string id="st_ama_plate_steel_hardened_l3_name">
+        <text>Hardened Tool Steel Plate</text>
+</string>
+    <string id="st_ama_plate_steel_hardened_l3_descr">
+        <text>Heat-treated to extreme hardness, this plate excels at deflecting rounds at sharp angles. However, the hardening process makes the steel slightly more brittle, reducing its overall lifespan compared to standard AR500.</text>
+</string>
+
+    <string id="st_ama_plate_poly_l3_name">
+        <text>Polyethylene Plate</text>
+</string>
+    <string id="st_ama_plate_poly_l3_descr">
+        <text>A thick slab of pure UHMWPE. While incredibly bulky, it weighs almost nothing and stops bullets by melting and trapping the lead. It generates zero spall and will never ricochet a round.</text>
+</string>
+
+    <string id="st_ama_plate_poly_pressed_l3_name">
+        <text>Pressed Polyethylene Plate</text>
+</string>
+    <string id="st_ama_plate_poly_pressed_l3_descr">
+        <text>A higher-density variant of the standard UHMWPE plate. The high-pressure pressing process makes it slightly thinner and more concealable, though it sacrifices a minor amount of multi-hit durability.</text>
+</string>
+
+    <string id="st_plate_steel_side_l3_name">
+        <text>Hard Steel Side Plate</text>
+</string>
+    <string id="st_plate_steel_side_l3_descr">
+        <text>A small, heavy AR500 steel plate offering exceptional, durable flank protection at the cost of significant stamina drain.</text>
+</string>
+
+    <string id="st_plate_poly_side_l3_name">
+        <text>Polyethylene Side Plate</text>
+</string>
+    <string id="st_plate_poly_side_l3_descr">
+        <text>A bulky but ultra-lightweight side plate that traps rounds without spalling, providing comfortable lateral protection.</text>
+</string>
+
+    <string id="st_ama_plate_titanium_old_l3_name">
+        <text>Old Stock Titanium Plate</text>
+</string>
+    <string id="st_ama_plate_titanium_old_l3_descr">
+        <text>A surplus Soviet titanium plate, likely scavenged from an old Afghan-era 6B3 vest. It bridges the gap between steel and ceramic, offering decent multi-hit capability without the spine-breaking weight.</text>
+</string>
+
+    <string id="st_plate_ceramic_l4_name">
+        <text>Standard Ceramic Plate</text>
+</string>
+    <string id="st_plate_ceramic_l4_descr">
+        <text>A conventional military-grade composite ceramic plate. It provides excellent stopping power against rifle rounds but degrades quickly under sustained fire as the ceramic matrix cracks.</text>
+</string>
+
+    <string id="st_ama_plate_alumina_l4_name">
+        <text>Alumina Ceramic Plate</text>
+</string>
+    <string id="st_ama_plate_alumina_l4_descr">
+        <text>A heavy Alumina (Al2O3) ceramic plate. It will reliably stop an AP rifle round by shattering at the point of impact, absorbing the kinetic energy, but it cannot sustain concentrated fire.</text>
+</string>
+
+    <string id="st_ama_plate_alumina_reinforced_l4_name">
+        <text>Reinforced Alumina Plate</text>
+</string>
+    <string id="st_ama_plate_alumina_reinforced_l4_descr">
+        <text>A standard Alumina strike face tightly wrapped in ballistic nylon. The tension wrap holds the ceramic matrix together longer, allowing it to take an extra hit or two before total catastrophic failure.</text>
+</string>
+
+    <string id="st_ama_plate_titanium_polished_l4_name">
+        <text>Polished VT14 Titanium Plate</text>
+</string>
+    <string id="st_ama_plate_titanium_polished_l4_descr">
+        <text>A modernized, high-grade titanium alloy plate. Lighter and more resilient than cold war surplus, it represents a premium middle-ground for well-funded mercenaries who despise the fragility of ceramics.</text>
+</string>
+
+    <string id="st_ama_plate_granit_l4_name">
+        <text>Granit-4 Ceramic Plate</text>
+</string>
+    <string id="st_ama_plate_granit_l4_descr">
+        <text>A modern Russian military plate rated for GOST 4. Thick, dependable, and heavy, designed to catch standard 5.45 and 7.62 rounds used by most factions in the Zone.</text>
+</string>
+
+    <string id="st_plate_ceramic_side_l4_name">
+        <text>Ceramic Side Plate</text>
+</string>
+    <string id="st_plate_ceramic_side_l4_descr">
+        <text>A high-end composite side plate capable of stopping rifle fire from flanking maneuvers, though it must be replaced after taking damage.</text>
+</string>
+
+    <string id="st_ama_plate_granit_l5_name">
+        <text>Granit-5 Ceramic Plate</text>
+</string>
+    <string id="st_ama_plate_granit_l5_descr">
+        <text>An upgraded Russian assault plate rated for GOST 5. It utilizes a denser ceramic matrix to defeat armor-piercing threats at the cost of additional weight.</text>
+</string>
+
+    <string id="st_ama_plate_stf_l5_name">
+        <text>Liquid Armor (STF) Plate</text>
+</string>
+    <string id="st_ama_plate_stf_l5_descr">
+        <text>A flexible pouch containing Shear Thickening Fluid. Soft and pliable while walking, it instantly hardens into a rigid barrier upon kinetic impact, dispersing the massive shockwave safely across your torso.</text>
+</string>
+
+    <string id="st_ama_plate_sic_l5_name">
+        <text>Silicon Carbide (SiC) Plate</text>
+</string>
+    <string id="st_ama_plate_sic_l5_descr">
+        <text>A significant upgrade over standard Alumina. Silicon Carbide is noticeably lighter and harder, making it the preferred choice for professional Stalkers operating deep in the northern Zone.</text>
+</string>
+
+    <string id="st_ama_plate_sic_multihit_l5_name">
+        <text>Multi-Hit SiC Plate</text>
+</string>
+    <string id="st_ama_plate_sic_multihit_l5_descr">
+        <text>Constructed using small, interlocking hexagonal tiles of Silicon Carbide rather than a monolithic slab. If one tile shatters, the rest of the plate remains intact, drastically improving survivability.</text>
+</string>
+
+    <string id="st_ama_plate_cnt_l5_name">
+        <text>Carbon Nanotube (CNT) Plate</text>
+</string>
+    <string id="st_ama_plate_cnt_l5_descr">
+        <text>An experimental Ecologist prototype. Razor-thin and astonishingly light, the woven nanotubes catch bullets like a spiderweb, transferring massive blunt force but rarely allowing penetration.</text>
+</string>
+
+    <string id="st_ama_plate_soul_l5_name">
+        <text>"Soul" Infused Plate</text>
+</string>
+    <string id="st_ama_plate_soul_l5_descr">
+        <text>A flexible Kevlar panel interwoven with organic, pulsating tendrils from a Soul artifact. While its ballistic protection is negligible against rifles, it artificially stimulates the wearer's metabolism, granting incredible stamina recovery.</text>
+</string>
+
+    <string id="st_plate_boron_side_l5_name">
+        <text>Boron Carbide Side Plate</text>
+</string>
+    <string id="st_plate_boron_side_l5_descr">
+        <text>An ultra-premium, lightweight side plate offering GOST 6 protection for your flanks. Extremely fragile but unparalleled in stopping power.</text>
+</string>
+
+    <string id="st_ama_plate_granit_l6_name">
+        <text>Granit-6A Ceramic Plate</text>
+</string>
+    <string id="st_ama_plate_granit_l6_descr">
+        <text>The apex of conventional Russian armor. This massive, cumbersome GOST 6A plate transforms the wearer into a walking tank, capable of shrugging off sniper fire—provided they have the stamina to carry it.</text>
+</string>
+
+    <string id="st_ama_plate_mamasbeads_l6_name">
+        <text>"Mama's Beads" Composite Plate</text>
+</string>
+    <string id="st_ama_plate_mamasbeads_l6_descr">
+        <text>A ceramic plate with fragments of Mama's Beads embedded in the strike face. The artifact's thermal properties actively coagulate the wearer's wounds, though the plate itself is structurally compromised and fragile.</text>
+</string>
+
+    <string id="st_ama_plate_kolobok_l6_name">
+        <text>"Kolobok" Spall Shield Plate</text>
+</string>
+    <string id="st_ama_plate_kolobok_l6_descr">
+        <text>A heavy metallic plate vibrating with anomalous energy. The embedded Kolobok fragment repels high-velocity metal magnetically, rendering you completely immune to spalling and secondary shrapnel.</text>
+</string>
+
+    <string id="st_ama_plate_boron_l6_name">
+        <text>Boron Carbide Plate</text>
+</string>
+    <string id="st_ama_plate_boron_l6_descr">
+        <text>The Ferrari of hard armor. Incredibly thin and light, this pure Boron Carbide plate offers miraculous stopping power, but it is a true glass cannon that shatters violently after just a few direct hits.</text>
+</string>
+
+    <string id="st_ama_plate_boron_operator_l6_name">
+        <text>Operator Grade Boron Plate</text>
+</string>
+    <string id="st_ama_plate_boron_operator_l6_descr">
+        <text>A refined Boron Carbide plate featuring a slightly thicker composite backing. This design mitigates its natural brittleness, allowing it to survive longer in a firefight while retaining a phenomenal weight-to-protection ratio.</text>
+</string>
+
+    <string id="st_ama_plate_graphene_l6_name">
+        <text>Graphene-Ceramic Hybrid Plate</text>
+</string>
+    <string id="st_ama_plate_graphene_l6_descr">
+        <text>A technological marvel recovered from classified ISG drops. Combining the unparalleled hardness of a graphene lattice with a ceramic core, it completely halts high-velocity rounds with minimal structural degradation.</text>
+</string>
+
+    <string id="st_plate_monocrystal_side_l6_name">
+        <text>Monocrystal Side Plate</text>
+</string>
+    <string id="st_plate_monocrystal_side_l6_descr">
+        <text>A terrifyingly hard slab of anomalous crystal for the lateral pouches. It stops everything, but the whispers it projects directly into your mind will drain your sanity.</text>
+</string>
+
+    <string id="st_ama_plate_monocrystal_l7_name">
+        <text>Monolith Monocrystal Plate</text>
+</string>
+    <string id="st_ama_plate_monocrystal_l7_descr">
+        <text>A solid slab of shimmering, iridescent crystal used by the highest-ranking Monolith preachers. It possesses supernatural hardness, but wearing it causes a constant, draining headache as the Zone whispers in your ear.</text>
+</string>
+
+    <string id="st_ama_plate_empty_l7_name">
+        <text>"Empty" Void Plate</text>
+</string>
+    <string id="st_ama_plate_empty_l7_descr">
+        <text>A terrifying creation of the Zone. The center of the plate contains a localized "Empty" anomaly that physically swallows kinetic energy, turning lethal, armor-piercing rifle hits into gentle thumps against your chest.</text>
+</string>
+
+	<string id="svoboda_novice_outfit_upgraded_name">
+		<text>Freedom Armored Jacket</text>
+</string>
+	<string id="svoboda_novice_outfit_upgraded_description">
+		<text>A Freedom-style novice jacket bolstered by a heavy, octagonal steel plate strapped over the center. It’s a classic piece of "freedom-engineered" gear, though, for some reason, the plate only covers the lower and middle torso, leaving the upper chest and collar area completely unarmored. It’s great for gut-shots, but you'd better hope no one aims for your sternum.\n \n</text>
+</string>
+
+	<string id="csky_novice_outfit_upgraded_name">
+		<text>Clear Sky Upgraded Research Jacket</text>
+</string>
+	<string id="csky_novice_outfit_upgraded_description">
+		<text>Modified with the specific needs of the Great Swamps in mind. This variant features integrated soft-ballistic inserts and teal-colored trauma padding stitched into the blue camo fabric. It’s lightweight and includes mounting points for vials and research equipment, providing a consistent, albeit lighter, protection profile across the trunk for stalkers who value science over pure tanking.\n \n</text>
+</string>
+
+	<string id="dolg_novice_outfit_upgraded_name">
+		<text>Duty Upgraded Tactical Jacket</text>
+</string>
+	<string id="dolg_novice_outfit_upgraded_description">
+		<text>A disciplined overhaul of the novice kit, designed for initiates who haven't yet earned their PS5-M. It features high-density polymer trauma pads and carbon-fiber inserts sewn directly into the red-and-black lining. It’s professional, slick, and provides a uniform ballistic threshold across the upper, middle, and lower torso without sacrificing the mobility needed for Duty’s aggressive patrol tactics.\n \n</text>
+</string>
+
+	<string id="bandit_novice_outfit_upgraded_name">
+		<text>Bandit Armored Jacket</text>
+</string>
+	<string id="bandit_novice_outfit_upgraded_description">
+		<text>Commonly known among the gangs as the "Skull-Cracker’s Plate." This black leather jacket features rusted scrap-metal plates crudely bolted together with thick wire. While the heavy central plate displays a stylized skull for intimidation, the real value is in the high-threshold scrap plating that covers the chest and gut, offering surprisingly solid protection for something made in a garage.\n \n</text>
+</string>
+
+	<string id="novice_outfit_tourist_upgraded_name">
+		<text>Upgraded Wayfarer Jacket</text>
+</string>
+	<string id="novice_outfit_tourist_upgraded_description">
+		<text>The traveler’s choice, reinforced with a singular, rounded metal sheet salvaged from old military containers. While the thick metal helps mitigate hits to the vitals, the plate only covers the lower and middle torso, presumably to avoid interfering with the heavy straps of a long-haul rucksack. It offers peace of mind for the long road, as long as you keep your head—and upper chest—down.\n \n</text>
+</string>
+
+	<string id="scrap_pile_ama_name">
+		<text>Metallic Scraps</text>
+</string>
+	<string id="scrap_pile_ama_desc">
+		<text>A collection of rusted steel fragments, industrial brass, and salvaged copper wiring. In the Zone, today's trash is tomorrow's vital protection. While too heavy for standard gear, a skilled technician can forge and rivet these scraps into crude ballistic plating. Riveted onto a leather jacket, it provides a meaningful, albeit heavy, threshold against low-caliber threats and jagged debris.\n \n</text>
+</string>
+
+	<string id="kevlar_materials_ama_name">
+		<text>Kevlar Materials</text>
+</string>
+	<string id="kevlar_materials_ama_desc">
+		<text>High-tensile aramid fibers and polymer resin panels recovered from damaged military-grade body armor. Unlike heavy iron scraps, these materials are engineered specifically for kinetic attenuation. Stitched into the lining of a leather jacket, they provide a sophisticated layer of soft-ballistic defense, catching shrapnel and small-arms fire while remaining light enough for rapid movement through the Zone's brush.\n \n</text>
+</string>
+	<string id="novice_outfit_upgraded_name">
+		<text>Armored Leather Jacket</text>
+</string>
+	<string id="novice_outfit_upgraded_description">
+		<text>A standard-issue beginner's leather jacket that has been drastically modified for actual combat survivability in the Zone. Rookies often learn the hard way that plain cowhide won't stop a 9x18mm Makarov round. To compensate, this jacket has been heavily retrofitted with scavenged metal and localized reinforced plating stitched directly over the vitals. While it certainly won't save you from a high-velocity rifle round or a sustained burst of fire, it still provides a crucial ballistic threshold against pistol-caliber threats, shrapnel, and mutant attacks. It is notably heavier and stiffer than the standard coat, but it represents the first real step between dying as a tourist and surviving as a stalker.\n \n</text>
+</string>
+
+	<string id="st_kevlar_l_dap_name">
+		<text>Left Kevlar DAP</text>
+</string>
+	<string id="st_kevlar_r_dap_name">
+		<text>Right Kevlar DAP</text>
+</string>
+	<string id="st_kevlar_dap_descr">
+		<text>A flexible aramid sleeve offering basic soft-armor protection for the upper arm against shrapnel and pistol-caliber rounds.</text>
+</string>
+
+	<string id="st_kevlar_l_forearm_guard_name">
+		<text>Left Kevlar Forearm Guard</text>
+</string>
+	<string id="st_kevlar_r_forearm_guard_name">
+		<text>Right Kevlar Forearm Guard</text>
+</string>
+	<string id="st_kevlar_forearm_guard_descr">
+		<text>Lightweight aramid wrapping for the forearm. Provides crucial laceration and low-velocity ballistic protection without restricting weapon handling.</text>
+</string>
+
+	<string id="st_kevlar_l_femoral_protector_name">
+		<text>Left Kevlar Femoral Protector</text>
+</string>
+	<string id="st_kevlar_r_femoral_protector_name">
+		<text>Right Kevlar Femoral Protector</text>
+</string>
+	<string id="st_kevlar_femoral_protector_descr">
+		<text>Soft armor tasset designed to shield the femoral artery from spall and low-caliber impacts while maintaining full leg mobility.</text>
+</string>
+
+	<string id="st_kevlar_l_shin_guard_name">
+		<text>Left Kevlar Shin Guard</text>
+</string>
+	<string id="st_kevlar_r_shin_guard_name">
+		<text>Right Kevlar Shin Guard</text>
+</string>
+	<string id="st_kevlar_shin_guard_descr">
+		<text>Flexible aramid protection for the lower leg, ideal for deflecting shrapnel and mutant hazards in the Zone.</text>
+</string>
+
+	<string id="st_steel_l_dap_name">
+		<text>Left Steel DAP</text>
+</string>
+	<string id="st_steel_r_dap_name">
+		<text>Right Steel DAP</text>
+</string>
+	<string id="st_steel_dap_descr">
+		<text>A heavy AR500 steel upper arm plate. Highly durable and capable of stopping intermediate rifle rounds, at the cost of significant weight.</text>
+</string>
+
+	<string id="st_steel_l_forearm_guard_name">
+		<text>Left Steel Forearm Guard</text>
+</string>
+	<string id="st_steel_r_forearm_guard_name">
+		<text>Right Steel Forearm Guard</text>
+</string>
+	<string id="st_steel_forearm_guard_descr">
+		<text>Rigid steel vambrace. Offers substantial protection against direct impacts and rifle fire, but noticeably increases arm fatigue.</text>
+</string>
+
+	<string id="st_steel_l_femoral_protector_name">
+		<text>Left Steel Femoral Protector</text>
+</string>
+	<string id="st_steel_r_femoral_protector_name">
+		<text>Right Steel Femoral Protector</text>
+</string>
+	<string id="st_steel_femoral_protector_descr">
+		<text>A solid steel thigh plate. Provides reliable ballistic coverage but drastically increases the inertia of the user's leg.</text>
+</string>
+
+	<string id="st_steel_l_shin_guard_name">
+		<text>Left Steel Shin Guard</text>
+</string>
+	<string id="st_steel_r_shin_guard_name">
+		<text>Right Steel Shin Guard</text>
+</string>
+	<string id="st_steel_shin_guard_descr">
+		<text>Heavy steel greave designed to stop high-velocity rounds. Durable and cheap to maintain, but highly encumbering.</text>
+</string>
+
+	<string id="st_poly_l_dap_name">
+		<text>Left Polyethylene DAP</text>
+</string>
+	<string id="st_poly_r_dap_name">
+		<text>Right Polyethylene DAP</text>
+</string>
+	<string id="st_poly_dap_descr">
+		<text>Advanced UHMWPE upper arm protection. Capable of stopping multi-hit rifle threats while remaining significantly lighter than steel.</text>
+</string>
+
+	<string id="st_poly_l_forearm_guard_name">
+		<text>Left Polyethylene Forearm Guard</text>
+</string>
+	<string id="st_poly_r_forearm_guard_name">
+		<text>Right Polyethylene Forearm Guard</text>
+</string>
+	<string id="st_poly_forearm_guard_descr">
+		<text>Lightweight, high-density polymer forearm shell. Excellent ballistic resistance with a negligible impact on weapon handling.</text>
+</string>
+
+	<string id="st_poly_l_femoral_protector_name">
+		<text>Left Polyethylene Femoral Protector</text>
+</string>
+	<string id="st_poly_r_femoral_protector_name">
+		<text>Right Polyethylene Femoral Protector</text>
+</string>
+	<string id="st_poly_femoral_protector_descr">
+		<text>Molded polyethylene thigh armor. Offers Tier 3+ protection with a reduced stamina penalty compared to standard metal plates.</text>
+</string>
+
+	<string id="st_poly_l_shin_guard_name">
+		<text>Left Polyethylene Shin Guard</text>
+</string>
+	<string id="st_poly_r_shin_guard_name">
+		<text>Right Polyethylene Shin Guard</text>
+</string>
+	<string id="st_poly_shin_guard_descr">
+		<text>High-tech polymer lower leg protection. A perfect balance of mobility and resistance to intermediate rifle cartridges.</text>
+</string>
+
+	<string id="st_ceramic_l_dap_name">
+		<text>Left Ceramic DAP</text>
+</string>
+	<string id="st_ceramic_r_dap_name">
+		<text>Right Ceramic DAP</text>
+</string>
+	<string id="st_ceramic_dap_descr">
+		<text>Standard-issue military ceramic upper arm plate. Designed to shatter and absorb the kinetic energy of armor-piercing rounds.</text>
+</string>
+
+	<string id="st_ceramic_l_forearm_guard_name">
+		<text>Left Ceramic Forearm Guard</text>
+</string>
+	<string id="st_ceramic_r_forearm_guard_name">
+		<text>Right Ceramic Forearm Guard</text>
+</string>
+	<string id="st_ceramic_forearm_guard_descr">
+		<text>Thick ceramic forearm panel. Highly effective at stopping lethal threats, but brittle and requires replacement after taking fire.</text>
+</string>
+
+	<string id="st_ceramic_l_femoral_protector_name">
+		<text>Left Ceramic Femoral Protector</text>
+</string>
+	<string id="st_ceramic_r_femoral_protector_name">
+		<text>Right Ceramic Femoral Protector</text>
+</string>
+	<string id="st_ceramic_femoral_protector_descr">
+		<text>Rigid alumina ceramic thigh plate. Provides superior protection against heavy rifle fire at the expense of lower-body flexibility.</text>
+</string>
+
+	<string id="st_ceramic_l_shin_guard_name">
+		<text>Left Ceramic Shin Guard</text>
+</string>
+<string id="st_ceramic_r_shin_guard_name">
+	<text>Right Ceramic Shin Guard</text>
+</string>
+	<string id="st_ceramic_shin_guard_descr">
+		<text>Heavy-duty ceramic greave. Turns the lower leg into a fortress, but will degrade quickly under sustained impacts.</text>
+</string>
+
+	<string id="st_boron_l_dap_name">
+		<text>Left Boron Carbide DAP</text>
+</string>
+	<string id="st_boron_r_dap_name">
+		<text>Right Boron Carbide DAP</text>
+</string>
+	<string id="st_boron_dap_descr">
+		<text>The pinnacle of tactical shoulder armor. Boron carbide construction stops high-caliber AP rounds with unmatched efficiency.</text>
+</string>
+
+	<string id="st_boron_l_forearm_guard_name">
+		<text>Left Boron Carbide Forearm Guard</text>
+</string>
+	<string id="st_boron_r_forearm_guard_name">
+		<text>Right Boron Carbide Forearm Guard</text>
+</string>
+	<string id="st_boron_forearm_guard_descr">
+		<text>Elite GoST Br6 rated forearm protection. Extremely hard and relatively lightweight, designed for heavy assault operations.</text>
+</string>
+
+	<string id="st_boron_l_femoral_protector_name">
+		<text>Left Boron Carbide Femoral Protector</text>
+</string>
+	<string id="st_boron_r_femoral_protector_name">
+		<text>Right Boron Carbide Femoral Protector</text>
+</string>
+	<string id="st_boron_femoral_protector_descr">
+		<text>State-of-the-art boron carbide thigh plate. Offers maximum survivability against the Zone's most lethal threats.</text>
+</string>
+
+	<string id="st_boron_l_shin_guard_name">
+		<text>Left Boron Carbide Shin Guard</text>
+</string>
+	<string id="st_boron_r_shin_guard_name">
+		<text>Right Boron Carbide Shin Guard</text>
+</string>
+	<string id="st_boron_shin_guard_descr">
+		<text>Experimental-grade lower leg armor. Unparalleled ballistic stopping power, usually reserved for elite UNISG or Mercenary forces.</text>
+</string>
+
+	<string id="st_merc_uclothing_base_name">
+        <text>Mercenary Recruit Uniform</text>
+</string>
+    <string id="st_merc_uclothing_base_descr">
+        <text>The standard-issue tactical shirt provided to newly contracted operators within the Mercenary syndicate. Woven with basic aramid fibers and lightly treated with thermal retardants, it offers a decent baseline of protection against mild environmental hazards and glancing blows from smaller mutants. However, it is strictly a base layer—do not expect it to save your life if you wander head-first into a Burner anomaly or a pack of Snorks.</text>
+</string>
+
+    <string id="st_merc_lclothing_base_name">
+        <text>Mercenary Recruit Trousers</text>
+</string>
+    <string id="st_merc_lclothing_base_descr">
+        <text>Standard-issue tactical pants for low-ranking Mercenary personnel. Constructed with reinforced knees and mild environmental sealing, they provide a decent foundation of protection against the Zone's ambient hazards and the occasional mutant swipe. Just like the matching uniform, this is foundational gear meant to be worn under heavy armor. It will absolutely not protect you from taking a direct hit from a localized anomaly.</text>
+</string>
+
+</string_table>

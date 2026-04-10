@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<w>
+    <combat_feed_window x="700" y="40" width="300" height="300">
+    </combat_feed_window>
+
+    <msg_item x="0" y="0" width="300" height="18">
+        <text font="letterica16" r="255" g="255" b="255" a="255" align="r" vert_align="c" complex_mode="1"/>
+    </msg_item>
+</w>

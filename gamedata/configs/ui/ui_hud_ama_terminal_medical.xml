@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="windows-1251" ?>
+<window>
+    <ama_medical_terminal x="0" y="0" width="379" height="768">
+        <background x="0" y="0" width="379" height="768" stretch="1"/>
+        
+        <flesh_view x="0" y="43" width="379" height="700" stretch="1"/>
+        <organ_view x="0" y="43" width="379" height="700" stretch="1"/>        
+        <skeletal_view x="0" y="43" width="379" height="700" stretch="1"/>
+        <circulatory_view x="0" y="43" width="379" height="700" stretch="1"/>
+        
+        <layer x="0" y="43" width="379" height="700" stretch="1"/>
+    </ama_medical_terminal>
+</window>

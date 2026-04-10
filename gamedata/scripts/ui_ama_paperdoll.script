@@ -1,0 +1,205 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - PAPERDOLL HUD (DUAL-MODE)
+-- ======================================================================
+-- Lower-left corner HUD. TAB toggles: Show -> Hidden
+-- Plates hidden when not shown.
+-- ======================================================================
+
+local hud = nil
+local GLOBAL_ALPHA = 160
+
+class "AMAPaperdoll" (CUIScriptWnd)
+
+function AMAPaperdoll:__init() super()
+    self:SetAutoDelete(true)
+    self:InitControls()
+end
+
+function AMAPaperdoll:InitControls()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    
+    local xml = CScriptXmlInit()
+    xml:ParseFile("ui_hud_ama.xml")
+    
+    self.main_container = xml:InitStatic("paperdoll", self)
+    self.base = xml:InitStatic("paperdoll:base", self.main_container)
+    self.base:Show(true) 
+
+    self.zones = {
+        ["head"]       = xml:InitStatic("paperdoll:head", self.main_container),
+        ["torso"]      = xml:InitStatic("paperdoll:torso", self.main_container),
+        ["l_upperarm"] = xml:InitStatic("paperdoll:l_up", self.main_container),
+        ["r_upperarm"] = xml:InitStatic("paperdoll:r_up", self.main_container),
+        ["l_forearm"]  = xml:InitStatic("paperdoll:l_fo", self.main_container),
+        ["r_forearm"]  = xml:InitStatic("paperdoll:r_fo", self.main_container),
+        ["l_thigh"]    = xml:InitStatic("paperdoll:l_th", self.main_container),
+        ["r_thigh"]    = xml:InitStatic("paperdoll:r_th", self.main_container),
+        ["l_calf"]     = xml:InitStatic("paperdoll:l_ca", self.main_container),
+        ["r_calf"]     = xml:InitStatic("paperdoll:r_ca", self.main_container),
+    }
+
+    self.plates_container = xml:InitStatic("plates_hud", self)
+    self.plates = {
+        ["front"] = xml:InitStatic("plates_hud:front", self.plates_container),
+        ["back"]  = xml:InitStatic("plates_hud:back", self.plates_container),
+        ["left"]  = xml:InitStatic("plates_hud:left", self.plates_container),
+        ["right"] = xml:InitStatic("plates_hud:right", self.plates_container),
+    }
+end
+
+-- ==========================================================
+-- COLOR FUNCTIONS
+-- ==========================================================
+
+-- Armor condition color (green -> yellow -> orange -> red)
+local function get_ama_color(cond)
+    if cond >= 0.80 then
+        return GetARGB(GLOBAL_ALPHA, 0, 255, 0)
+    elseif cond >= 0.50 then
+        return GetARGB(GLOBAL_ALPHA, 255, 255, 0)
+    elseif cond >= 0.20 then
+        return GetARGB(GLOBAL_ALPHA, 255, 128, 0)
+    else
+        return GetARGB(GLOBAL_ALPHA, 255, 0, 0)
+    end
+end
+
+-- ==========================================================
+-- UPDATE - ARMOR MODE (original logic)
+-- ==========================================================
+function AMAPaperdoll:UpdateArmorMode()
+    self.base:SetTextureColor(GetARGB(GLOBAL_ALPHA, 200, 200, 200))
+    
+    -- Show plates in armor mode
+    self.plates_container:Show(true)
+
+    local outfit = db.actor:item_in_slot(7)
+    local helmet = db.actor:item_in_slot(12)
+   
+    if helmet then
+        self.zones["head"]:Show(true)
+        self.zones["head"]:SetTextureColor(get_ama_color(helmet:condition()))
+    else
+        self.zones["head"]:Show(false)
+    end
+
+    if outfit then
+        self.zones["torso"]:Show(true)
+        self.zones["torso"]:SetTextureColor(get_ama_color(outfit:condition()))
+        
+        local vid = outfit:id()
+        
+        local limbs = mod_limb_armor and mod_limb_armor.installed_limbs and mod_limb_armor.installed_limbs[vid] or {}
+        for slot, static in pairs(self.zones) do
+            if slot ~= "head" and slot ~= "torso" then
+                local data = limbs[slot]
+                if data then
+                    static:Show(true)
+                    static:SetTextureColor(get_ama_color(data.cond))
+                else
+                    static:Show(false)
+                end
+            end
+        end
+
+        local plates = mod_plate_inventory and mod_plate_inventory.installed_plates and mod_plate_inventory.installed_plates[vid] or {}
+        for slot, static in pairs(self.plates) do
+            local p_data = plates[slot]
+            if p_data then
+                static:Show(true)
+                static:SetTextureColor(get_ama_color(p_data.cond))
+            else
+                static:Show(false)
+            end
+        end
+
+    else
+        self.zones["torso"]:Show(false)
+        for slot, static in pairs(self.zones) do
+            if slot ~= "head" then static:Show(false) end
+        end
+        for slot, static in pairs(self.plates) do
+            static:Show(false)
+        end
+    end
+end
+
+
+
+-- ==========================================================
+-- UPDATE DISPATCHER
+-- ==========================================================
+function AMAPaperdoll:Update()
+    CUIScriptWnd.Update(self)
+    
+    if not db.actor or not db.actor:alive() then return end
+    
+    self:UpdateArmorMode()
+end
+
+-- ==========================================================
+-- HUD MANAGEMENT
+-- ==========================================================
+function toggle_hud(show)
+    if show then
+        if not hud then
+            hud = AMAPaperdoll()
+            get_hud():AddDialogToRender(hud)
+        end
+        hud:Show(true)
+    elseif hud then
+        get_hud():RemoveDialogToRender(hud)
+        hud = nil
+    end
+end
+
+-- TAB toggle: show -> hide
+local hud_hidden = false
+local inventory_open = false
+
+local function on_key_press(key)
+    if key == DIK_keys.DIK_TAB then
+        -- Toggle paperdoll out of inventory
+        if not inventory_open then
+            hud_hidden = not hud_hidden
+            toggle_hud(not hud_hidden)
+        end
+    end
+end
+
+local function on_inventory_toggle(mode)
+    if mode == 1 then
+        inventory_open = true
+        if hud then hud:Show(false) end
+    elseif mode == 0 then
+        inventory_open = false
+        if hud and not hud_hidden then
+            hud:Show(true)
+        end
+    end
+end
+
+local function clear_hud()
+    if hud then
+        get_hud():RemoveDialogToRender(hud)
+        hud = nil
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("actor_on_net_destroy", clear_hud)
+    RegisterScriptCallback("actor_on_first_update", function()
+        CreateTimeEvent("ama_restore_hud", "restore_hud_delay", 1.5, function()
+            if db.actor and db.actor:alive() then
+                toggle_hud(true) 
+            end
+            return true
+        end)
+    end)
+    RegisterScriptCallback("on_key_press", on_key_press)
+    RegisterScriptCallback("ActorMenu_on_mode_changed", on_inventory_toggle)
+end
+
+
+
+

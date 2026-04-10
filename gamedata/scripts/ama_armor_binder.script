@@ -1,0 +1,44 @@
+armor_spawn_condition = {}
+armor_spawn_upgrades = {} 
+
+function bind(obj)
+    obj:bind_object(ama_armor_binder(obj))
+end
+
+class "ama_armor_binder" (object_binder)
+
+function ama_armor_binder:__init(obj) super(obj)
+    self.initialized = false
+end
+
+function ama_armor_binder:update(delta)
+    local obj = self.object
+    local id = obj:id()
+
+    if not self.initialized then
+        self.initialized = true
+        
+        if armor_spawn_condition[id] then
+            obj:set_condition(armor_spawn_condition[id])
+            armor_spawn_condition[id] = nil
+        end
+        
+        if armor_spawn_upgrades[id] then
+            for i = 1, #armor_spawn_upgrades[id] do
+                obj:install_upgrade(armor_spawn_upgrades[id][i])
+            end
+            armor_spawn_upgrades[id] = nil
+        end
+    end
+end
+
+function ama_armor_binder:net_spawn(se_abstract)
+    if not(object_binder.net_spawn(self, se_abstract)) then
+        return false
+    end
+    return true
+end
+
+function ama_armor_binder:net_destroy()
+    object_binder.net_destroy(self)
+end

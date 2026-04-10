@@ -1,0 +1,93 @@
+; ======================================================================
+; AMA OUTFIT ATTACHMENTS - BASE LAYER
+; ======================================================================
+
+[clothing_ama_base]:identity_immunities
+GroupControlSection             = spawn_group
+discovery_dependency            = 
+hud                             = artefact_hud
+animation_slot                  = 11
+allow_inertion                  = true
+attach_angle_offset             = 0,0,0
+attach_position_offset          = -0.1,-0.1,0
+attach_bone_name                = bip01_root
+belt                            = true
+slot                            = 10
+default_to_ruck                 = true
+af_actor_properties             = on
+actor_properties                = on
+det_show_particles              = 
+det_hide_particles              = 
+det_show_snd                    = 
+det_hide_snd                    = 
+af_rank                         = 0
+can_be_controlled               = true
+particles_bone                  = link
+lights_enabled                  = false
+trail_light_color               = 0,0,0
+trail_light_range               = 0
+health_restore_speed            = 0
+radiation_restore_speed         = 0
+satiety_restore_speed           = 0
+power_restore_speed             = 0
+bleeding_restore_speed          = 0
+additional_inventory_weight     = 0
+additional_inventory_weight2    = 0
+inv_grid_width                  = 4
+inv_grid_height                 = 6
+inv_grid_scale					= 2
+hit_absorbation_sect            = af_base_absorbation
+particles                       = 
+jump_height                     = 0
+class                           = SCRPTART
+kind							= i_attach
+cform                           = skeleton
+visual                          = dynamics\equipments\aa\kevlar
+cost                            = 8976
+use_condition                   = true
+cond_part                       = true
+script_binding                  = bind_item.bind
+IsAShirt						= true
+
+[ama_merc_uclothing_base]:clothing_ama_base
+$spawn                          = "devices\ama_merc_uclothing_base"
+visual                          = dynamics\equipments\aa\kevlar
+icons_texture                   = ui\ui_ama_merc_base
+inv_name                        = st_merc_uclothing_base_name
+inv_name_short                  = st_merc_uclothing_base_name
+description                     = st_merc_uclothing_base_descr
+inv_weight                      = 1.6
+inv_grid_x                      = 0
+inv_grid_y                      = 0
+cost							= 10374
+ama_clothing_type				= upper
+ama_power_restore_speed			= 0.00126
+
+ama_burn_protection             = 0.12
+ama_chemical_burn_protection    = 0.021
+ama_radiation_protection        = 0.00583
+ama_wound_protection			= 0.198
+ama_shock_protection			= 0.436
+
+[ama_merc_lclothing_base]:clothing_ama_base
+$spawn                          = "outfits\ama_merc_lclothing_base"
+visual                          = dynamics\equipments\aa\kevlar
+icons_texture                   = ui\ui_ama_merc_base
+inv_name                        = st_merc_lclothing_base_name
+inv_name_short                  = st_merc_lclothing_base_name
+description                     = st_merc_lclothing_base_descr
+inv_weight                      = 1.6
+inv_grid_x                      = 4
+inv_grid_y                      = 0
+cost							= 11022
+ama_clothing_type				= lower
+ama_power_restore_speed     	 = 0.001
+
+ama_burn_protection             = 0.0974
+ama_chemical_burn_protection    = 0.013
+ama_radiation_protection        = 0.00278
+ama_wound_protection			= 0.203
+ama_shock_protection			= 0.264
+
+#include "items\items\ama_items_plates.ltx"
+#include "items\items\ama_items_limb_armor.ltx"

@@ -1,0 +1,633 @@
+; ----------------------------------------------------------------------------------------------------------------
+; VESTS
+; ----------------------------------------------------------------------------------------------------------------
+[unisg_ranger_vest]:outfit_base
+	$spawn 								= "outfits\unisg_ranger_vest"
+	class 								= EQU_STLK
+	ef_equipment_type					= 3
+	kind 								= o_medium
+
+	visual 								= dynamics\outfit\isg_outfit
+	actor_visual 						= actors\stalker_isg\stalker_isg_military.ogf
+	npc_visual							= actors\stalker_isg\stalker_isg_military.ogf
+	player_hud_section	 				= actor_hud_isg_suit
+	character_portrait					= ui_inGame2_Soldier_2
+	full_icon_name						= npc_icon_svoboda_heavy_outfit
+	full_scale_icon						= 2, 6
+
+	inv_name 							= st_unisg_ranger_vest_name
+	inv_name_short 						= st_unisg_ranger_vest_name
+	description 						= st_unisg_ranger_vest_desc
+	icons_texture						= ui\ui_icon_unisg_ranger
+	
+	inv_grid_width						= 4
+	inv_grid_height						= 6
+	inv_grid_x							= 0
+	inv_grid_y							= 0
+	inv_grid_scale						= 2
+	
+	upgrade_icon_x						= 1505
+	upgrade_icon_y						= 1240
+	upgrade_icon_width					= 301
+	upgrade_icon_height					= 141
+	
+	community							= isg
+	upgrades							= up_gr_firstab_assault_vest_1, up_gr_seconab_assault_vest_1, up_gr_thirdab_assault_vest_1, up_gr_fourtab_assault_vest_1
+	installed_upgrades					=
+	upgrade_scheme						= up_scheme_assault_vest_1
+	cost								= 120670
+	inv_weight							= 8
+	additional_inventory_weight			= 35
+	additional_inventory_weight2		= 35
+	artefact_count						= 2
+	immunities_sect						= sect_unisg_ranger_immunities
+	repair_type							= outfit_medium
+	;repair_part_bonus					= 0.25
+	hit_fraction_actor					= 0.35
+	bones_koeff_protection				= actor_armor_class_ama_base_04
+	control_inertion_factor      		= 1.35
+	power_loss                   	 	= 0.10
+	visibility_spot_k					= 0.6
+	script_binding			 			= ama_armor_binder.bind
+	
+	max_front_plate						= 5
+	max_left_plate						= 2
+	max_right_plate 					= 2
+	max_back_plate						= 5
+	
+	burn_protection               		= 0.07
+	shock_protection              		= 0.31
+	radiation_protection          		= 0.0055
+	chemical_burn_protection      		= 0.03
+	telepatic_protection          		= 0
+	strike_protection             		= 0.33
+	explosion_protection          		= 0.25
+	wound_protection              		= 0.55
+	fire_wound_protection         		= 0.31
+	
+[sect_unisg_ranger_immunities]
+	burn_immunity                 		= 0.1
+	chemical_burn_immunity        		= 0.025
+	explosion_immunity            		= 0.1
+	fire_wound_immunity           		= 0.020
+	radiation_immunity            		= 0.0
+	shock_immunity                		= 0.018
+	strike_immunity               		= 0
+	telepatic_immunity            		= 0.0
+	wound_immunity                		= 0.020
+	
+; <===== UNISG RANGER VARIANTS ======>
+
+; ===== 1 Module =====
+[unisg_ranger_vest_lap]:unisg_ranger_vest
+	$spawn								= "outfits\unisg_ranger_vest_lap"
+	description							= st_unisg_ranger_vest_lap_desc
+	inv_name							= st_unisg_ranger_vest_name
+	inv_name_short						= st_unisg_ranger_vest_name
+	inv_grid_x							= 16
+	inv_grid_y							= 0
+	inv_weight							= 10
+	
+	control_inertion_factor				= 1.45
+	hit_fraction_actor					= 0.30
+	power_loss							= 0.10
+	bones_koeff_protection				= actor_armor_class_ama_lap_09
+	fire_wound_protection				= 0.36
+	strike_protection             		= 0.36
+	explosion_protection          		= 0.30
+	wound_protection              		= 0.65
+	
+[unisg_ranger_vest_gorget]:unisg_ranger_vest
+	$spawn								= "outfits\unisg_ranger_vest_gorget"
+	description							= st_unisg_ranger_vest_gorget_desc
+	inv_name							= st_unisg_ranger_vest_name
+	inv_name_short						= st_unisg_ranger_vest_name
+	inv_grid_x							= 12
+	inv_grid_y							= 0
+	inv_weight							= 10
+	
+	control_inertion_factor				= 1.45
+	hit_fraction_actor					= 0.30
+	power_loss							= 0.10
+	bones_koeff_protection				= actor_armor_class_ama_gorget_09
+	fire_wound_protection				= 0.38
+	strike_protection					= 0.36
+; ===== 2 Modules =====
+[unisg_ranger_vest_pauldrons]:unisg_ranger_vest
+	$spawn								= "outfits\unisg_ranger_vest_pauldrons"
+	description							= st_unisg_ranger_vest_pauldrons_desc
+	inv_name							= st_unisg_ranger_vest_name
+	inv_name_short						= st_unisg_ranger_vest_name
+	inv_grid_x							= 24
+	inv_grid_y							= 0
+	inv_weight							= 10
+	
+	control_inertion_factor				= 1.45
+	hit_fraction_actor					= 0.30
+	power_loss							= 0.10
+	bones_koeff_protection				= actor_armor_class_ama_pauldrons_09
+	fire_wound_protection				= 0.36
+	strike_protection					= 0.36
+	
+[unisg_ranger_vest_lap_gorget]:unisg_ranger_vest
+	$spawn								= "outfits\unisg_ranger_vest_lap_gorget"
+	description							= st_unisg_ranger_vest_lap_gorget_desc
+	inv_name							= st_unisg_ranger_vest_name
+	inv_name_short						= st_unisg_ranger_vest_name
+	inv_grid_x							= 28
+	inv_grid_y							= 0
+	inv_weight							= 12
+	
+	control_inertion_factor				= 1.50
+	hit_fraction_actor					= 0.25
+	power_loss							= 0.15
+	bones_koeff_protection				= actor_armor_class_ama_lap_gorget_09
+	fire_wound_protection				= 0.39
+	strike_protection             		= 0.36
+	explosion_protection          		= 0.30
+	wound_protection              		= 0.65
+	
+[unisg_ranger_vest_lap_pauldrons]:unisg_ranger_vest
+	$spawn								= "outfits\unisg_ranger_vest_lap_pauldrons"
+	description							= st_unisg_ranger_vest_lap_pauldrons_desc
+	inv_name							= st_unisg_ranger_vest_name
+	inv_name_short						= st_unisg_ranger_vest_name
+	inv_grid_x							= 20
+	inv_grid_y							= 0
+	inv_weight							= 12
+	
+	control_inertion_factor				= 1.50
+	hit_fraction_actor					= 0.25
+	power_loss							= 0.15
+	bones_koeff_protection				= actor_armor_class_ama_lap_pauldrons_09
+	fire_wound_protection				= 0.39
+	strike_protection             		= 0.36
+	explosion_protection          		= 0.30
+	wound_protection              		= 0.65
+	
+[unisg_ranger_vest_gorget_pauldrons]:unisg_ranger_vest
+	$spawn								= "outfits\unisg_ranger_vest_gorget_pauldrons"
+	description							= st_unisg_ranger_vest_gorget_pauldrons_desc
+	inv_name							= st_unisg_ranger_vest_name
+	inv_name_short						= st_unisg_ranger_vest_name
+	inv_grid_x							= 8
+	inv_grid_y							= 0
+	inv_weight							= 12
+	
+	max_left_plate						= 3
+	max_right_plate						= 3
+	
+	control_inertion_factor				= 1.50
+	hit_fraction_actor					= 0.25
+	power_loss							= 0.15
+	bones_koeff_protection				= actor_armor_class_ama_gorget_pauldrons_09
+	fire_wound_protection				= 0.39
+	strike_protection             		= 0.36
+	explosion_protection          		= 0.30
+	wound_protection              		= 0.65
+	
+; ===== Full Module =====
+[unisg_ranger_vest_full]:unisg_ranger_vest
+	$spawn								= "outfits\unisg_ranger_vest_full"
+	ef_equipment_type					= 4
+	repair_type							= outfit_heavy
+	kind								= o_heavy
+	
+	inv_grid_x							= 4
+	inv_grid_y							= 0
+	inv_weight							= 14
+	inv_name							= st_unisg_ranger_rhino_name
+	inv_name_short						= st_unisg_ranger_rhino_name
+	description							= st_unisg_ranger_rhino_desc
+	
+	control_inertion_factor				= 1.55
+	strike_protection					= 0.55
+	hit_fraction_actor					= 0.20
+	power_loss							= 0.20
+	artefact_count						= 3
+	bones_koeff_protection				= actor_armor_class_ama_full_09
+	fire_wound_protection				= 0.41
+	strike_protection             		= 0.39
+	explosion_protection          		= 0.40
+	wound_protection              		= 0.75
+	
+	max_left_plate						= 4
+	max_right_plate						= 4
+
+; ----------------------------------------------------------------------------------------------------------------
+;HELMETS
+; ----------------------------------------------------------------------------------------------------------------
+[unisg_specter_helm]:tch_helmet
+	$spawn 								= "outfit\unisg_specter_helm"
+	class 								= E_HLMET
+	visual 								= dynamics\outfit\helm_tactic
+	inv_name 							= st_helm_unisg_specter
+	inv_name_short 						= st_helm_unisg_specter
+	description 						= st_helm_unisg_specter_desc
+	
+	inv_grid_width						= 4
+	inv_grid_height						= 4
+	inv_grid_x 							= 0
+	inv_grid_y 							= 0
+	inv_grid_scale						= 2
+	
+	kind 								= o_helmet
+	icons_texture 						= ui\ui_icon_unisg_specter
+	cost 								= 50570
+	inv_weight 							= 2
+	additional_inventory_weight 		= 0
+	additional_inventory_weight2 		= 0
+	immunities_sect 					= sect_helm_specter_immunities
+	repair_type 						= helmet
+	hit_fraction_actor 					= 0.5
+	bones_koeff_protection 				= actor_armor_class_ama_helm_04
+	control_inertion_factor 			= 1
+	disassemble_parts 					= prt_o_fabrics_4, prt_o_retardant_7, prt_o_ballistic_13, prt_o_ballistic_17
+	script_binding 						= ama_armor_binder.bind
+	
+	burn_protection 					= 0.1
+	shock_protection 					= 0.3
+	radiation_protection 				= 0.010
+	chemical_burn_protection 			= 0.02
+	strike_protection 					= 0.1
+	explosion_protection 				= 0.2
+	
+[sect_helm_specter_immunities]
+	burn_immunity                 		= 0.075
+	chemical_burn_immunity        		= 0.04
+	explosion_immunity            		= 0.14
+	fire_wound_immunity           		= 0.064
+	radiation_immunity           	 	= 0.0
+	shock_immunity               	 	= 0.0
+	strike_immunity              	 	= 0.0
+	telepatic_immunity           	 	= 0.0
+	wound_2_immunity             	 	= 0.0
+	wound_immunity               		= 0.0
+	
+; <===== UNISG SPECTER VARIANTS ======>
+
+; ===== 1 Module =====
+[unisg_specter_visor]:unisg_specter_helm
+	inv_grid_x							= 4
+	inv_grid_y							= 0
+	inv_weight							= 3.2
+	description 						= st_helm_unisg_specter_visor_desc
+	
+	hit_fraction_actor					= 0.45
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection 				= 0.22
+	chemical_burn_protection 			= 0.045
+	radiation_protection				= 0.0120
+	
+[unisg_specter_mandible]:unisg_specter_helm
+
+	inv_grid_x							= 28
+	inv_grid_y							= 4
+	inv_weight							= 2.5
+	description 						= st_helm_unisg_specter_mandible_desc
+	
+	hit_fraction_actor					= 0.45
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection 				= 0.25
+	chemical_burn_protection 			= 0.060
+	radiation_protection				= 0.0175
+	
+[unisg_specter_slaap]:unisg_specter_helm
+	inv_grid_x							= 8
+	inv_grid_y							= 0
+	inv_weight							= 2.6
+	description 						= st_helm_unisg_specter_slaap_desc
+	
+	hit_fraction_actor					= 0.45
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection 				= 0.25
+	
+[unisg_specter_ear_cover]:unisg_specter_helm
+	inv_grid_x							= 12
+	inv_grid_y							= 0
+	inv_weight							= 2.3
+	description 						= st_helm_unisg_specter_ear_cover_desc
+	
+	hit_fraction_actor					= 0.45
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	telepatic_protection				= 0.1
+	
+; ===== 2 Modules =====
+[unisg_specter_v_m]:unisg_specter_helm
+	inv_grid_x							= 16
+	inv_grid_y							= 0
+	inv_weight							= 3.7
+	description 						= st_helm_unisg_specter_v_m_desc
+	
+	hit_fraction_actor					= 0.40
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.27
+	chemical_burn_protection			= 0.085
+	radiation_protection				= 0.0195
+	
+[unisg_specter_v_s]:unisg_specter_helm
+	inv_grid_x							= 20
+	inv_grid_y							= 0
+	inv_weight							= 3.8
+	description 						= st_helm_unisg_specter_v_s_desc
+	
+	hit_fraction_actor					= 0.40
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.27
+	chemical_burn_protection			= 0.045
+	radiation_protection				= 0.0120
+	
+[unisg_specter_v_e]:unisg_specter_helm
+	inv_grid_x							= 24
+	inv_grid_y							= 0
+	inv_weight							= 3.5
+	description 						= st_helm_unisg_specter_v_e_desc
+	
+	hit_fraction_actor					= 0.40
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.220
+	chemical_burn_protection			= 0.045
+	radiation_protection				= 0.0120
+	telepatic_protection				= 0.1
+	
+[unisg_specter_m_s]:unisg_specter_helm
+	inv_grid_x							= 28
+	inv_grid_y							= 0
+	inv_weight							= 3.1
+	description 						= st_helm_unisg_specter_m_s_desc
+	
+	hit_fraction_actor					= 0.40
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.300
+	chemical_burn_protection			= 0.060
+	radiation_protection				= 0.0175
+	
+[unisg_specter_m_e]:unisg_specter_helm
+	inv_grid_x							= 0
+	inv_grid_y							= 4
+	inv_weight							= 2.8
+	description 						= st_helm_unisg_specter_m_e_desc
+	
+	hit_fraction_actor					= 0.40
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.250
+	chemical_burn_protection			= 0.060
+	radiation_protection				= 0.0175
+	telepatic_protection				= 0.1
+	
+[unisg_specter_s_e]:unisg_specter_helm
+	inv_grid_x							= 4
+	inv_grid_y							= 4
+	inv_weight							= 2.9
+	description 						= st_helm_unisg_specter_s_e_desc
+	
+	hit_fraction_actor					= 0.40
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.250
+	chemical_burn_protection			= 0.020
+	radiation_protection				= 0.010
+	telepatic_protection				= 0.1
+	
+; ===== 3 Modules =====
+[unisg_specter_v_m_s]:unisg_specter_helm
+	inv_grid_x							= 8
+	inv_grid_y							= 4
+	inv_weight							= 4.3
+	description 						= st_helm_unisg_specter_v_m_s_desc
+	
+	hit_fraction_actor					= 0.35
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.320
+	chemical_burn_protection			= 0.085
+	radiation_protection				= 0.0195
+	
+[unisg_specter_v_m_e]:unisg_specter_helm
+	inv_grid_x							= 12
+	inv_grid_y							= 4
+	inv_weight							= 4
+	description 						= st_helm_unisg_specter_v_m_e_desc
+	
+	hit_fraction_actor					= 0.35
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.270
+	chemical_burn_protection			= 0.085
+	radiation_protection				= 0.0195
+	telepatic_protection				= 0.1
+	
+[unisg_specter_v_s_e]:unisg_specter_helm
+	inv_grid_x							= 16
+	inv_grid_y							= 4
+	inv_weight							= 4.1
+	description 						= st_helm_unisg_specter_v_s_e_desc
+	
+	hit_fraction_actor					= 0.35
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.270
+	chemical_burn_protection			= 0.045
+	radiation_protection				= 0.012
+	telepatic_protection				= 0.1
+	
+[unisg_specter_m_s_e]:unisg_specter_helm
+	inv_grid_x							= 20
+	inv_grid_y							= 4
+	inv_weight							= 3.4
+	description 						= st_helm_unisg_specter_m_s_e_desc
+	
+	hit_fraction_actor					= 0.35
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.300
+	chemical_burn_protection			= 0.060
+	radiation_protection				= 0.0175
+	telepatic_protection				= 0.1
+	
+; ===== Full Module =====
+[unisg_specter_full]:unisg_specter_helm
+	inv_grid_x							= 24
+	inv_grid_y							= 4
+	inv_weight							= 4.6
+	inv_name							= st_helm_unisg_specter_deceiver_name
+	inv_name_short						= st_helm_unisg_specter_deceiver_name
+	description 						= st_helm_unisg_specter_full_desc
+	
+	hit_fraction_actor					= 0.25
+	bones_koeff_protection				= actor_armor_class_ama_helm_08
+	
+	explosion_protection				= 0.320
+	chemical_burn_protection			= 0.085
+	radiation_protection				= 0.0195
+	telepatic_protection				= 0.1
+	
+; ----------------------------------------------------------------------------------------------------------------
+;MODULAR TRIGGERS
+; ----------------------------------------------------------------------------------------------------------------
+[armor_parts]:identity_immunities
+	GroupControlSection 				= spawn_group
+	discovery_dependency 				= 
+	$spawn 								= "food and drugs\harmonica_a"
+	cform 								= skeleton
+	class 								= II_ATTCH
+	kind 								= i_part
+	icons_texture						= ui\ui_icon_unisg_ranger
+	attach_angle_offset 				= 0.000000, -1.204452, -1.262921
+	attach_position_offset 				= 0.081856, -0.035081, 0.011694
+	attach_bone_name 					= bip01_l_hand
+	auto_attach 						= false
+	cost 								= 0
+	
+; ===== UNISG RANGER MODULAR TRIGGERS ======
+[ranger_lap]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description							= st_unisg_ranger_module_lap_desc
+	inv_name 							= st_unisg_ranger_module_lap_name
+	inv_name_short 						= st_unisg_ranger_module_lap_name
+	inv_grid_width 						= 2
+	inv_grid_height 					= 2
+	inv_grid_x 							= 0
+	inv_grid_y 							= 6
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 2
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+		
+[ranger_gorget]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description 						= st_unisg_ranger_module_gorget_desc
+	inv_name 							= st_unisg_ranger_module_gorget_name
+	inv_name_short 						= st_unisg_ranger_module_gorget_name
+	inv_grid_width 						= 2
+	inv_grid_height						= 2
+	inv_grid_x 							= 4
+	inv_grid_y 							= 6
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 2
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+		
+[ranger_pauldrons]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description 						= st_unisg_ranger_module_pauldrons_desc
+	inv_name 							= st_unisg_ranger_module_pauldrons_name
+	inv_name_short 						= st_unisg_ranger_module_pauldrons_name
+	inv_grid_width 						= 2
+	inv_grid_height 					= 2
+	inv_grid_x 							= 2
+	inv_grid_y 							= 6
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 2
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+	
+; ===== UNISG SPECTER MODULAR TRIGGERS ======
+[specter_visor]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description							= st_unisg_specter_module_visor_desc
+	inv_name 							= st_unisg_specter_module_visor_name
+	inv_name_short 						= st_unisg_specter_module_visor_name
+	icons_texture						= ui\ui_icon_unisg_specter
+	
+	inv_grid_width 						= 2
+	inv_grid_height 					= 2
+	inv_grid_x 							= 0
+	inv_grid_y 							= 8
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 1.2
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+	
+[specter_mandible]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description							= st_unisg_specter_module_mandible_desc
+	inv_name 							= st_unisg_specter_module_mandible_name
+	inv_name_short 						= st_unisg_specter_module_mandible_name
+	icons_texture						= ui\ui_icon_unisg_specter
+	
+	inv_grid_width 						= 2
+	inv_grid_height 					= 2
+	inv_grid_x 							= 2
+	inv_grid_y 							= 8
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 0.5
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+	
+[specter_slaap]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description							= st_unisg_specter_module_slaap_desc
+	inv_name 							= st_unisg_specter_module_slaap_name
+	inv_name_short 						= st_unisg_specter_module_slaap_name
+	icons_texture						= ui\ui_icon_unisg_specter
+	
+	inv_grid_width 						= 2
+	inv_grid_height 					= 2
+	inv_grid_x 							= 4
+	inv_grid_y 							= 8
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 0.6
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+	
+[specter_ear_cover]:armor_parts
+	visual 								= dynamics\part\prt_o_ballistic_1.ogf
+	description							= st_unisg_specter_module_ear_cover_desc
+	inv_name 							= st_unisg_specter_module_ear_cover_name
+	inv_name_short 						= st_unisg_specter_module_ear_cover_name
+	icons_texture						= ui\ui_icon_unisg_specter
+	
+	inv_grid_width 						= 2
+	inv_grid_height 					= 2
+	inv_grid_x 							= 6
+	inv_grid_y 							= 8
+	inv_grid_scale						= 2
+	cost 								= 9999
+	inv_weight 							= 0.3
+	attach_angle_offset 				= -0.287979, 1.560923, 1.544060
+	attach_position_offset 				= 0.096910, -0.013594, 0.107925
+	attach_bone_name 					= bip01_r_hand
+	auto_attach 						= false
+	tier 								= 2
+	
+;----------------------------------------------------------------------------------------------------------------
+;For items_ama.ltx
+;----------------------------------------------------------------------------------------------------------------
+[unisg_ranger_vest_merc]:unisg_ranger_vest
+[unisg_ranger_vest_freedom]:unisg_ranger_vest
+[unisg_specter_merc]:unisg_specter_helm
+[unisg_specter_freedom]:unisg_specter_helm

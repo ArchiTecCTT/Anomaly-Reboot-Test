@@ -1,0 +1,110 @@
+-- ======================================================================
+-- AMA DIRECTIONAL ARMOR SYSTEM - LIMB MODULE (INVENTORY ONLY)
+-- ======================================================================
+
+installed_limbs = {}
+
+function on_item_drag_dropped(item, vest, from_slot, to_slot)
+    local item_sec = item:section()
+    local armor_type = SYS_GetParam(0, item_sec, "armor_type")
+    
+    if armor_type ~= "limb" then return end
+    if not IsOutfit(vest) then return end
+    
+    local target_slot = SYS_GetParam(0, item_sec, "target_limb")
+    local tier = SYS_GetParam(2, item_sec, "plate_tier")
+    local vid = vest:id()
+    
+    if not installed_limbs[vid] then installed_limbs[vid] = {} end
+    
+    if not installed_limbs[vid][target_slot] then
+        installed_limbs[vid][target_slot] = {
+            sec = item_sec,
+            tier = tier,
+            cond = item:condition()
+        }
+        
+        utils_obj.play_sound("interface\\inv_iam_open")
+        actor_menu.set_msg(1, "Attached " .. target_slot:upper() .. " armor.", 3)
+        alife_release_id(item:id())
+        
+        mod_plate_inventory.update_vest_weight(vest)
+        
+        local inventory = ActorMenu.get_actor_menu()
+        if inventory and inventory:IsShown() then
+            inventory:UpdateItems()
+        end
+    else
+        actor_menu.set_msg(1, "Limb slot is already occupied.", 3)
+    end
+end
+
+function extract_limb_armor(vest_obj, slot_name, silent)
+    local vid = vest_obj:id()
+    local v_data = installed_limbs[vid]
+    if not (v_data and v_data[slot_name]) then return end
+
+    local armor_data = v_data[slot_name]
+    
+    alife_create_item(armor_data.sec, db.actor, {cond = armor_data.cond})
+
+    installed_limbs[vid][slot_name] = nil
+    mod_plate_inventory.update_vest_weight(vest_obj)
+    
+    if not silent then
+        utils_obj.play_sound("interface\\inv_iam_open")
+        actor_menu.set_msg(1, "Removed " .. slot_name:upper() .. " armor.", 3)
+    end
+end
+
+function extract_all_limb_armor(vest_obj)
+    local vid = vest_obj:id()
+    local v_data = installed_limbs[vid]
+    if not v_data then return end
+
+    for slot_name, _ in pairs(v_data) do
+        extract_limb_armor(vest_obj, slot_name, true)
+    end
+    
+    utils_obj.play_sound("interface\\inv_iam_open")
+    actor_menu.set_msg(1, "All limb armor removed.", 3)
+end
+
+local function cond_manage_limbs(obj)  
+    local v = installed_limbs[obj:id()] 
+    return v and next(v) and true or false 
+end
+
+local function name_manage_limbs(obj)
+    return "Manage Limb Armor" 
+end
+
+local function func_manage_limbs(obj)  
+    ui_ama_context.start(obj, "limb") 
+end
+
+local function save_state(mdata) 
+    mdata.installed_limbs = installed_limbs 
+end
+
+local function load_state(mdata) 
+    installed_limbs = mdata.installed_limbs or {} 
+end
+
+local function server_entity_on_unregister(se_obj, typ) 
+    if se_obj then
+        installed_limbs[se_obj.id] = nil 
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("ActorMenu_on_item_drag_drop", on_item_drag_dropped)
+
+    RegisterScriptCallback("save_state", save_state)
+    RegisterScriptCallback("load_state", load_state)
+    RegisterScriptCallback("server_entity_on_unregister", server_entity_on_unregister)
+
+    if custom_functor_autoinject then
+        custom_functor_autoinject.add_functor("manage_limb_armor", cond_manage_limbs, name_manage_limbs, nil, func_manage_limbs, true)
+    end
+end
