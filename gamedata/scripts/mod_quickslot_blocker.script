@@ -1,0 +1,43 @@
+-- ======================================================================
+-- AMA MEDICAL OVERHAUL - UI QUICKSLOT BLOCKER
+-- ======================================================================
+-- Dynamically monkey-patches the inventory UI to prevent dragging
+-- complex trauma items into quick slots.
+-- ======================================================================
+
+local banned_items = {
+    ["bandage"]         = true,
+    ["jgut"]            = true,
+    ["medkit"]          = true,
+    ["medkit_army"]     = true,
+    ["medkit_scientic"] = true,
+    ["survival_kit"]    = true
+}
+
+local original_drag_drop = nil
+
+local function custom_drag_drop(self, obj_from, bag_from, obj_to, bag_to, idx_to)
+    -- Intercept quick slot bag placement
+    if bag_to == "actor_quick" and obj_from then
+        local sec = obj_from:section()
+        if banned_items[sec] then
+            if ui_ama_combat_feed and ui_ama_combat_feed.push_msg then 
+                ui_ama_combat_feed.push_msg("NEGATIVE - ITEM REQUIRES PRECISE APPLICATION", "critical") 
+            end
+            if utils_obj and utils_obj.play_sound then
+                utils_obj.play_sound("interface\\inv_error")
+            end
+            return -- Halt the drag-drop execution completely
+        end
+    end
+    
+    -- Route back to original vanilla or modded function safely
+    if original_drag_drop then return original_drag_drop(self, obj_from, bag_from, obj_to, bag_to, idx_to) end
+end
+
+function on_game_start()
+    if ui_inventory and ui_inventory.UIInventory and ui_inventory.UIInventory.DragDrop then
+        original_drag_drop = ui_inventory.UIInventory.DragDrop
+        ui_inventory.UIInventory.DragDrop = custom_drag_drop
+    end
+end

@@ -6,6 +6,57 @@ local math_min    = math.min
 local math_max    = math.max
 local math_random = math.random
 
+-- ==========================================================
+-- CONSTANTS & TUNING
+-- ==========================================================
+-- Basic Field Care
+local BANDAGE_POWER             = 0.50
+local BANDAGE_SEPSIS_RISK       = 0.25
+local JGUT_POWER                = 1.00
+local JGUT_ISCHEMIA_TIME_MS     = 600000 -- 10 minutes
+local ISCHEMIC_PAIN_RATE        = 0.5
+
+-- Wound Treatment
+local MEDKIT_FLESH_POWER        = 0.70
+local MEDKIT_ORGAN_POWER        = 0.40
+local MEDKIT_ARMY_FLESH         = 0.85
+local MEDKIT_ARMY_ORGAN         = 0.60
+local MEDKIT_ARMY_ART           = 0.70
+local COAGULANT_POWER           = 0.30
+local COAGULANT_DURATION_S      = 180
+
+-- Critical Care & Surgical
+local SURGERY_CLOSE_THRESH      = 5.0
+local SURGERY_BLOOD_RESTORE     = 1000
+
+-- Chemical Management
+local ANALGESIC_WEAK_PAIN       = 15
+local ANALGESIC_STRONG_PAIN     = 20
+local NARCOTIC_PAIN_REDUCTION   = 100
+local NARCOTIC_STAMINA_CAP      = 0.40
+local NARCOTIC_DURATION_S       = 300
+local NARCOTIC_PAIN_REBOUND     = 10
+local ANTIBIOTIC_SULFAD_DUR     = 14400
+local ANTIBIOTIC_CHLOR_DUR      = 28800
+local PURGE_TETANUS_POWER       = 0.50
+local PURGE_AKVATAB_POWER       = 0.30
+
+-- Stimulants
+local EPI_ADRENALIN_DUR         = 60
+local EPI_STIMPACK_DUR          = 30
+local EPI_STIMPACK_ARMY_DUR     = 45
+local EPI_STIMPACK_SCI_DUR      = 60
+local EPI_CRASH_PAIN            = 50
+local CNS_COCAINE_DUR           = 300
+local CNS_CAFFEINE_DUR          = 180
+
+-- IV Fluids
+local IV_GLUCOSE_VOL            = 750
+local IV_GLUCOSE_S_VOL          = 300
+
+-- System
+local ITEM_TICK_RATE            = 200
+
 -- Persistent state for temporary item effects
 item_effects = {
     tourniquet_timer        = 0,
@@ -48,39 +99,39 @@ item_effects = {
 --
 local item_map = {
     -- Tier 1: Basic Field Care
-    ["bandage"]        = { type = "hemostatic", power = 0.50, sepsis_risk = 0.25 },
-    ["jgut"]           = { type = "tourniquet", power = 1.00 },
+    ["bandage"]        = { type = "hemostatic", power = BANDAGE_POWER, sepsis_risk = BANDAGE_SEPSIS_RISK },
+    ["jgut"]           = { type = "tourniquet", power = JGUT_POWER },
 
     -- Tier 2: Wound Treatment
-    ["medkit"]         = { type = "field_dressing", flesh_power = 0.70, organ_power = 0.40, anim_time = 10 },
-    ["medkit_army"]    = { type = "trauma_kit", flesh_power = 0.85, organ_power = 0.60, arterial_power = 0.70, anim_time = 12 },
-    ["drug_coagulant"] = { type = "systemic_coagulant", duration = 180, power = 0.30 },
+    ["medkit"]         = { type = "field_dressing", flesh_power = MEDKIT_FLESH_POWER, organ_power = MEDKIT_ORGAN_POWER, anim_time = 10 },
+    ["medkit_army"]    = { type = "trauma_kit", flesh_power = MEDKIT_ARMY_FLESH, organ_power = MEDKIT_ARMY_ORGAN, arterial_power = MEDKIT_ARMY_ART, anim_time = 12 },
+    ["drug_coagulant"] = { type = "systemic_coagulant", duration = COAGULANT_DURATION_S, power = COAGULANT_POWER },
 
     -- Tier 3: Critical Care / Field Surgery
-    ["medkit_scientic"]= { type = "surgical_kit", close_threshold = 5.0, blood_restore = 1000, anim_time = 45 },
+    ["medkit_scientic"]= { type = "surgical_kit", close_threshold = SURGERY_CLOSE_THRESH, blood_restore = SURGERY_BLOOD_RESTORE, anim_time = 45 },
     ["survival_kit"]   = { type = "splint", anim_time = 15 },
 
     -- Chemical Management (Pain & Sepsis)
-    ["analgetic"]      = { type = "analgesic", pain_reduction = 20 },
-    ["salicidic_acid"] = { type = "analgesic", pain_reduction = 15 },
-    ["yadylin"]        = { type = "narcotic", pain_reduction = 100, stamina_cap = 0.40, duration = 300 },
-    ["morphine"]       = { type = "narcotic", pain_reduction = 100, stamina_cap = 0.40, duration = 300 },
-    ["antibio_sulfad"] = { type = "antibiotic", duration = 14400 },
-    ["antibio_chlor"]  = { type = "antibiotic", duration = 28800 },
-    ["tetanus"]        = { type = "purge", power = 0.50 },
-    ["akvatab"]        = { type = "purge", power = 0.30 },
+    ["analgetic"]      = { type = "analgesic", pain_reduction = ANALGESIC_STRONG_PAIN },
+    ["salicidic_acid"] = { type = "analgesic", pain_reduction = ANALGESIC_WEAK_PAIN },
+    ["yadylin"]        = { type = "narcotic", pain_reduction = NARCOTIC_PAIN_REDUCTION, stamina_cap = NARCOTIC_STAMINA_CAP, duration = NARCOTIC_DURATION_S },
+    ["morphine"]       = { type = "narcotic", pain_reduction = NARCOTIC_PAIN_REDUCTION, stamina_cap = NARCOTIC_STAMINA_CAP, duration = NARCOTIC_DURATION_S },
+    ["antibio_sulfad"] = { type = "antibiotic", duration = ANTIBIOTIC_SULFAD_DUR },
+    ["antibio_chlor"]  = { type = "antibiotic", duration = ANTIBIOTIC_CHLOR_DUR },
+    ["tetanus"]        = { type = "purge", power = PURGE_TETANUS_POWER },
+    ["akvatab"]        = { type = "purge", power = PURGE_AKVATAB_POWER },
 
     -- Emergency Stimulants
-    ["adrenalin"]      = { type = "epinephrine", duration = 60 },
-    ["stimpack"]       = { type = "epinephrine", duration = 30 },
-    ["stimpack_army"]  = { type = "epinephrine", duration = 45 },
-    ["stimpack_scientic"] = { type = "epinephrine", duration = 60 },
-    ["cocaine"]        = { type = "cns_stimulant", duration = 300 },
-    ["caffeine"]       = { type = "cns_stimulant", duration = 180 },
+    ["adrenalin"]      = { type = "epinephrine", duration = EPI_ADRENALIN_DUR },
+    ["stimpack"]       = { type = "epinephrine", duration = EPI_STIMPACK_DUR },
+    ["stimpack_army"]  = { type = "epinephrine", duration = EPI_STIMPACK_ARMY_DUR },
+    ["stimpack_scientic"] = { type = "epinephrine", duration = EPI_STIMPACK_SCI_DUR },
+    ["cocaine"]        = { type = "cns_stimulant", duration = CNS_COCAINE_DUR },
+    ["caffeine"]       = { type = "cns_stimulant", duration = CNS_CAFFEINE_DUR },
 
     -- Volume Replacement
-    ["glucose"]        = { type = "iv_saline", volume = 500, anim_time = 20 },
-    ["glucose_s"]      = { type = "iv_saline", volume = 750, anim_time = 25 },
+    ["glucose"]        = { type = "iv_saline", volume = IV_GLUCOSE_VOL, anim_time = 20 },
+    ["glucose_s"]      = { type = "iv_saline", volume = IV_GLUCOSE_S_VOL, anim_time = 25 },
 }
 
 -- ==========================================================
@@ -91,22 +142,34 @@ local item_map = {
 -- TARGETED ITEM EXECUTION LOGIC
 -- ==========================================================
 
+local target_patterns = {
+    head       = { organs = {"head", "jaw", "eye", "neck", "jugular", "trachea"}, limbs = {"head"} },
+    torso      = { organs = {"torso", "spine", "heart", "lung", "liver", "pelvis", "clavicle"}, limbs = {"torso"} },
+    l_upperarm = { organs = {"l_upperarm", "l_brachial"}, limbs = {"l_upperarm"} },
+    r_upperarm = { organs = {"r_upperarm", "r_brachial"}, limbs = {"r_upperarm"} },
+    l_forearm  = { organs = {"l_forearm", "l_radial"}, limbs = {"l_forearm"} },
+    r_forearm  = { organs = {"r_forearm", "r_radial"}, limbs = {"r_forearm"} },
+    l_thigh    = { organs = {"l_thigh", "l_femoral"}, limbs = {"l_thigh"} },
+    r_thigh    = { organs = {"r_thigh", "r_femoral"}, limbs = {"r_thigh"} },
+    l_calf     = { organs = {"l_calf", "l_tibial"}, limbs = {"l_calf"} },
+    r_calf     = { organs = {"r_calf", "r_tibial"}, limbs = {"r_calf"} }
+}
+
 local function is_wound_in_target(w, t)
     if not w then return false end
     local wo = w.organ or ""
     local wl = w.limb or ""
-    if t == "head" then
-        return string.find(wo, "head") or string.find(wo, "jaw") or string.find(wo, "eye") or string.find(wo, "neck") or string.find(wo, "jugular") or string.find(wo, "trachea") or wl == "head" or (wl == "torso" and (string.find(wo, "neck") or string.find(wo, "jugular")))
-    elseif t == "torso" then
-        return string.find(wo, "torso") or string.find(wo, "spine") or string.find(wo, "heart") or string.find(wo, "lung") or string.find(wo, "liver") or string.find(wo, "pelvis") or string.find(wo, "clavicle") or wl == "torso"
-    elseif t == "l_arm" then
-        return string.find(wo, "l_arm") or string.find(wo, "l_brachial") or string.find(wo, "l_radial") or wl == "l_arm" or wl == "l_upperarm" or wl == "l_forearm"
-    elseif t == "r_arm" then
-        return string.find(wo, "r_arm") or string.find(wo, "r_brachial") or string.find(wo, "r_radial") or wl == "r_arm" or wl == "r_upperarm" or wl == "r_forearm"
-    elseif t == "l_leg" then
-        return string.find(wo, "l_leg") or string.find(wo, "l_femoral") or string.find(wo, "l_tibial") or wl == "l_leg" or wl == "l_thigh" or wl == "l_calf"
-    elseif t == "r_leg" then
-        return string.find(wo, "r_leg") or string.find(wo, "r_femoral") or string.find(wo, "r_tibial") or wl == "r_leg" or wl == "r_thigh" or wl == "r_calf"
+    
+    if t == "head" and string.find(wl, "torso") and (string.find(wo, "neck") or string.find(wo, "jugular")) then return true end
+    
+    local p = target_patterns[t]
+    if not p then return false end
+    
+    for _, pattern in ipairs(p.organs) do
+        if string.find(wo, pattern) then return true end
+    end
+    for _, pattern in ipairs(p.limbs) do
+        if string.find(wl, pattern) then return true end
     end
     return false
 end
@@ -136,7 +199,7 @@ local function process_tourniquet(item_data, t_limb)
     end
     if applied then
         item_effects.tourniquet_active = true
-        item_effects.tourniquet_timer = time_global() + 600000
+        item_effects.tourniquet_timer = time_global() + JGUT_ISCHEMIA_TIME_MS
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("TOURNIQUET APPLIED - ARTERIAL BLEEDING STOPPED", "flesh") end
     else
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO EXTREMITY WOUNDS", "critical") end
@@ -241,7 +304,7 @@ local function process_narcotic(item_data)
     
     item_effects.narcotic_active = true
     item_effects.narcotic_timer = time_global() + (item_data.duration * 1000)
-    item_effects.narcotic_stamina_cap = item_data.stamina_cap or 0.40
+    item_effects.narcotic_stamina_cap = item_data.stamina_cap or NARCOTIC_STAMINA_CAP
     
     if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("HEAVY NARCOTIC ADMINISTERED - CNS SUPPRESSED", "flesh") end
 end
@@ -306,20 +369,11 @@ local function actor_on_item_use(item)
     local data = item_map[sec]
     
     if not data then return end
+    
+    -- Note: Localized items (bandages, tourniquets, medkits, splints) are blocked from direct
+    -- consumption by actor_on_item_before_use and are executed via contextual right-click menus instead.
 
-    if data.type == "hemostatic" then
-        process_hemostatic(data)
-    elseif data.type == "tourniquet" then
-        process_tourniquet(data)
-    elseif data.type == "field_dressing" then
-        process_field_dressing(data)
-    elseif data.type == "trauma_kit" then
-        process_trauma_kit(data)
-    elseif data.type == "surgical_kit" then
-        process_surgical_kit(data)
-    elseif data.type == "splint" then
-        process_splint(data)
-    elseif data.type == "systemic_coagulant" then
+    if data.type == "systemic_coagulant" then
         process_coagulant(data)
     elseif data.type == "analgesic" then
         process_analgesic(data)
@@ -339,7 +393,6 @@ local function actor_on_item_use(item)
 end
 
 -- BUG-13 fix: tick-throttled update loop for item effect timers
-local ITEM_TICK_RATE = 200
 local last_item_tick = 0
 
 local function actor_on_update()
@@ -355,7 +408,7 @@ local function actor_on_update()
             if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ISCHEMIC PAIN - NERVE DEATH IMMINENT", "critical") end
         end
         if mod_medical_core then
-            mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + (0.5 * dt))
+            mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + (ISCHEMIC_PAIN_RATE * dt))
         end
     end
     
@@ -383,7 +436,7 @@ local function actor_on_update()
         if mod_medical_core and mod_medical_core.bio_state.wounds then
             local wound_count = #mod_medical_core.bio_state.wounds
             if wound_count > 0 then
-                mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + (wound_count * 10))
+                mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + (wound_count * NARCOTIC_PAIN_REBOUND))
                 if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NARCOTIC METABOLIZED - PAIN REBOUNDING", "critical") end
             else
                 if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NARCOTIC METABOLIZED", "flesh") end
@@ -395,7 +448,7 @@ local function actor_on_update()
     if item_effects.adrenaline_active and tg > item_effects.adrenaline_timer then
         item_effects.adrenaline_active = false
         if mod_medical_core then
-            mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + 50)
+            mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + EPI_CRASH_PAIN)
         end
         db.actor.power = -1.0
         level.add_pp_effector("snd_shock.ppe", 2052, false)
@@ -471,10 +524,14 @@ end
 local contextual_targets = {
     { id = "head", name = "Apply to Head" },
     { id = "torso", name = "Apply to Torso" },
-    { id = "l_arm", name = "Apply to Left Arm" },
-    { id = "r_arm", name = "Apply to Right Arm" },
-    { id = "l_leg", name = "Apply to Left Leg" },
-    { id = "r_leg", name = "Apply to Right Leg" },
+    { id = "l_upperarm", name = "Apply to L. Upper Arm" },
+    { id = "r_upperarm", name = "Apply to R. Upper Arm" },
+    { id = "l_forearm", name = "Apply to L. Forearm" },
+    { id = "r_forearm", name = "Apply to R. Forearm" },
+    { id = "l_thigh", name = "Apply to L. Thigh" },
+    { id = "r_thigh", name = "Apply to R. Thigh" },
+    { id = "l_calf", name = "Apply to L. Shin" },
+    { id = "r_calf", name = "Apply to R. Shin" },
 }
 
 local function apply_localized_item(item, t_limb)
@@ -511,51 +568,3 @@ if custom_functor_autoinject then
         custom_functor_autoinject.add_functor("ama_med_" .. target.id, cond, name, nil, func, true)
     end
 end
-
--- ==========================================================
--- CONTEXT MENUS (RIGHT CLICK)
--- ==========================================================
-local contextual_targets = {
-    { id = "head", name = "Apply to Head" },
-    { id = "torso", name = "Apply to Torso" },
-    { id = "l_arm", name = "Apply to Left Arm" },
-    { id = "r_arm", name = "Apply to Right Arm" },
-    { id = "l_leg", name = "Apply to Left Leg" },
-    { id = "r_leg", name = "Apply to Right Leg" },
-}
-
-local function apply_localized_item(item, t_limb)
-    local sec = item:section()
-    local data = item_map[sec]
-    if not data then return end
-    
-    local success = false
-    if data.type == "hemostatic" then success = process_hemostatic(data, t_limb)
-    elseif data.type == "tourniquet" then success = process_tourniquet(data, t_limb)
-    elseif data.type == "field_dressing" then success = process_field_dressing(data, t_limb)
-    elseif data.type == "trauma_kit" then success = process_trauma_kit(data, t_limb)
-    elseif data.type == "surgical_kit" then success = process_surgical_kit(data, t_limb)
-    elseif data.type == "splint" then success = process_splint(data, t_limb)
-    end
-    
-    if success then
-        utils_obj.play_sound("interface\\inv_iam_open")
-        alife_release_id(item:id())
-    end
-end
-
-if custom_functor_autoinject then
-    for i, target in ipairs(contextual_targets) do
-        local cond = function(item)
-            local data = item_map[item:section()]
-            if not data or not localized_types[data.type] then return false end
-            if data.type == "tourniquet" and (target.id == "head" or target.id == "torso") then return false end
-            return true
-        end
-        local name = function(item) return target.name end
-        local func = function(item) apply_localized_item(item, target.id) end
-        
-        custom_functor_autoinject.add_functor("ama_med_" .. target.id, cond, name, nil, func, true)
-    end
-end
-

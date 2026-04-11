@@ -10,6 +10,55 @@ local math_acos  = math.acos
 local math_deg   = math.deg
 local math_rad   = math.rad
 
+-- ==========================================================
+-- CONSTANTS & TUNING
+-- ==========================================================
+local EXPLOSION_THRESHOLD_SCALE     = 2.5
+local PLATE_DESTROYED_COND          = 0.05
+local SOFT_ARMOR_MM_MULTIPLIER      = 40.0
+local FALLBACK_SOFT_ARMOR           = 0.01
+
+-- Ricochet Tuning
+local RICOCHET_BASE_ANGLE           = 75.0
+local RICOCHET_HARDNESS_SCALE       = 5.0
+local RICOCHET_DURABILITY_COST      = 0.005
+
+-- Spall Tuning
+local DEFAULT_SPALL_RISK            = 0.8
+local SPALL_MIN_DAMAGE              = 0.05
+
+-- Energy Transfer & Degradation Tuning
+local PHASE4_DEFORMATION_SCALE      = 1.5
+local PHASE4_BLUNT_TRANSFER         = 0.5
+local PHASE4_OUTFIT_DMG             = 0.05
+local PHASE5_BLUNT_TRANSFER         = 0.3
+local PHASE5_MIN_PIERCE_RATIO       = 0.05
+local PHASE5_OUTFIT_DMG             = 0.10
+local PHASE3_SHOCK_BASE             = 0.2
+local PHASE3_SHOCK_HARD_SCALE       = 0.2
+local PHASE3_MAX_SHOCK_TRANSFER     = 0.8
+local PHASE3_OUTFIT_DMG             = 0.01
+local DURABILITY_COST_PENETRATE     = 0.40
+local DURABILITY_COST_STOP          = 0.15
+
+-- Mutant Attack Tuning
+local MUTANT_MASS_TINY              = 0.5
+local MUTANT_MASS_SMALL             = 1.5
+local MUTANT_MASS_MEDIUM            = 3.5
+local MUTANT_MASS_LARGE             = 8.0
+local MUTANT_SCRAP_REFLECT_DMG      = 0.15
+
+-- NPC Specific Tuning
+local NPC_HEAVY_KOEFF               = 0.45
+local NPC_LIGHT_KOEFF               = 0.15
+local NPC_HEAVY_PAD_BASE            = 0.5
+local NPC_LIGHT_PAD_BASE            = 0.8
+
+-- Specialized Plate Tuning
+local STF_KINETIC_THRESH            = 0.30
+local STF_HARDENED_VALUE            = 0.85
+local STF_SOFT_VALUE                = 0.20
+
 local npc_virtual_plates = {}
 
 -- ==========================================================
@@ -65,11 +114,11 @@ local plate_secs = {
     },
     [6] = { 
         main = {"ama_plate_granit_l6", "ama_plate_mamasbeads_l6", "ama_plate_kolobok_l6", "ama_plate_boron_l6", "ama_plate_boron_operator_l6", "ama_plate_graphene_l6"}, 
-        side = {"ama_plate_boron_side_l6", "ama_plate_monocrystal_side_l6"} 
+        side = {"ama_plate_boron_side_l6", "ama_plate_monocrystal_side_l7"} 
     },
     [7] = { 
         main = {"ama_plate_monocrystal_l7", "ama_plate_empty_l7"}, 
-        side = {"ama_plate_monocrystal_side_l6"} 
+        side = {"ama_plate_monocrystal_side_l7"} 
     }
 }
 
@@ -251,7 +300,7 @@ end
 -- ==========================================================
 local function npc_on_net_spawn(obj)
     if not (obj and IsStalker(obj) and obj:alive()) then return end
-    if obj:id() == db.actor:id() then return end
+    if not db.actor or obj:id() == db.actor:id() then return end
     
     local id = obj:id()
     if npc_virtual_plates[id] then return end
@@ -279,7 +328,8 @@ local function npc_on_net_spawn(obj)
         end
 
         local cov = rank_cfg.cov
-        npc_virtual_plates[id] = { is_heavy = is_heavy }
+        local outfit_cond = roll_cond(rank_cfg.cond)
+        npc_virtual_plates[id] = { is_heavy = is_heavy, outfit_cond = outfit_cond }
         
         local main_pool = plate_secs[tier].main
         local side_pool = plate_secs[tier].side
@@ -412,9 +462,11 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
         end
     end
 
-    if not hit_zone then return "PENETRATING", 50.0 end
+    if not hit_zone then return "PENETRATING", nil end
     local active_plate = v_data[hit_zone]
-    if not active_plate or active_plate.cond < 0.05 then return "PENETRATING", 50.0 end
+    if not active_plate or active_plate.cond < PLATE_DESTROYED_COND then return "PENETRATING", nil end
+
+    local is_torso = (hit_zone == "front" or hit_zone == "back" or hit_zone == "left" or hit_zone == "right")
 
     -- ==========================================================
     -- 2. FETCH AMMO OR SYNTHESIZE MUTANT KINETICS
@@ -434,10 +486,10 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
         is_mutant_attack = true
         local d_sec = shooter:section()
         
-        if string.find(d_sec, "tushkano") or string.find(d_sec, "rat") or string.find(d_sec, "zombie") then mass_mult = 0.5
-        elseif string.find(d_sec, "dog") or string.find(d_sec, "cat") or string.find(d_sec, "fracture") then mass_mult = 1.5
-        elseif string.find(d_sec, "boar") or string.find(d_sec, "snork") or string.find(d_sec, "flesh") then mass_mult = 3.5
-        elseif string.find(d_sec, "chimera") or string.find(d_sec, "gigant") or string.find(d_sec, "bloodsucker") then mass_mult = 8.0 end
+        if string.find(d_sec, "tushkano") or string.find(d_sec, "rat") or string.find(d_sec, "zombie") then mass_mult = MUTANT_MASS_TINY
+        elseif string.find(d_sec, "dog") or string.find(d_sec, "cat") or string.find(d_sec, "fracture") then mass_mult = MUTANT_MASS_SMALL
+        elseif string.find(d_sec, "boar") or string.find(d_sec, "snork") or string.find(d_sec, "flesh") then mass_mult = MUTANT_MASS_MEDIUM
+        elseif string.find(d_sec, "chimera") or string.find(d_sec, "gigant") or string.find(d_sec, "bloodsucker") then mass_mult = MUTANT_MASS_LARGE end
         
         if string.find(d_sec, "burer") or string.find(d_sec, "poltergeist") then
             mass_mult = math_max(1.0, shit.power * 6.0)
@@ -480,9 +532,12 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
     local material      = SYS_GetParam(0, active_plate.sec, "ama_material") or "ceramic"
     local durability    = SYS_GetParam(2, active_plate.sec, "ama_durability_multiplier") or 1.0
     
-    local padding_mult = v_data.is_heavy and 0.5 or 0.8 
-    -- FIXED: Higher value means higher armor rating / protection
-    local safe_koeff    = v_data.is_heavy and 0.45 or 0.10
+    -- Dynamic Soft Armor based on tracked Outfit Condition
+    local base_koeff = v_data.is_heavy and NPC_HEAVY_KOEFF or NPC_LIGHT_KOEFF
+    local safe_koeff = math_max(FALLBACK_SOFT_ARMOR, base_koeff * v_data.outfit_cond)
+    
+    local base_padding = v_data.is_heavy and NPC_HEAVY_PAD_BASE or NPC_LIGHT_PAD_BASE
+    local padding_mult = math_min(1.0, base_padding / v_data.outfit_cond)
 
     -- ==========================================================
     -- 4. MATERIAL MODIFIERS
@@ -493,7 +548,8 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
     if is_mutant_attack then
         if material == "steel" or material == "metal" then
             if string.find(active_plate.sec, "scrap") and shooter.health then
-                shooter.health = math_max(0, shooter.health - 0.15)
+                local new_hp = math_max(0, shooter.health - MUTANT_SCRAP_REFLECT_DMG)
+                if shooter.set_health_ex then shooter:set_health_ex(new_hp) else shooter.health = new_hp end
             else
                 nom_thickness = nom_thickness * 10.0
                 padding_mult = padding_mult * 1.5 
@@ -513,7 +569,7 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
     end
 
     if string.find(active_plate.sec, "stf") then
-        if kinetic_shock > 0.3 then hardness = 0.85; padding_mult = padding_mult * 1.5 else hardness = 0.20 end
+        if kinetic_shock > STF_KINETIC_THRESH then hardness = STF_HARDENED_VALUE; padding_mult = padding_mult * 1.5 else hardness = STF_SOFT_VALUE end
     end
     if string.find(active_plate.sec, "titanium") then material = "metal"; is_shear_plug = true end
 
@@ -535,16 +591,16 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
     t_data.cos_val = cos_val
     t_data.eff_thick = current_strength / cos_val
     
-    local ricochet_threshold = 75 - (hardness * 5)
+    local ricochet_threshold = RICOCHET_BASE_ANGLE - (hardness * RICOCHET_HARDNESS_SCALE)
     if is_monocrystal then ricochet_threshold = math_max(0, ricochet_threshold - 25) end
     
     if impact_angle_deg > ricochet_threshold then
         if not is_mutant_attack then play_npc_sound(npc, material, "ricochet") end
         shit.power = 0
-        active_plate.cond = math_max(0, active_plate.cond - (0.005 * durability))
+        active_plate.cond = math_max(0, active_plate.cond - (RICOCHET_DURABILITY_COST * durability))
         
         t_data.phase = "PHASE 1 - RICOCHET"
-        t_data.final_dmg_str = string.format("Power: 0.0 | Plate_Cond: -%.4f", 0.005 * durability)
+        t_data.final_dmg_str = string.format("Power: 0.0 | Plate_Cond: -%.4f", RICOCHET_DURABILITY_COST * durability)
         log_telemetry(t_data)
         return "RICOCHET", 0
     end
@@ -557,7 +613,7 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
 
     local spall_dmg = 0
     if not is_mutant_attack and (material == "metal" or material == "steel") then
-        local spall_risk = SYS_GetParam(2, active_plate.sec, "ama_spall_multiplier") or 0.8
+        local spall_risk = SYS_GetParam(2, active_plate.sec, "ama_spall_multiplier") or DEFAULT_SPALL_RISK
         local soft_armor_spall_reduction = math_max(0.1, 1.0 - safe_koeff)
         spall_dmg = (shit.power * bullet_impulse) * spall_risk * t_data.pen_ratio * soft_armor_spall_reduction
     end
@@ -569,14 +625,16 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
         if residual_k_ap <= safe_koeff then
             -- PHASE 4: SOFT CATCH
             local deformation_severity = residual_k_ap / safe_koeff
-            local blunt_dmg = ((kinetic_shock * 0.5) * (1.0 + (deformation_severity * 1.5))) * padding_mult
+            local trauma_multiplier = 1.0 + (deformation_severity * PHASE4_DEFORMATION_SCALE)
+            local blunt_dmg = ((kinetic_shock * PHASE4_BLUNT_TRANSFER) * trauma_multiplier) * padding_mult
             
             if is_shear_plug and not is_mutant_attack then blunt_dmg = blunt_dmg + (spall_dmg * 2.0); spall_dmg = 0 end
             
             shit.power = math_max(0, blunt_dmg + spall_dmg)
             
-            local plate_dmg = (kinetic_shock * 0.4) * durability
+            local plate_dmg = (kinetic_shock * DURABILITY_COST_PENETRATE) * durability
             active_plate.cond = math_max(0, active_plate.cond - plate_dmg)
+            if is_torso then v_data.outfit_cond = math_max(0.01, v_data.outfit_cond - PHASE4_OUTFIT_DMG) end
             
             if not is_mutant_attack then play_npc_sound(npc, material, "penetrated") end
             
@@ -588,45 +646,50 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
             t_data.phase = "PHASE 4 - SOFT CATCH"
             t_data.final_dmg_str = string.format("Blunt: %.2f | Spall: %.2f", blunt_dmg, spall_dmg)
             log_telemetry(t_data)
-        return "BLUNT", 0
+            return "BLUNT", 0
         else
             -- PHASE 5: OVER-PENETRATION
-            local soft_armor_mm = safe_koeff * 40
+            local soft_armor_mm = safe_koeff * SOFT_ARMOR_MM_MULTIPLIER
             local total_material_drag = effective_thickness + soft_armor_mm
             t_data.soft_mm = soft_armor_mm
             
             local consumed_energy_ratio = math_min(1.0, total_material_drag / bullet_pen)
-            local blunt_dmg = (kinetic_shock * 0.3) * consumed_energy_ratio
-            local piercing_dmg = shit.power * math_max(0.05, 1.0 - (total_material_drag / bullet_pen))
+            local blunt_dmg = (kinetic_shock * PHASE5_BLUNT_TRANSFER) * consumed_energy_ratio
+            local piercing_dmg = shit.power * math_max(PHASE5_MIN_PIERCE_RATIO, 1.0 - (total_material_drag / bullet_pen))
             
             if is_shear_plug and not is_mutant_attack then blunt_dmg = blunt_dmg + (spall_dmg * 2.0); spall_dmg = 0 end
             
             shit.power = math_max(0, piercing_dmg + blunt_dmg + spall_dmg)
             
-            local plate_dmg = (kinetic_shock * 0.4) * durability
+            local plate_dmg = (kinetic_shock * DURABILITY_COST_PENETRATE) * durability
             active_plate.cond = math_max(0, active_plate.cond - plate_dmg)
+            if is_torso then v_data.outfit_cond = math_max(0.01, v_data.outfit_cond - PHASE5_OUTFIT_DMG) end
             
-            if active_plate.cond < 0.05 then
+            if active_plate.cond < PLATE_DESTROYED_COND then
                 if not is_mutant_attack then play_npc_sound(npc, material, "broken") end
             end
             
             t_data.phase = "PHASE 5 - LETHAL BREACH"
             t_data.final_dmg_str = string.format("Piercing: %.2f | Blunt: %.2f | Spall: %.2f", piercing_dmg, blunt_dmg, spall_dmg)
             log_telemetry(t_data)
-        local remaining_pen = math_max(0.1, bullet_pen - total_material_drag)
-        return "PENETRATING", remaining_pen
+            local remaining_pen = math_max(0.1, bullet_pen - total_material_drag)
+            return "PENETRATING", remaining_pen
         end
     else
         -- PHASE 3: CLEAN STOP
-        local blunt_dmg = (kinetic_shock * math_min(0.8, 0.2 + (hardness * 0.2))) * padding_mult
+        local material_shock_transfer = PHASE3_SHOCK_BASE + (hardness * PHASE3_SHOCK_HARD_SCALE)
+        local deformation_shock = kinetic_shock * math_min(PHASE3_MAX_SHOCK_TRANSFER, material_shock_transfer)
+        local blunt_dmg = deformation_shock * padding_mult
         
         local stamina_penalty = (kinetic_shock * 0.25) * padding_mult
         if stamina_penalty > 0.5 then blunt_dmg = blunt_dmg + (stamina_penalty * 0.2) end
 
         shit.power = math_max(0, blunt_dmg + spall_dmg)
         
-        local plate_dmg = (kinetic_shock * 0.15) * durability
+        local plate_dmg = (kinetic_shock * DURABILITY_COST_STOP) * durability
         active_plate.cond = math_max(0, active_plate.cond - plate_dmg)
+        if is_torso and PHASE3_OUTFIT_DMG > 0 then v_data.outfit_cond = math_max(0.01, v_data.outfit_cond - PHASE3_OUTFIT_DMG) end
+        if is_torso then v_data.outfit_cond = math_max(0.01, v_data.outfit_cond - PHASE3_OUTFIT_DMG) end
         
         if not is_mutant_attack then play_npc_sound(npc, material, "stopped") end
         
@@ -638,7 +701,7 @@ local function armor_npc_on_before_hit(npc, shit, bone_id)
         t_data.phase = "PHASE 3 - CLEAN STOP"
         t_data.final_dmg_str = string.format("Blunt: %.2f | Spall: %.2f | Stamina Pen: %.2f", blunt_dmg, spall_dmg, stamina_penalty)
         log_telemetry(t_data)
-    return "BLUNT", 0
+        return "BLUNT", 0
     end
 end
 
@@ -647,16 +710,31 @@ end
 -- ==========================================================
 local function npc_on_before_hit(npc, shit, bone_id)
     if not (npc and IsStalker(npc)) then return end
-    if not (shit.type == hit.fire_wound or shit.type == hit.wound or shit.type == hit.strike) then return end
+    if not (shit.type == hit.fire_wound or shit.type == hit.wound or shit.type == hit.strike or shit.type == hit.explosion) then return end
 
-    local impact_type, remaining_pen = armor_npc_on_before_hit(npc, shit, bone_id)
-    if not impact_type then 
-        impact_type = "PENETRATING"
-        remaining_pen = 50.0
-    end
-
+    local impact_type, remaining_pen
     local flesh_power = shit.power
     local flesh_impulse = shit.impulse
+
+    if shit.type == hit.explosion then
+        local v_data = npc_virtual_plates[npc:id()]
+        local blast_threshold = FALLBACK_SOFT_ARMOR
+        if v_data then
+            local base_koeff = v_data.is_heavy and NPC_HEAVY_KOEFF or NPC_LIGHT_KOEFF
+            blast_threshold = math_max(FALLBACK_SOFT_ARMOR, base_koeff * v_data.outfit_cond)
+        end
+        
+        flesh_power = math_max(0, shit.power - (blast_threshold * EXPLOSION_THRESHOLD_SCALE))
+        impact_type = "OVERPRESSURE"
+        remaining_pen = 0
+    else
+        impact_type, remaining_pen = armor_npc_on_before_hit(npc, shit, bone_id)
+        if not impact_type then 
+            impact_type = "PENETRATING"
+            remaining_pen = nil
+        end
+        flesh_power = shit.power
+    end
 
     if mod_flesh_math and mod_flesh_math.process_flesh_hit then
         mod_flesh_math.process_flesh_hit(npc, shit, flesh_power, flesh_impulse, remaining_pen, bone_id, impact_type)
@@ -692,6 +770,31 @@ local function npc_on_death(npc, killer)
     end
 
     for _, slot in ipairs(slots) do spawn_armor(v_data[slot]) end
+    
+    -- Spawn Degraded Outfit
+    local visual = npc:get_visual_name()
+    if system_ini():section_exist("outfit_by_visual") then
+        local outfit_sec = system_ini():r_string_ex("outfit_by_visual", visual)
+        if outfit_sec and system_ini():section_exist(outfit_sec) then
+            local rank = ranks.get_obj_rank_name(npc)
+            local rank_chances = { novice=15, trainee=20, experienced=25, professional=30, veteran=40, expert=50, master=60, legend=70 }
+            local drop_chance = rank_chances[rank] or 25
+            
+            if math.random(1, 100) <= drop_chance then
+                local final_cond = math_max(0.01, v_data.outfit_cond - (math.random(5, 15) / 100))
+                
+                -- Remove any vanilla outfits that death_manager might have generated
+                -- (we'll spawn our own degraded version based on outfit_cond)
+                local function check_item(temp, item)
+                    if IsOutfit(item) and item:condition() < 0.5 then alife_release(item) end
+                end
+                npc:iterate_inventory(check_item, nil)
+                
+                alife_create_item(outfit_sec, npc, {cond = final_cond})
+            end
+        end
+    end
+    
     npc_virtual_plates[id] = nil
 end
 
