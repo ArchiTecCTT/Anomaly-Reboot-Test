@@ -72,7 +72,7 @@ local ORGAN_DEATH_RATINGS = {
     heart = 1.0, aorta = 1.0, cervical_spine = 1.0, spine = 1.0, brain = 1.0, trachea = 1.0,
     carotid_artery = {0.15, 0.30}, jugular = {0.05, 0.10}, femoral_artery = 0.10,
     iliac_artery = 0.05, brachial_artery = 0.02, radial_artery = 0.01,
-    liver = {0.15, 0.40}, lungs = {0.15, 0.40}, gi_tract = {0.15, 0.40},
+    liver = {0.15, 0.40}, lung = {0.15, 0.40}, gi_tract = {0.15, 0.40},
     pelvis = {0.05, 0.25}, leg_bone = {0.05, 0.25}, arm_bone = {0.01, 0.05}, ribs = {0.01, 0.05}
 }
 
@@ -94,7 +94,7 @@ bio_state = {
         l_upperarm = 1.0,  r_upperarm = 1.0,
         l_forearm  = 1.0,  r_forearm  = 1.0,
         l_thigh    = 1.0,  r_thigh    = 1.0,
-        l_calf     = 1.0,  r_calf     = 1.0,
+        l_shin     = 1.0,  r_shin     = 1.0,
     },
 }
 
@@ -120,6 +120,33 @@ function get_wounds() return bio_state.wounds end
 function get_blood_type() return bio_state.blood_type end
 function get_blood_type_name() return BLOOD_TYPE_NAMES[bio_state.blood_type] or "UNKNOWN" end
 
+function get_sorted_wounds()
+    local sorted = {}
+    if not bio_state.wounds then return sorted end
+    
+    for i, w in ipairs(bio_state.wounds) do
+        local b_rate = tonumber(w.bleed_rate) or 0
+        if b_rate > 0 or w.type == "fracture" then
+            local w_name = ""
+            if w.type == "fracture" then
+                w_name = w.organ or "bone"
+            else
+                w_name = w.limb or "body"
+                if w_name == "" then w_name = "body" end
+            end
+            
+            table.insert(sorted, {
+                name = w_name,
+                type = w.type or "unknown",
+                bleed = b_rate
+            })
+        end
+    end
+    
+    table.sort(sorted, function(a, b) return a.bleed > b.bleed end)
+    return sorted
+end
+
 function set_blood_volume(val) bio_state.blood_volume = math_max(0.0, math_min(MAX_BLOOD_VOLUME, val)) end
 function set_pain_level(val) bio_state.pain_level = math_max(0.0, math_min(MAX_PAIN_LEVEL, val)) end
 function set_sepsis_timer(val) bio_state.sepsis_timer = math_max(0.0, val) end
@@ -132,13 +159,6 @@ function add_death_rating(val)
     bio_state.death_rating = bio_state.death_rating + val
 end
 
--- Medical log relay: pushes wound events to terminal medical log
-local function log_medical(msg)
-    if ui_ama_terminal and ui_ama_terminal.push_medical_log then
-        ui_ama_terminal.push_medical_log(msg)
-    end
-end
-
 local function map_bone_to_limb(bone_name)
     if not bone_name or bone_name == "" then return "torso" end
     local b = string.lower(bone_name)
@@ -148,8 +168,8 @@ local function map_bone_to_limb(bone_name)
     if string.find(b, "r_forearm") then return "r_forearm" end
     if string.find(b, "l_thigh") then return "l_thigh" end
     if string.find(b, "r_thigh") then return "r_thigh" end
-    if string.find(b, "l_calf") or string.find(b, "l_foot") then return "l_calf" end
-    if string.find(b, "r_calf") or string.find(b, "r_foot") then return "r_calf" end
+    if string.find(b, "l_calf") or string.find(b, "l_foot") then return "l_shin" end
+    if string.find(b, "r_calf") or string.find(b, "r_foot") then return "r_shin" end
     if string.find(b, "head") or string.find(b, "jaw") or string.find(b, "eye") or string.find(b, "neck") then return "head" end
     return "torso"
 end
@@ -181,12 +201,6 @@ function add_wound(wound_data)
         end
     end
 
-    -- Log wound arrival to medical terminal
-    local organ_name = string.upper(wound_data.organ or "UNKNOWN")
-    local bleed = wound_data.bleed_rate or 0
-    if bleed > 0.5 then
-        log_medical(string.format("%s PENETRATED --- Blood Loss = +%.0fmL/s", organ_name, bleed))
-    end
 end
 
 function remove_wound(index)
@@ -549,8 +563,8 @@ end
 -- ==========================================================
 
 function process_leg_penalties(tg, dt)
-    local l_leg = math_min(bio_state.limb_health.l_thigh, bio_state.limb_health.l_calf)
-    local r_leg = math_min(bio_state.limb_health.r_thigh, bio_state.limb_health.r_calf)
+    local l_leg = math_min(bio_state.limb_health.l_thigh, bio_state.limb_health.l_shin)
+    local r_leg = math_min(bio_state.limb_health.r_thigh, bio_state.limb_health.r_shin)
     
     -- Speed penalty via speed.script (Grok's approach)
     -- Formula: linear interpolation. At 1.0 health = 1.0x speed. At 0.0 = 0.375x speed.

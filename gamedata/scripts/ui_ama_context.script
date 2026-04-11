@@ -4,82 +4,133 @@
 
 local gui
 
-local function action_router(vest_id, slot, mode, action)
-    local vest = level.object_by_id(vest_id)
-    if not vest then return end
+local limb_names = {
+    ["head"]       = "Head",
+    ["torso"]      = "Torso",
+    ["l_upperarm"] = "Left Upper Arm",
+    ["r_upperarm"] = "Right Upper Arm",
+    ["l_forearm"]  = "Left Forearm",
+    ["r_forearm"]  = "Right Forearm",
+    ["l_thigh"]    = "Left Thigh",
+    ["r_thigh"]    = "Right Thigh",
+    ["l_shin"]     = "Left Shin",
+    ["r_shin"]     = "Right Shin"
+}
 
-    if action == "all" then
-        if mode == "limb" then 
-            mod_limb_armor.extract_all_limb_armor(vest)
-        elseif mode == "clothing" then 
-            ama_base_layer.extract_all_clothing(vest)
-        else 
-            mod_plate_inventory.extract_all_plates(vest) 
+local function action_router(obj_id, slot, mode, action)
+    local obj = level.object_by_id(obj_id)
+    if not obj then return end
+
+    if mode == "medical" then
+        if slot ~= "none" then
+            if mod_medical_items and mod_medical_items.apply_localized_item then
+                mod_medical_items.apply_localized_item(obj, slot)
+            end
         end
     else
-        if mode == "limb" then 
-            mod_limb_armor.extract_limb_armor(vest, slot, false)
-        elseif mode == "clothing" then 
-            ama_base_layer.extract_clothing(vest, slot, false)
-        else 
-            mod_plate_inventory.extract_plate(vest, slot, false) 
+        if action == "all" then
+            if mode == "limb" and mod_limb_armor then 
+                mod_limb_armor.extract_all_limb_armor(obj)
+            elseif mode == "clothing" and ama_base_layer then 
+                ama_base_layer.extract_all_clothing(obj)
+            elseif mode == "plate" and mod_plate_inventory then 
+                mod_plate_inventory.extract_all_plates(obj) 
+            end
+        else
+            if mode == "limb" and mod_limb_armor then 
+                mod_limb_armor.extract_limb_armor(obj, slot, false)
+            elseif mode == "clothing" and ama_base_layer then 
+                ama_base_layer.extract_clothing(obj, slot, false)
+            elseif mode == "plate" and mod_plate_inventory then 
+                mod_plate_inventory.extract_plate(obj, slot, false) 
+            end
         end
     end
-    
+
     local inventory = ActorMenu.get_actor_menu()
     if inventory and inventory:IsShown() then
         inventory:UpdateItems()
     end
 end
 
-function start(vest, mode)
+function start(obj, mode)
+    if not obj then return end
+
     local context_str = {}
     local context_action = {}
     local context_params = {}
 
-    local vid = vest:id()
-    local v_data = nil
-    
-    if mode == "limb" then 
-        v_data = mod_limb_armor.installed_limbs[vid]
-    elseif mode == "clothing" then 
-        v_data = ama_base_layer.installed_clothing[vid]
-    else 
-        v_data = mod_plate_inventory.installed_plates[vid]
-    end
+    local obj_id = obj:id()
 
-    if not v_data then return end
+    if mode == "medical" then
+        local valid_limbs = {}
+        if mod_medical_core and mod_medical_core.bio_state and mod_medical_core.bio_state.wounds then
+            for _, w in ipairs(mod_medical_core.bio_state.wounds) do
+                if (w.bleed_rate and w.bleed_rate > 0) or w.type == "fracture" then
+                    local t_limb = w.limb or "torso"
+                    if t_limb == "" then t_limb = "torso" end
+                    valid_limbs[t_limb] = true
+                end
+            end
+        end
 
-    local count = 0
-    for slot, data in pairs(v_data) do
-        local display_name = ""
-        
-        if mode == "plate" then
-            display_name = "Remove " .. slot:upper() .. " Plate"
-        elseif mode == "clothing" then
-            local formatted_slot = slot:gsub("^%l", string.upper)
-            display_name = "Remove " .. formatted_slot .. " Clothing"
-        else
-            display_name = "Remove " .. slot:upper() .. " Armor"
+        local count = 0
+        for limb, _ in pairs(valid_limbs) do
+            local display_name = "Apply to " .. (limb_names[limb] or limb)
+            table.insert(context_str, display_name)
+            table.insert(context_action, "apply_ama_med")
+            table.insert(context_params, {obj_id, limb, mode, "single"})
+            count = count + 1
         end
         
-        table.insert(context_str, display_name)
-        table.insert(context_action, "remove_ama_item")
-        table.insert(context_params, {vid, slot, mode, "single"})
-        count = count + 1
-    end
-
-    if count > 0 then
-        local all_text = "Remove All Limb Armor"
-        if mode == "plate" then 
-            all_text = "Remove All Plates"
-        elseif mode == "clothing" then 
-            all_text = "Remove All Clothing" 
+        if count == 0 then
+            table.insert(context_str, "No Applicable Wounds")
+            table.insert(context_action, "apply_ama_med")
+            table.insert(context_params, {obj_id, "none", mode, "none"})
+        end
+    else
+        local v_data = nil
+        if mode == "limb" and mod_limb_armor then 
+            v_data = mod_limb_armor.installed_limbs[obj_id]
+        elseif mode == "clothing" and ama_base_layer then 
+            v_data = ama_base_layer.installed_clothing[obj_id]
+        elseif mode == "plate" and mod_plate_inventory then 
+            v_data = mod_plate_inventory.installed_plates[obj_id]
         end
         
-        table.insert(context_str, all_text)
-        table.insert(context_action, "remove_ama_item")
-        table.insert(context_params, {vid, nil, mode, "all"})
+        if not v_data then return end
+
+        local count = 0
+        for slot, data in pairs(v_data) do
+            local display_name = ""
+            
+            if mode == "plate" then
+                display_name = "Remove " .. slot:upper() .. " Plate"
+            elseif mode == "clothing" then
+                local formatted_slot = slot:gsub("^%l", string.upper)
+                display_name = "Remove " .. formatted_slot .. " Clothing"
+            else
+                display_name = "Remove " .. slot:upper() .. " Armor"
+            end
+            
+            table.insert(context_str, display_name)
+            table.insert(context_action, "remove_ama_item")
+            table.insert(context_params, {obj_id, slot, mode, "single"})
+            count = count + 1
+        end
+
+        if count > 0 then
+            local all_text = "Remove All Limb Armor"
+            if mode == "plate" then 
+                all_text = "Remove All Plates"
+            elseif mode == "clothing" then 
+                all_text = "Remove All Clothing" 
+            end
+            
+            table.insert(context_str, all_text)
+            table.insert(context_action, "remove_ama_item")
+            table.insert(context_params, {obj_id, nil, mode, "all"})
+        end
     end
 
     if not gui then

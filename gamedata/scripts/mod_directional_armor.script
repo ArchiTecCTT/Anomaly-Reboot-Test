@@ -125,8 +125,8 @@ local function map_all_bones()
         ["bip01_r_forearm"]  = { r = 45,  slot = "r_forearm" },
         ["bip01_l_thigh"]    = { r = 110, slot = "l_thigh" },
         ["bip01_r_thigh"]    = { r = 110, slot = "r_thigh" },
-        ["bip01_l_calf"]     = { r = 75,  slot = "l_calf" },
-        ["bip01_r_calf"]     = { r = 75,  slot = "r_calf" }
+        ["bip01_l_calf"]     = { r = 75,  slot = "l_shin" },
+        ["bip01_r_calf"]     = { r = 75,  slot = "r_shin" }
     }
     
     for engine_bone, data in pairs(target_curved) do

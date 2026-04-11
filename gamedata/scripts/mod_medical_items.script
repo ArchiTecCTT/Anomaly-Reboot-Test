@@ -151,8 +151,8 @@ local target_patterns = {
     r_forearm  = { organs = {"r_forearm", "r_radial"}, limbs = {"r_forearm"} },
     l_thigh    = { organs = {"l_thigh", "l_femoral"}, limbs = {"l_thigh"} },
     r_thigh    = { organs = {"r_thigh", "r_femoral"}, limbs = {"r_thigh"} },
-    l_calf     = { organs = {"l_calf", "l_tibial"}, limbs = {"l_calf"} },
-    r_calf     = { organs = {"r_calf", "r_tibial"}, limbs = {"r_calf"} }
+    l_shin     = { organs = {"l_calf", "l_tibial", "l_shin"}, limbs = {"l_shin", "l_calf"} },
+    r_shin     = { organs = {"r_calf", "r_tibial", "r_shin"}, limbs = {"r_shin", "r_calf"} }
 }
 
 local function is_wound_in_target(w, t)
@@ -180,6 +180,7 @@ local function process_hemostatic(item_data, t_limb)
     for _, w in ipairs(mod_medical_core.bio_state.wounds) do
         if w.type == "external" and w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
             w.bleed_rate = w.bleed_rate * (1.0 - item_data.power)
+            if w.bleed_rate < 0.1 then w.bleed_rate = 0 end
             treated = true
         end
     end
@@ -192,7 +193,7 @@ local function process_tourniquet(item_data, t_limb)
     if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
     local applied = false
     for _, w in ipairs(mod_medical_core.bio_state.wounds) do
-        if (w.type == "internal" or w.type == "external" or w.type == "fracture") and is_wound_in_target(w, t_limb) then
+        if (w.type == "internal" or w.type == "external" or w.type == "fracture") and w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
             w.bleed_rate = 0
             applied = true
         end
@@ -212,11 +213,12 @@ local function process_field_dressing(item_data, t_limb)
     local treated = false
     for _, w in ipairs(mod_medical_core.bio_state.wounds) do
         if w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
-            if w.type == "external" then
-                w.bleed_rate = w.bleed_rate * (1.0 - item_data.flesh_power); treated = true
+            if w.type == "external" or w.type == "fracture" then
+                    if string.find(w.organ or "", "lung") or string.find(w.organ or "", "trachea") then sealed = true end
             elseif w.type == "internal" then
                 w.bleed_rate = w.bleed_rate * (1.0 - item_data.organ_power); treated = true
             end
+            if w.bleed_rate < 0.1 then w.bleed_rate = 0 end
         end
     end
     if treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("WOUND PACKED", "flesh") end
@@ -229,12 +231,24 @@ local function process_trauma_kit(item_data, t_limb)
     local treated, sealed = false, false
     for _, w in ipairs(mod_medical_core.bio_state.wounds) do
         if w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
-            if w.type == "external" then w.bleed_rate = w.bleed_rate * (1.0 - item_data.flesh_power); treated = true
+            local organ = w.organ or ""
+            local is_artery = string.find(organ, "artery") 
+                or string.find(organ, "jugular")
+                or string.find(organ, "brachial")
+                or string.find(organ, "radial")
+                or string.find(organ, "femoral")
+                or string.find(organ, "tibial")
+            if w.type == "external" or w.type == "fracture" then 
+                w.bleed_rate = w.bleed_rate * (1.0 - item_data.flesh_power); treated = true
             elseif w.type == "internal" then
-                w.bleed_rate = w.bleed_rate * (1.0 - item_data.organ_power); treated = true
-                if string.find(w.organ or "", "lungs") or string.find(w.organ or "", "trachea") then sealed = true end
-            elseif w.type == "internal" then w.bleed_rate = w.bleed_rate * (1.0 - item_data.arterial_power); treated = true
+                if is_artery then
+                    w.bleed_rate = w.bleed_rate * (1.0 - item_data.arterial_power); treated = true
+                else
+                    w.bleed_rate = w.bleed_rate * (1.0 - item_data.organ_power); treated = true
+                    if string.find(w.organ or "", "lung") or string.find(w.organ or "", "trachea") then sealed = true end
+                end
             end
+            if w.bleed_rate < 0.1 then w.bleed_rate = 0 end
         end
     end
     if sealed then db.actor.power = 1.0; if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CHEST SEALED", "flesh") end end
@@ -521,20 +535,7 @@ end
 -- ==========================================================
 -- CONTEXT MENUS (RIGHT CLICK)
 -- ==========================================================
-local contextual_targets = {
-    { id = "head", name = "Apply to Head" },
-    { id = "torso", name = "Apply to Torso" },
-    { id = "l_upperarm", name = "Apply to L. Upper Arm" },
-    { id = "r_upperarm", name = "Apply to R. Upper Arm" },
-    { id = "l_forearm", name = "Apply to L. Forearm" },
-    { id = "r_forearm", name = "Apply to R. Forearm" },
-    { id = "l_thigh", name = "Apply to L. Thigh" },
-    { id = "r_thigh", name = "Apply to R. Thigh" },
-    { id = "l_calf", name = "Apply to L. Shin" },
-    { id = "r_calf", name = "Apply to R. Shin" },
-}
-
-local function apply_localized_item(item, t_limb)
+function apply_localized_item(item, t_limb)
     local sec = item:section()
     local data = item_map[sec]
     if not data then return end
@@ -554,17 +555,20 @@ local function apply_localized_item(item, t_limb)
     end
 end
 
+local function cond_apply_med(item)
+    local data = item_map[item:section()]
+    if not data or not localized_types[data.type] then return false end
+    return true
+end
+
+local function name_apply_med(item)
+    return "Apply Medical Item"
+end
+
+local function func_apply_med(item)
+    ui_ama_context.start(item, "medical")
+end
+
 if custom_functor_autoinject then
-    for i, target in ipairs(contextual_targets) do
-        local cond = function(item)
-            local data = item_map[item:section()]
-            if not data or not localized_types[data.type] then return false end
-            if data.type == "tourniquet" and (target.id == "head" or target.id == "torso") then return false end
-            return true
-        end
-        local name = function(item) return target.name end
-        local func = function(item) apply_localized_item(item, target.id) end
-        
-        custom_functor_autoinject.add_functor("ama_med_" .. target.id, cond, name, nil, func, true)
-    end
+    custom_functor_autoinject.add_functor("ama_med_apply", cond_apply_med, name_apply_med, nil, func_apply_med, true)
 end

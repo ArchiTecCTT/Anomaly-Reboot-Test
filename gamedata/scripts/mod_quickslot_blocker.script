@@ -1,9 +1,6 @@
 -- ======================================================================
 -- AMA MEDICAL OVERHAUL - UI QUICKSLOT BLOCKER
 -- ======================================================================
--- Dynamically monkey-patches the inventory UI to prevent dragging
--- complex trauma items into quick slots.
--- ======================================================================
 
 local banned_items = {
     ["bandage"]         = true,
@@ -16,9 +13,40 @@ local banned_items = {
 
 local original_drag_drop = nil
 
-local function custom_drag_drop(self, obj_from, bag_from, obj_to, bag_to, idx_to)
-    -- Intercept quick slot bag placement
-    if bag_to == "actor_quick" and obj_from then
+local function custom_drag_drop(self, bag_from, idx_from)
+    -- 1. Derive the object being dragged, exactly how vanilla does it
+    local obj_from = self.CC[bag_from]:GetObj(idx_from)
+    if (not obj_from) then
+        if original_drag_drop then return original_drag_drop(self, bag_from, idx_from) end
+        return
+    end
+
+    -- 2. Figure out what UI element the mouse is hovering over (the drop zone)
+    local bag_to, idx_to, obj_to
+    for name, cc in pairs(self.CC) do
+        bag_to, idx_to, obj_to = cc:GetCell_Focused()
+        if bag_to then
+            break
+        end
+    end
+
+    -- Handle item picker ownership (anomaly edge-case)
+    if obj_to and self.Picker_Ownership then
+        bag_to, idx_to = self:Picker_Ownership(bag_to, idx_to, obj_to)
+    end
+
+    -- If dropping on empty UI space, fallback check
+    if (not bag_to) then
+        for bag, cc in pairs(self.CC) do
+            if (bag ~= "picker") and cc:IsCursorOverWindow() then
+                bag_to = bag
+                break
+            end
+        end
+    end
+
+    -- 3. Execute the custom ban-list logic
+    if bag_to == "actor_quick" then
         local sec = obj_from:section()
         if banned_items[sec] then
             if ui_ama_combat_feed and ui_ama_combat_feed.push_msg then 
@@ -27,17 +55,20 @@ local function custom_drag_drop(self, obj_from, bag_from, obj_to, bag_to, idx_to
             if utils_obj and utils_obj.play_sound then
                 utils_obj.play_sound("interface\\inv_error")
             end
-            return -- Halt the drag-drop execution completely
+            return -- Halt the drag-drop execution entirely, preventing the item from slotting
         end
     end
     
-    -- Route back to original vanilla or modded function safely
-    if original_drag_drop then return original_drag_drop(self, obj_from, bag_from, obj_to, bag_to, idx_to) end
+    -- 4. If the item isn't banned, or isn't going to a quickslot, route back to the original function
+    if original_drag_drop then 
+        return original_drag_drop(self, bag_from, idx_from) 
+    end
 end
 
 function on_game_start()
-    if ui_inventory and ui_inventory.UIInventory and ui_inventory.UIInventory.DragDrop then
-        original_drag_drop = ui_inventory.UIInventory.DragDrop
-        ui_inventory.UIInventory.DragDrop = custom_drag_drop
+    -- Hook into the correct vanilla function: On_CC_DragDrop
+    if ui_inventory and ui_inventory.UIInventory and ui_inventory.UIInventory.On_CC_DragDrop then
+        original_drag_drop = ui_inventory.UIInventory.On_CC_DragDrop
+        ui_inventory.UIInventory.On_CC_DragDrop = custom_drag_drop
     end
 end

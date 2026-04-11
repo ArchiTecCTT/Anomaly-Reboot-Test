@@ -52,15 +52,15 @@ local PAPERDOLL_ATLAS = {
     ["neck"]             = {x=385, y=2114, view=1},
     ["flesh"]            = {x=768, y=2818, view=1},
     
-    ["bip01_r_upperarm"] = {x=1917, y=706, view=1},
-    ["bip01_r_forearm"]  = {x=385, y=1410, view=1},
-    ["bip01_r_thigh"]    = {x=1534, y=706, view=1},
-    ["bip01_r_calf"]     = {x=1534, y=2, view=1},
+    ["r_upperarm"]       = {x=1917, y=706, view=1},
+    ["r_forearm"]        = {x=385, y=1410, view=1},
+    ["r_thigh"]          = {x=1534, y=706, view=1},
+    ["r_shin"]           = {x=2300, y=1410, view=1},
 
-    ["bip01_l_upperarm"] = {x=2683, y=1410, view=1},
-    ["bip01_l_forearm"]  = {x=1917, y=2114, view=1},
-    ["bip01_l_thigh"]    = {x=2300, y=2114, view=1},
-    ["bip01_l_calf"]     = {x=2300, y=1410, view=1},
+    ["l_upperarm"]       = {x=2683, y=1410, view=1},
+    ["l_forearm"]        = {x=1917, y=2114, view=1},
+    ["l_thigh"]          = {x=2300, y=2114, view=1},
+    ["l_shin"]           = {x=1534, y=2, view=1},
 }
 
 -- ======================================================================
@@ -202,6 +202,22 @@ function AMATerminalUI:InitActorControls()
     self.bar_blood = xml:InitProgressBar("ama_actor_terminal:background:blood_vol_bar", self.actor_bg)
     self.bar_pain = xml:InitProgressBar("ama_actor_terminal:background:pain_level_bar", self.actor_bg)
     
+    -- Initialize Static Wound Pool (Bypassing ScrollView crashes entirely)
+    self.wound_pool = {}
+    for i = 1, 5 do
+        local wnd = CUIWindow()
+        xml:InitWindow("wound_list_item", 0, wnd)
+        wnd:SetWndPos(vector2():set(25, 188 + ((i - 1) * 24)))
+        self.actor_main:AttachChild(wnd)
+        wnd:Show(false)
+        local rate_txt = xml:InitTextWnd("wound_list_item:wound_rate_text", wnd)
+        local type_txt = xml:InitTextWnd("wound_list_item:wound_type_text", wnd)
+        table.insert(self.wound_pool, { main = wnd, rate = rate_txt, type = type_txt })
+    end
+    
+    -- State hash to prevent per-frame rebuilding
+    self.cached_wounds_hash = "INIT"
+
     table.insert(self.actor_elements, self.actor_main)
 end
 
@@ -298,7 +314,7 @@ function AMATerminalUI:UpdateArmorMode()
         ["l_up"] = "l_upperarm", ["r_up"] = "r_upperarm",
         ["l_fo"] = "l_forearm",  ["r_fo"] = "r_forearm",
         ["l_th"] = "l_thigh",    ["r_th"] = "r_thigh",
-        ["l_ca"] = "l_calf",    ["r_ca"] = "r_calf"
+        ["l_ca"] = "l_shin",     ["r_ca"] = "r_shin"
     }
 
     local limbs = mod_limb_armor and mod_limb_armor.installed_limbs and mod_limb_armor.installed_limbs[vid] or {}
@@ -344,18 +360,35 @@ function AMATerminalUI:UpdateMedicalMode()
         local layer = self.medical_overlays[org]
         
         if layer and layer.view == self.medical_view_mode then
-            layer.ui:Show(true)
             local wt = w.type
+            local bleed = w.bleed_rate or 0
+            
             if layer.view == 1 then
-                if wt == "external" then
-                    layer.ui:SetTextureColor(GetARGB(255, 255, 128, 0))
-                else
-                    layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))
+                if bleed > 0.5 then
+                    layer.ui:Show(true)
+                    if wt == "external" then
+                        layer.ui:SetTextureColor(GetARGB(255, 255, 128, 0))
+                    else
+                        layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))
+                    end
+                elseif bleed > 0 then
+                    layer.ui:Show(true)
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 255, 0))
                 end
             elseif layer.view == 2 then
-                layer.ui:SetTextureColor(GetARGB(255, 20, 20, 20))
+                if bleed > 0 then
+                    layer.ui:Show(true)
+                    layer.ui:SetTextureColor(GetARGB(255, 20, 20, 20))
+                end
             elseif layer.view == 3 then
-                layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))
+                layer.ui:Show(true)
+                if bleed > 0.5 then
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))
+                elseif bleed > 0 then
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 255, 0))
+                else
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 128, 0))
+                end
             end
         end
     end
@@ -372,25 +405,6 @@ function AMATerminalUI:UpdateActorMode()
     local pain_level = mod_medical_core.get_pain_level()
     self.bar_pain:SetProgressPos(pain_level / 150.0)
     
-    local active_wounds = 0
-    local total_bleed = 0
-    
-    local wounds = mod_medical_core.get_wounds() or {}
-    for i, w in ipairs(wounds) do
-        if w.bleed_rate and w.bleed_rate > 0.5 then
-            active_wounds = active_wounds + 1
-            total_bleed = total_bleed + w.bleed_rate
-        end
-    end
-    
-    self.txt_bleeds:SetText("ACTIVE BLEEDS: " .. active_wounds)
-    self.txt_loss:SetText(string.format("TOTAL BLOOD LOSS: %.1f mL/s", total_bleed))
-    
-    local cond = 1.0 - math_min(total_bleed / 15.0, 1.0)
-    local bleed_color = get_text_color(cond)
-    self.txt_bleeds:SetTextColor(bleed_color)
-    self.txt_loss:SetTextColor(bleed_color)
-    
     local sepsis = mod_medical_core.get_sepsis_timer()
     if sepsis > 0 then
         self.txt_sepsis:SetText("SEPSIS: INFECTED")
@@ -398,6 +412,54 @@ function AMATerminalUI:UpdateActorMode()
     else
         self.txt_sepsis:SetText("SEPSIS: CLEAN")
         self.txt_sepsis:SetTextColor(GetARGB(255, 0, 255, 0))
+    end
+
+    local sorted_wounds = mod_medical_core.get_sorted_wounds() or {}
+    
+    -- Generate State Hash to prevent rebuilding the UI every frame
+    local active_wounds = 0
+    local total_bleed = 0
+    local current_hash = ""
+    
+    for i, w_data in ipairs(sorted_wounds) do
+        if w_data.bleed > 0 then
+            active_wounds = active_wounds + 1
+            total_bleed = total_bleed + w_data.bleed
+        end
+        -- Hash EVERYTHING (including 0-bleed fractures) so they trigger UI updates
+        current_hash = current_hash .. string.format("%s_%.1f_%s|", tostring(w_data.name), w_data.bleed, tostring(w_data.type))
+    end
+    
+    -- Only rebuild list if the wounds actually changed
+    if self.cached_wounds_hash ~= current_hash then
+        self.cached_wounds_hash = current_hash
+        
+        self.txt_bleeds:SetText("ACTIVE BLEEDS: " .. active_wounds)
+        self.txt_loss:SetText(string.format("TOTAL BLOOD LOSS: %.1f mL/s", total_bleed))
+        
+        local cond = 1.0 - math_min(total_bleed / 15.0, 1.0)
+        local bleed_color = get_text_color(cond)
+        self.txt_bleeds:SetTextColor(bleed_color)
+        self.txt_loss:SetTextColor(bleed_color)
+        
+        -- Only display the Top 5 most critical wounds to fit the UI space
+        for i = 1, 5 do
+            local w_data = sorted_wounds[i]
+            local ui_item = self.wound_pool[i]
+            
+            if w_data then
+                ui_item.rate:SetText(string.format("%s: %.1f mL/s", string.upper(tostring(w_data.name)), w_data.bleed))
+                ui_item.type:SetText(string.upper(tostring(w_data.type)))
+                
+                local w_cond = 1.0 - math_min(w_data.bleed / 15.0, 1.0)
+                local w_color = get_text_color(w_cond)
+                ui_item.rate:SetTextColor(w_color)
+                ui_item.type:SetTextColor(w_color)
+                ui_item.main:Show(true)
+            else
+                ui_item.main:Show(false)
+            end
+        end
     end
 end
 
@@ -421,11 +483,6 @@ function AMATerminalUI:Update()
     else
         self:UpdateArmorMode()
     end
-end
-
-function AMATerminalUI:push_medical_log(msg)
-    -- Placeholder for future medical log UI element
-    -- This prevents crashes if other scripts try to call it
 end
 
 -- ==================================================
