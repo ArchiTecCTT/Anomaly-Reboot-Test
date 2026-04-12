@@ -137,6 +137,24 @@ local SHOCK_SEVERE_MULT           = 1.5
 local SHOCK_NORMAL_MULT           = 0.2
 local SHOCK_STAMINA_DRAIN_MULT    = 0.2
 
+local MAX_OVERPENETRATION_ITERATIONS = 4
+hit_state = { traversed = {}, iterations = 0, remaining_power = 0, remaining_pen = 0 }
+
+function reset_hit_state()
+    hit_state.traversed = {}
+    hit_state.iterations = 0
+    hit_state.remaining_power = 0
+    hit_state.remaining_pen = 0
+end
+
+-- Sequential Bullet Hit Pain Tracker
+local bhp_seq = 1
+local function play_sequential_bhp()
+    utils_obj.play_sound("actor\\bullet_hit_pain_" .. bhp_seq)
+    bhp_seq = bhp_seq + 1
+    if bhp_seq > 3 then bhp_seq = 1 end
+end
+
 -- ==========================================================
 -- BRUISE PAIN MAP
 -- ==========================================================
@@ -181,7 +199,7 @@ local TISSUE_PROPERTIES = {
     ["radius_ulna"]    = { thickness = 14,  hardness = 0.75, base_bleed = 3.0,  death_rating = 0.0 },
     ["flesh"]          = { thickness = 50,  hardness = 0.10, base_bleed = 2.0,  death_rating = 0.01 },
     ["trachea"]        = { thickness = 40,  hardness = 0.10, base_bleed = 15.0, death_rating = 0.9 },
-    ["artery"]         = { thickness = 20,  hardness = 0.05, base_bleed = 90.0, death_rating = 0.8 }
+    ["artery"]         = { thickness = 20,  hardness = 0.05, base_bleed = 15.0, death_rating = 0.8 }
 }
 
 local function get_bone_category(bone_name)
@@ -189,7 +207,7 @@ local function get_bone_category(bone_name)
     if string.find(bone_name, "pelvis") then return "pelvis" end
     if string.find(bone_name, "neck") then return "neck" end
     if string.find(bone_name, "head") or string.find(bone_name, "jaw") or string.find(bone_name, "eye") then return "head" end
-    if string.find(bone_name, "spine") then return "spine" end
+    if string.find(bone_name, "spine") or string.find(bone_name, "clavicle") then return "spine" end
     return "limb"
 end
 
@@ -229,7 +247,7 @@ function trigger_physiological_effect(effect_type)
         level.add_pp_effector("snd_shock.ppe", 2005, true)
         level.add_cam_effector("camera_effects\\hit_front.anm", 2006, false, "")
         CreateTimeEvent("ama_physio", "clear_bone_ppe", 10, remove_physio_effect, 2005, false)
-        utils_obj.play_sound("actor\\pain_" .. tostring(math_random(1, 3)))
+        utils_obj.play_sound("actor\\hit_" .. tostring(math_random(5, 7)))
         
     elseif effect_type == "organ_damage" then
         -- Internal systemic failure: sickening contrast fade, labored movement (25s)
@@ -237,7 +255,7 @@ function trigger_physiological_effect(effect_type)
         level.add_cam_effector("camera_effects\\fatigue.anm", 2008, true, "")
         CreateTimeEvent("ama_physio", "clear_org_ppe", 25, remove_physio_effect, 2007, false)
         CreateTimeEvent("ama_physio", "clear_org_anm", 25, remove_physio_effect, 2008, true)
-        utils_obj.play_sound("actor\\pain_" .. tostring(math_random(4, 6)))
+        utils_obj.play_sound("actor\\health_2_" .. tostring(math_random(1, 4)))
         
     elseif effect_type == "cns_failure" then
         -- Brain/Spine short circuit: Yadulin-style white flash to dark blackout strobing (6s)
@@ -247,14 +265,14 @@ function trigger_physiological_effect(effect_type)
         CreateTimeEvent("ama_physio", "clear_cns_ppe1", 6, remove_physio_effect, 2009, false)
         CreateTimeEvent("ama_physio", "clear_cns_ppe2", 6, remove_physio_effect, 2010, false)
         CreateTimeEvent("ama_physio", "clear_cns_anm", 6, remove_physio_effect, 2011, true)
-        utils_obj.play_sound("actor\\tinnitus")
+        utils_obj.play_sound("actor\\drop" .. tostring(math_random(1, 4)))
         
     elseif effect_type == "pelvis_shatter" then
         -- Absolute structural collapse: Intense blur loop (12s), sharp staggering blow once
         level.add_pp_effector("bloody.ppe", 2012, true)
         level.add_cam_effector("camera_effects\\hit_front.anm", 2013, false, "")
         CreateTimeEvent("ama_physio", "clear_pelv_ppe", 12, remove_physio_effect, 2012, false)
-        utils_obj.play_sound("actor\\pain_8")
+        utils_obj.play_sound("actor\\drop" .. tostring(math_random(1, 4)))
     end
 end
 
@@ -295,8 +313,12 @@ local function apply_tissue_drag(hit_organ, organ_string, bullet_pen, flesh_powe
     end
 
     local final_bleed = props.base_bleed * energy_dumped
+    if hit_organ == "artery" then
+        final_bleed = final_bleed * (5.0 + (math_random() * 3.0))
+    end
     local final_death_risk = props.death_rating * pen_ratio
     table.insert(wounds, acquire_wound(wound_type, final_bleed, organ_string or hit_organ, limb, final_death_risk))
+    if bullet_pen > 0 then utils_obj.play_sound("actor\\hurt" .. tostring(math_random(1, 7))) end
     
     return bullet_pen
 end
@@ -304,7 +326,7 @@ end
 -- ==========================================================
 -- HEAD / NECK MATH
 -- ==========================================================
-local function calculate_head_trauma(hit_dir, target_dir, bone_name, flesh_power, flesh_impulse, bullet_pen)
+local function calculate_head_trauma(target, hit_dir, target_dir, bone_name, flesh_power, flesh_impulse, bullet_pen)
     local alignment = math_abs(target_dir:dotproduct(hit_dir))
     local simulated_offset = math_random(0, 100) * (1.0 - (alignment * 0.5))
     simulated_offset = math_min(simulated_offset, 100)
@@ -315,9 +337,10 @@ local function calculate_head_trauma(hit_dir, target_dir, bone_name, flesh_power
 
     bullet_pen = apply_tissue_drag("brain", "brain", bullet_pen, flesh_power, wounds, bone_name or "bip01_head", "internal")
     table.insert(wounds, acquire_wound("fracture", 0.0, "skull", bone_name or "bip01_head", HEAD_SKULL_FRACTURE_RISK))
+    if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("SKULL FRACTURED", "critical") end
     local pain_spike = HEAD_PAIN_SPIKE
     
-    return dmg_mult, 1.0, hit_log, false, wounds, pain_spike
+    return dmg_mult, 1.0, hit_log, false, wounds, pain_spike, (bullet_pen > 0), 150, flesh_power * 0.5, bullet_pen
 end
 
 local function calculate_neck_trauma(target, shit, bone_name, flesh_power, flesh_impulse, bullet_pen)
@@ -352,6 +375,8 @@ local function calculate_neck_trauma(target, shit, bone_name, flesh_power, flesh
     local wounds = {}
     local total_pain_spike = 0
     local accumulated_flesh_bleed = 0
+    local is_exit = false
+    local travel_dist_mm = 0
 
     local flesh_props = TISSUE_PROPERTIES["flesh"]
     local constant_flesh_drag = step_size_mm * flesh_props.hardness
@@ -385,6 +410,9 @@ local function calculate_neck_trauma(target, shit, bone_name, flesh_power, flesh
 
         local dist_from_center = math_sqrt(current_x^2 + current_z^2)
         if dist_from_center > radius + 5 then
+            is_exit = true
+            travel_dist_mm = i * step_size_mm
+            if target:id() == 0 then play_sequential_bhp() end
             table.insert(path_log, "Exit Wound")
             break
         end
@@ -443,7 +471,7 @@ local function calculate_neck_trauma(target, shit, bone_name, flesh_power, flesh
         table.insert(wounds, acquire_wound("external", accumulated_flesh_bleed, "neck_flesh", "torso"))
     end
     
-    return dmg_mult, bleed_mult, table.concat(path_log, " -> "), false, wounds, total_pain_spike
+    return dmg_mult, bleed_mult, table.concat(path_log, " -> "), false, wounds, total_pain_spike, is_exit, travel_dist_mm, remaining_power, bullet_pen
 end
 
 -- ==========================================================
@@ -471,6 +499,8 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
     elseif string.find(bone_name, "forearm") then radius, length = 40, 250
     elseif string.find(bone_name, "thigh") then radius, length = 85, 450
     elseif string.find(bone_name, "calf") then radius, length = 60, 400
+    elseif string.find(bone_name, "hand") or string.find(bone_name, "finger") then radius, length = 20, 150
+    elseif string.find(bone_name, "foot") or string.find(bone_name, "toe") then radius, length = 30, 200
     end
 
     -- Synthesize Local Entry Coordinates (Clamped to prevent missing the cylinder)
@@ -494,6 +524,8 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
     local wounds = {}
     local total_pain_spike = 0
     local accumulated_flesh_bleed = 0
+    local is_exit = false
+    local travel_dist_mm = 0
 
     local flesh_props = TISSUE_PROPERTIES["flesh"]
     local constant_flesh_drag = step_size_mm * flesh_props.hardness
@@ -529,6 +561,9 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
         -- Cylinder boundary escape
         local dist_from_center = math_sqrt(current_x^2 + current_z^2)
         if dist_from_center > radius + 5 or current_y < -10 or current_y > length + 10 then
+            is_exit = true
+            travel_dist_mm = i * step_size_mm
+            if target:id() == 0 then play_sequential_bhp() end
             table.insert(path_log, "Exit Wound")
             break
         end
@@ -580,7 +615,7 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
                 
                 if target:id() == 0 then
                     trigger_physiological_effect("bone_fracture")
-                    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FOREARM FRACTURED", "flesh") end
+                    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("RADIUS/ULNA FRACTURED", "flesh") end
                 end
                 remaining_power = remaining_power - 0.1
                 if bullet_pen <= 0 then break end
@@ -655,6 +690,41 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
                 bleed_mult = bleed_mult + LIMB_CALF_MUSCLE_BLEED
                 table.insert(path_log, "Gastrocnemius Muscle")
             end
+            
+        -- E. HANDS / FINGERS
+        elseif string.find(bone_name, "hand") or string.find(bone_name, "finger") then
+            if not hits.bone and math_abs(current_x) < 15 and (current_z > -20 and current_z < 40) then
+                hits.bone = true
+                dmg_mult = dmg_mult + 0.3
+                table.insert(path_log, "Hand/Digits Struck")
+                
+                bullet_pen = apply_tissue_drag("radius_ulna", bone_name, bullet_pen, flesh_power, wounds, side_prefix .. "forearm", "fracture")
+                total_pain_spike = total_pain_spike + 15
+                
+                local active_weapon = target:active_item()
+                if active_weapon and (target:id() == 0 or math_random() < 0.6) then
+                    target:drop_item(active_weapon)
+                    table.insert(path_log, "(Weapon Dropped)")
+                    if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("HAND/FINGERS STRUCK - WEAPON DROPPED", "flesh") end
+                end
+                remaining_power = remaining_power - 0.05
+                if bullet_pen <= 0 then break end
+            end
+            
+        -- F. FEET / TOES
+        elseif string.find(bone_name, "foot") or string.find(bone_name, "toe") then
+            if not hits.bone and math_abs(current_x) < 20 and (current_z > -20 and current_z < 40) then
+                hits.bone = true
+                dmg_mult = dmg_mult + 0.3
+                table.insert(path_log, "Foot/Toes Struck")
+                
+                bullet_pen = apply_tissue_drag("tibia", bone_name, bullet_pen, flesh_power, wounds, side_prefix .. "shin", "fracture")
+                total_pain_spike = total_pain_spike + 15
+                
+                if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FOOT/TOES STRUCK", "flesh") end
+                remaining_power = remaining_power - 0.05
+                if bullet_pen <= 0 then break end
+            end
         end
     end
 
@@ -662,7 +732,7 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
         table.insert(wounds, acquire_wound("external", accumulated_flesh_bleed, "limb_flesh", bone_name))
     end
     
-    return dmg_mult, bleed_mult, table.concat(path_log, " -> "), severe_shock, wounds, total_pain_spike
+    return dmg_mult, bleed_mult, table.concat(path_log, " -> "), severe_shock, wounds, total_pain_spike, is_exit, travel_dist_mm, remaining_power, bullet_pen
 end
 
 -- ==========================================================
@@ -712,9 +782,17 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
     local dispersion_x = math_random(-60, 60)
     local current_x = math_max(-150, math_min((-dot_right * 150) + dispersion_x, 150))
     local current_z = 150 + (dot_fwd * 150) 
+    
+    -- Shift X coordinate laterally if the hit specifically struck the outer collarbones
+    if string.find(bone_name, "l_clavicle") then 
+        current_x = math_max(-150, math_min(current_x + 80, 150))
+    elseif string.find(bone_name, "r_clavicle") then 
+        current_x = math_max(-150, math_min(current_x - 80, 150))
+    end
+    
     local current_y = 300
     
-    if string.find(bone_name, "spine2") then current_y = 450
+    if string.find(bone_name, "spine2") or string.find(bone_name, "clavicle") then current_y = 450
     elseif string.find(bone_name, "spine1") then current_y = 250
     elseif string.find(bone_name, "spine") then current_y = 150 
     elseif string.find(bone_name, "pelvis") then current_y = 50 end
@@ -742,6 +820,8 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
     local bone_spall_flag = false
     local ribs_shattered = false
     local severe_shock = false
+    local is_exit = false
+    local travel_dist_mm = 0
 
     local step_count = 0
     local max_steps = 200
@@ -777,7 +857,10 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
 
         local dist_from_center = math_sqrt(current_x^2 + (current_z - 150)^2)
         if dist_from_center > 155 or current_y < -50 or current_y > 650 then
+            is_exit = true
+            travel_dist_mm = step_count * step_size_mm
             total_dmg_mult, total_bleed_mult = total_dmg_mult + 0.5, total_bleed_mult + 1.0
+            if target:id() == 0 then play_sequential_bhp() end
             table.insert(path_log, "Exit Wound")
             break
         end
@@ -790,10 +873,11 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
                 if rib_wave > 0.2 and not ribs_shattered then
                     ribs_shattered = true
                     if kinetic_energy > 1.5 then
-                        bullet_pen = apply_tissue_drag("rib", "rib", bullet_pen, flesh_power, wounds, "torso")
+                        bullet_pen = apply_tissue_drag("rib", "ribs", bullet_pen, flesh_power, wounds, "torso", "fracture")
                         bone_spall_flag = true
                         remaining_power = remaining_power - 0.15 
                         table.insert(path_log, "Rib Shattered (Internal Spall)")
+                        if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("RIB SHATTERED - INTERNAL SPALL", "flesh") end
                         kinetic_energy = kinetic_energy - 1.0 
                         total_pain_spike = total_pain_spike + TORSO_RIB_SPALL_PAIN
                         if bullet_pen <= 0 then break end
@@ -807,7 +891,7 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
             end
         end
         
-        if current_x > -50 and current_x < 20 and current_y > 380 and current_y < 480 and current_z > 50 and current_z < 150 then
+        if current_x > -50 and current_x < 20 and current_y > 320 and current_y < 420 and current_z > 50 and current_z < 150 then
             if not hits.heart then
                 hits.heart = true
                 table.insert(path_log, "Heart/Aorta")
@@ -944,11 +1028,42 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
         total_pain_spike = total_pain_spike + TORSO_EXIT_WOUND_PAIN
     end
 
-    return total_dmg_mult, total_bleed_mult, table.concat(path_log, " -> "), severe_shock, wounds, total_pain_spike
+    return total_dmg_mult, total_bleed_mult, table.concat(path_log, " -> "), severe_shock, wounds, total_pain_spike, is_exit, travel_dist_mm, remaining_power, bullet_pen
 end
 
 -- BUG-02: apply_player_wounds was dead code with conflicting bleed values.
 -- Wound injection is now handled inline by the raymarchers via process_flesh_hit().
+
+-- ==========================================================
+-- 3D OVERPENETRATION RAYCASTER
+-- ==========================================================
+local BONE_RADII = {
+    ["bip01_head"] = 0.12, ["bip01_neck"] = 0.08, ["bip01_spine2"] = 0.18, ["bip01_spine1"] = 0.18, ["bip01_spine"] = 0.18, ["bip01_pelvis"] = 0.18,
+    ["bip01_l_upperarm"] = 0.08, ["bip01_r_upperarm"] = 0.08, ["bip01_l_forearm"] = 0.06, ["bip01_r_forearm"] = 0.06,
+    ["bip01_l_thigh"] = 0.12, ["bip01_r_thigh"] = 0.12, ["bip01_l_calf"] = 0.08, ["bip01_r_calf"] = 0.08,
+    ["bip01_l_hand"] = 0.05, ["bip01_r_hand"] = 0.05, ["bip01_l_foot"] = 0.06, ["bip01_r_foot"] = 0.06
+}
+
+local function get_overpenetration_target(target, exit_pos, exit_dir)
+    local best_bone, best_bone_id, best_dist = nil, nil, 1.5
+    for bone_name, radius in pairs(BONE_RADII) do
+        if not hit_state.traversed[bone_name] then
+            local bone_id = target:get_bone_id(bone_name)
+            if bone_id and bone_id ~= 65535 then
+                local p = target:bone_position(bone_name)
+                if p then
+                    local v = vector():set(p):sub(exit_pos)
+                    local t = v:dotproduct(exit_dir)
+                    if t > 0.01 and t < best_dist then
+                        local closest_pt = vector():set(exit_pos):add(vector():set(exit_dir):mul(t))
+                        if p:distance_to(closest_pt) <= radius then best_bone, best_dist, best_bone_id = bone_name, t, bone_id end
+                    end
+                end
+            end
+        end
+    end
+    return best_bone, best_bone_id
+end
 
 -- ==========================================================
 -- BLUNT FORCE TRAUMA MATH (ARMOR BACKFACE DEFORMATION)
@@ -964,15 +1079,28 @@ local function process_blunt_hit(target, shit, bone_name, category, flesh_power)
     if power < BLUNT_TIER1_THRESH then
         -- Tier 1: Surface Bruising
         path_log = "Surface Bruising"
+        if is_player then
+            local sound_pool = math_random(1, 2)
+            if sound_pool == 1 then utils_obj.play_sound("actor\\pain_" .. tostring(math_random(1, 8)))
+            else utils_obj.play_sound("actor\\pain" .. tostring(math_random(1, 8))) end
+        end
     elseif power < BLUNT_TIER2_THRESH then
         -- Tier 2: Severe Contusion
         dmg_mult = BLUNT_TIER2_DMG_MULT
         path_log = "Severe Contusion"
-        if is_player then db.actor.power = -BLUNT_TIER2_STAMINA_DRAIN end
+        if is_player then 
+            db.actor.power = -BLUNT_TIER2_STAMINA_DRAIN 
+            local sound_pool = math_random(1, 2)
+            if sound_pool == 1 then utils_obj.play_sound("actor\\pain_" .. tostring(math_random(1, 8)))
+            else utils_obj.play_sound("actor\\pain" .. tostring(math_random(1, 8))) end
+        end
     elseif power < BLUNT_TIER3_THRESH then
         -- Tier 3: Bone Fracture / Concussion
         dmg_mult = BLUNT_TIER3_DMG_MULT
-        if is_player then db.actor.power = -BLUNT_TIER3_STAMINA_DRAIN end
+        if is_player then 
+            db.actor.power = -BLUNT_TIER3_STAMINA_DRAIN 
+            utils_obj.play_sound("actor\\hit_" .. tostring(math_random(5, 7)))
+        end
         
         if category == "head" then
             path_log = "Concussion"
@@ -1004,7 +1132,10 @@ local function process_blunt_hit(target, shit, bone_name, category, flesh_power)
         -- Tier 4: Internal Rupture / Skull Fracture
         dmg_mult = BLUNT_TIER4_DMG_MULT
         bleed_mult = BLUNT_TIER4_BLEED_MULT 
-        if is_player then db.actor.power = -BLUNT_TIER4_STAMINA_DRAIN end
+        if is_player then 
+            db.actor.power = -BLUNT_TIER4_STAMINA_DRAIN 
+            utils_obj.play_sound("actor\\drop" .. tostring(math_random(1, 4)))
+        end
         
         if category == "head" then
             path_log = "Skull Fracture"
@@ -1025,15 +1156,20 @@ local function process_blunt_hit(target, shit, bone_name, category, flesh_power)
     shit.power = shit.power * dmg_mult
     
     if is_player then
+        local target_bone = bone_name or "bip01_spine"
+        local bruise_mult = 1.0
+        if mod_medical_core and mod_medical_core.add_bruise then
+            bruise_mult = mod_medical_core.add_bruise(target_bone)
+        end
+
         -- PHASE 3: Redirect blunt damage to Medical Core pain/internal bleeding
         if mod_medical_core then
             -- BRUISE SYSTEM (No active wound, just instantaneous pain spike)
-            local target_bone = bone_name or "bip01_spine"
             local base_pain = BRUISE_PAIN_MAP[target_bone] or BLUNT_FALLBACK_PAIN
-            local pain_spike = base_pain * dmg_mult
+            local pain_spike = (base_pain * dmg_mult) * bruise_mult
             
             mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + pain_spike)
-            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg(string.format("BRUISE SUSTAINED - PAIN SPIKE +%d", math.floor(pain_spike)), "flesh") end
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg(string.format("BRUISE SUSTAINED - PAIN SPIKE +%d (x%.1f)", math.floor(pain_spike), bruise_mult), "flesh") end
         end
         shit.power = 0.0001 -- Nullify vanilla health reduction
     end
@@ -1064,6 +1200,7 @@ local function process_blast_hit(target, shit, flesh_power)
         pain_spike = BLAST_TIER1_PAIN
         if is_player then
             level.add_pp_effector("snd_shock.ppe", 2030, false)
+            utils_obj.play_sound("actor\\pain" .. tostring(math_random(1, 8)))
             if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("MINOR OVERPRESSURE - AUDITORY TRAUMA", "flesh") end
         end
     elseif flesh_power < BLAST_TIER2_THRESH then
@@ -1073,6 +1210,7 @@ local function process_blast_hit(target, shit, flesh_power)
         if is_player then
             trigger_physiological_effect("hypoxia")
             db.actor.power = -BLAST_TIER2_STAMINA_DRAIN
+            utils_obj.play_sound("actor\\health_2_" .. tostring(math_random(1, 4)))
             if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("MODERATE OVERPRESSURE - BLAST LUNG", "critical") end
         end
     else
@@ -1082,6 +1220,7 @@ local function process_blast_hit(target, shit, flesh_power)
         if is_player then
             trigger_physiological_effect("organ_damage")
             db.actor.power = -BLAST_TIER3_STAMINA_DRAIN
+            utils_obj.play_sound("actor\\drop" .. tostring(math_random(1, 4)))
             if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("SEVERE OVERPRESSURE - GI RUPTURE", "critical") end
         end
         local active_weapon = target:active_item()
@@ -1158,8 +1297,8 @@ end
 -- MAIN HIT PROCESSOR
 -- ==========================================================
 function process_flesh_hit(target, shit, flesh_power, flesh_impulse, bullet_pen, bone_id, impact_type)
-    if not (shit.type == hit.fire_wound or shit.type == hit.explosion) then return end
-    if flesh_power <= 0.01 then return end 
+    if not (shit.type == hit.fire_wound or shit.type == hit.explosion) then return false, nil end
+    if flesh_power <= 0.01 then return false, nil end 
     
     -- Dynamically extract unarmored penetration if bypassed by armor plates
     if not bullet_pen or bullet_pen == DEFAULT_UNARMORED_PENETRATION then
@@ -1168,17 +1307,20 @@ function process_flesh_hit(target, shit, flesh_power, flesh_impulse, bullet_pen,
 
     local bone_name = target:bone_name(bone_id) or ""
     local category = get_bone_category(bone_name)
+    if bone_name ~= "" then
+        hit_state.traversed[bone_name] = true
+    end
     
     -- Route blunt impacts from the armor script away from the raymarcher
     if impact_type == "BLUNT" then
         process_blunt_hit(target, shit, bone_name, category, flesh_power)
-        return
+        return false, nil
     end
 
     -- Route explosive shockwaves away from the raymarcher
     if impact_type == "OVERPRESSURE" then
         process_blast_hit(target, shit, flesh_power)
-        return
+        return false, nil
     end
     
     local is_player_involved = (target:id() == 0) or (shit.draftsman and shit.draftsman:id() == 0)
@@ -1186,23 +1328,26 @@ function process_flesh_hit(target, shit, flesh_power, flesh_impulse, bullet_pen,
     local final_dmg_mult, final_bleed_mult, organ_path, severe_shock = 1.0, 1.0, "N/A", false
     local wounds = {}
     local pain_spike = 0
+    local is_exit, travel_mm, rem_power, rem_pen = false, 0, 0, 0
 
     if category == "head" then
-        final_dmg_mult, final_bleed_mult, organ_path, severe_shock, wounds, pain_spike = calculate_head_trauma(shit.direction, target:direction(), bone_name, flesh_power, flesh_impulse, bullet_pen)
+        final_dmg_mult, final_bleed_mult, organ_path, severe_shock, wounds, pain_spike, is_exit, travel_mm, rem_power, rem_pen = calculate_head_trauma(target, shit.direction, target:direction(), bone_name, flesh_power, flesh_impulse, bullet_pen)
     elseif category == "neck" then
-        final_dmg_mult, final_bleed_mult, organ_path, severe_shock, wounds, pain_spike = calculate_neck_trauma(target, shit, bone_name, flesh_power, flesh_impulse, bullet_pen)
+        final_dmg_mult, final_bleed_mult, organ_path, severe_shock, wounds, pain_spike, is_exit, travel_mm, rem_power, rem_pen = calculate_neck_trauma(target, shit, bone_name, flesh_power, flesh_impulse, bullet_pen)
     elseif category == "spine" or category == "pelvis" then
         if is_player_involved then
-            final_dmg_mult, final_bleed_mult, organ_path, severe_shock, wounds, pain_spike = raymarch_torso(target, shit, bone_name, flesh_power, flesh_impulse, bullet_pen, impact_type)
+            final_dmg_mult, final_bleed_mult, organ_path, severe_shock, wounds, pain_spike, is_exit, travel_mm, rem_power, rem_pen = raymarch_torso(target, shit, bone_name, flesh_power, flesh_impulse, bullet_pen, impact_type)
         else
             local kinetic_energy = flesh_power * (flesh_impulse or 1.0)
             final_dmg_mult, final_bleed_mult, organ_path = simplified_npc_torso(bone_name, kinetic_energy)
+            severe_shock, wounds, pain_spike, is_exit, travel_mm, rem_power, rem_pen = false, {}, 0, false, 0, 0, 0
         end
     else 
         if is_player_involved then
-            final_dmg_mult, final_bleed_mult, organ_path, severe_shock, wounds, pain_spike = raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse, bullet_pen)
+            final_dmg_mult, final_bleed_mult, organ_path, severe_shock, wounds, pain_spike, is_exit, travel_mm, rem_power, rem_pen = raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse, bullet_pen)
         else
             final_dmg_mult, final_bleed_mult, organ_path, severe_shock = 0.5, 1.0, "Limb Hit (Simplified)", false
+            wounds, pain_spike, is_exit, travel_mm, rem_power, rem_pen = {}, 0, false, 0, 0, 0
         end
     end
 
@@ -1233,14 +1378,39 @@ function process_flesh_hit(target, shit, flesh_power, flesh_impulse, bullet_pen,
         db.actor.power = -(shock_amount * bullet_impulse * SHOCK_STAMINA_DRAIN_MULT)
         shit.power = 0.0001 -- Nullify vanilla health reduction
     end
+    
+    local overpen_bone_id = nil
+    local next_bone_name = nil
+    
+    -- Caller must recursively invoke armor hit callbacks using hit_state.remaining_power/pen
+    if is_exit and rem_pen > 0 and rem_power > 0 and hit_state.iterations < MAX_OVERPENETRATION_ITERATIONS then
+        local entry_p = target:bone_position(bone_name)
+        if entry_p then
+            local exit_pos = vector():set(entry_p):add(vector():set(shit.direction):mul(travel_mm / 1000.0))
+            next_bone_name, overpen_bone_id = get_overpenetration_target(target, exit_pos, shit.direction)
+            
+            if overpen_bone_id then
+                hit_state.remaining_power = rem_power
+                hit_state.remaining_pen = rem_pen
+                hit_state.iterations = hit_state.iterations + 1
+                
+                if ui_ama_combat_feed and target:id() == 0 then
+                    ui_ama_combat_feed.push_msg(string.format("OVERPENETRATION: %s -> %s", bone_name, next_bone_name), "critical")
+                end
+            end
+        end
+    end
 
     if mod_directional_armor and mod_directional_armor.AMA_DEBUG_MODE then
         log(string.format("[AMA FLESH MATH] ----------------------------------------------"))
         log(string.format("[TARGET]      : %s", target:name() or "db.actor"))
         log(string.format("[BONE]        : %s (%s)", bone_name, category))
         log(string.format("[WOUND PATH]  : %s", organ_path))
+        if overpen_bone_id then log(string.format("[OVERPEN]     : Raycaster detected secondary impact on %s!", next_bone_name)) end
         log(string.format("[MULTIPLIERS] : Dmg: %.2fx | Bleed: %.2fx", final_dmg_mult, final_bleed_mult))
         log(string.format("[RESULT]      : Final Biological Power: %.2f", shit.power))
         log(string.format("[--------------------------------------------------------------]"))
     end
+    
+    return overpen_bone_id ~= nil, overpen_bone_id
 end

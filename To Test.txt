@@ -1,0 +1,139 @@
+======================================================================
+AMA OVERHAUL - MASTER TESTING CHECKLIST
+======================================================================
+Before implementing the Psy/Sanity system or the Surgeon Kit, verify 
+the following core systems are functioning correctly in-game.
+
+----------------------------------------------------------------------
+PHASE 1: UI & HUD SYSTEMS
+----------------------------------------------------------------------
+[ ] COMBAT FEED (ui_ama_combat_feed.script)
+    - Trigger: Get shot or hit an NPC.
+    - Expectation: Messages scroll up on the left side of the screen.
+    - Expectation: Colors match severity (Yellow = Stopped, Green = Ricochet, Red = Breached/Flesh).
+    - Expectation: Messages smoothly fade out after 10 seconds.
+    - Expectation: Shotgun blasts (multiple pellets) do not spam 8 identical messages at once (0.5s throttle check).
+
+[ ] PAPERDOLL (ui_ama_paperdoll.script)
+    - Trigger: Equip armor/plates, press TAB to toggle.
+    - Expectation: Paperdoll appears in the bottom left.
+    - Expectation: Properly displays equipped plates (Front, Back, L_Shin, etc.).
+    - Expectation: Colors shift from Green -> Yellow -> Orange -> Red as durability drops.
+
+[ ] MEDICAL TERMINAL (ui_ama_terminal.script)
+    - Trigger: Open inventory, switch to Medical Mode. Press LCTRL to cycle views.
+    - Expectation: Flesh, Organ, Skeletal, and Circulatory views cycle correctly.
+    - Expectation: If you have an active bleeding wound, the corresponding limb/organ turns RED.
+    - Expectation: If an organ/bone is stabilized (Surgical Kit / Splint), it turns YELLOW.
+    - Expectation: The left-side text logs actively track bleeding (mL/s), active flesh wounds, and bone fractures.
+
+----------------------------------------------------------------------
+PHASE 2: DIRECTIONAL ARMOR MATH
+----------------------------------------------------------------------
+[ ] RICOCHETS
+    - Trigger: Have an NPC shoot you at an extreme angle (e.g., turning your side slightly to them while wearing a hard plate).
+    - Expectation: Combat feed says "DEFLECTED ROUND" (Green). You take 0 damage, hear a ricochet sound, and sparks fly.
+
+[ ] SOFT ARMOR CATCH & BLUNT TRAUMA
+    - Trigger: Get shot in the chest by a pistol while wearing Kevlar/Polyethylene.
+    - Expectation: Combat feed says "CAUGHT PROJECTILE" or "DEFORMED: BLUNT TRAUMA".
+    - Expectation: You lose stamina and take minor health damage (bruising), but NO bleeding wounds are generated.
+
+[ ] LETHAL BREACH
+    - Trigger: Get shot in the chest by a high-caliber rifle (AP rounds) while wearing low-tier armor.
+    - Expectation: Combat feed says "ARMOR BREACHED: FRONT PLATE". 
+    - Expectation: You take heavy damage, and the bullet passes into the Flesh Math raymarcher (triggering organ/bone hits).
+
+[ ] PLATE DESTRUCTION
+    - Trigger: Stand still and let an NPC shoot your plate repeatedly.
+    - Expectation: When plate condition drops below 5%, feed says "PLATE SHATTERED". Subsequent hits to that zone say "SOFT ARMOR BREACHED".
+
+[ ] MUTANT MELEE PHYSICS
+    - Trigger: Let a mutant hit you while wearing Steel/Scrap vs Ceramic.
+    - Expectation: Steel/Scrap plates reflect minor damage back to the mutant.
+    - Expectation: Ceramic plates degrade massively (mutants crush ceramics).
+
+----------------------------------------------------------------------
+PHASE 3: FLESH MATH & RAYMARCHING
+----------------------------------------------------------------------
+[ ] ORGAN PUNCTURES
+    - Trigger: Get shot in the chest (unarmored or breached).
+    - Expectation: The 3D raymarcher detects internal organs based on the bullet's angle.
+    - Expectation: Hitting lungs causes "LUNG PUNCTURED - HYPOXIA" (stamina drain, coughing, grey screen).
+    - Expectation: Hitting the spine causes "THORACIC SPINE SEVERED" (screen flashes, character drops).
+
+[ ] ARTERIAL BLEEDS
+    - Trigger: Get shot in the inner thigh, neck, or underarm.
+    - Expectation: Feed says "FEMORAL/JUGULAR/BRACHIAL ARTERY SEVERED".
+    - Expectation: Extreme blood loss (e.g., 15-20 mL/s). Screen throbs, heartbeat sound plays loudly.
+
+[ ] BONE FRACTURES & DISARMING
+    - Trigger: Get shot in the arms or legs.
+    - Expectation: Getting shot in the arm has a chance to force you to drop your active weapon.
+    - Expectation: Getting shot in the leg instantly zeroes your stamina and triggers a heavy limp (camera sway, speed penalty).
+
+[ ] OVERPENETRATION
+    - Trigger: Get shot in the arm from the side so the bullet passes through your arm and into your chest.
+    - Expectation: Feed explicitly says "OVERPENETRATION: r_forearm -> torso". You take damage and wounds in BOTH zones.
+
+[ ] EXPLOSIVE OVERPRESSURE
+    - Trigger: Stand near a grenade explosion.
+    - Expectation: Armor is completely bypassed. If close enough, you get "BLAST LUNG" or "GI TRACT RUPTURE" (internal bleeding, heavy pain, hearing loss).
+
+----------------------------------------------------------------------
+PHASE 4: MEDICAL ITEMS & CONTEXT MENUS
+----------------------------------------------------------------------
+[ ] CONTEXT MENU RESTRICTIONS
+    - Trigger: Try to double-click or quick-slot a bandage, tourniquet, or medkit.
+    - Expectation: The game blocks it. Feed says "NEGATIVE - USE TARGETED MENU (RIGHT CLICK)".
+
+[ ] EXTREMITY TOURNIQUETS
+    - Trigger: Right-click a Tourniquet (Jgut) and apply to a bleeding leg.
+    - Expectation: Bleeding instantly stops. Status in terminal changes to "TOURNIQUETED" (Orange).
+    - Expectation: Wait ~10 real-time minutes (or speed up timescale). Ischemic pain begins, steadily draining health until removed by a surgeon.
+
+[ ] FIELD SURGERY & SPLINTS
+    - Trigger: Apply a Survival Kit (Splint) to a fractured leg.
+    - Expectation: Leg bone turns Yellow on the Skeletal terminal. Limp penalty is heavily reduced.
+    - Trigger: Apply a Scientific Medkit to a punctured lung.
+    - Expectation: Lung turns Yellow on the Organ terminal. Internal bleeding stops completely. "STABILIZED".
+
+[ ] NARCOTICS & STAMINA CAPS
+    - Trigger: Consume Morphine or Yadylin.
+    - Expectation: Pain level instantly drops to 0. Screen gets a mild psy-fade. Max stamina is capped at 40% for the duration.
+    - Expectation: When it wears off, pain "rebounds" based on how many active wounds you still have.
+
+[ ] SEPSIS & INFECTION
+    - Trigger: Walk into deep water/swamps while you have an active, unbandaged wound.
+    - Expectation: Chance to trigger "OPEN WOUNDS CONTAMINATED". Sepsis timer begins.
+    - Expectation: After 5 in-game minutes of sepsis, fever triggers (stamina cap drops, screen blurs).
+    - Trigger: Consume Antibiotics.
+    - Expectation: Sepsis timer pauses and slowly drains.
+
+----------------------------------------------------------------------
+PHASE 5: NPC MECHANICS
+----------------------------------------------------------------------
+[ ] VIRTUAL LOADOUTS
+    - Trigger: Spawn various NPCs (Rookies, Veterans, Monolith, Bandits).
+    - Expectation: Monolith/Mercs spawn with higher-tier plates (Ceramics, Boron). Bandits spawn with Scrap/Kevlar.
+    - Expectation: Heavy armors (Nosorog/Exo) always spawn with maximum coverage (Front, Back, Sides, Limbs).
+
+[ ] NPC ARMOR HIT REGISTRATION
+    - Trigger: Shoot an NPC in the chest with a low-tier pistol.
+    - Expectation: You hear a ricochet/metal "ding" sound, or the bullet gets stopped. The NPC takes virtually no damage.
+    - Trigger: Shoot them in the unarmored face or with AP rifle rounds.
+    - Expectation: They drop quickly.
+
+[ ] SCAVENGING
+    - Trigger: Loot a dead NPC.
+    - Expectation: They drop 0 to 3 random plates/limb armors from their virtual loadout. 
+    - Expectation: The dropped plates are physically degraded based on how many times you shot them in that specific zone.
+
+----------------------------------------------------------------------
+PHASE 6: SURGEON / MEDIC NPC
+----------------------------------------------------------------------
+[ ] MEDICAL RESTORATION
+    - Trigger: Go to an NPC Medic with limb damage, organ damage, or active bleeding. Choose the surgery dialog.
+    - Expectation: Cost dynamically scales based on how messed up you are (CNS damage and Arterials cost a fortune).
+    - Expectation: Screen fades to black, time advances. You wake up fully healed, limbs white on the paperdoll, all bleeds gone, stamina drained.
+======================================================================

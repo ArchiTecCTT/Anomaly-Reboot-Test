@@ -37,13 +37,17 @@ local PAIN_DECAY_RATE_CLEAN     = 3.0 / 60.0  -- 3 pain/min when no wounds remai
 local PAIN_DECAY_RATE_CLOTTED   = 1.0 / 60.0  -- 1 pain/min when wounds clotted
 local FLESH_CLOT_TIME           = 300.0       -- Seconds until minor flesh wounds clot
 local LIMB_DEGRADATION_MULT     = 0.001       -- Health lost per mL/s of bleeding per second
-local LIMB_HEAL_RATE            = 0.002       -- Health gained per second when not bleeding
+local LIMB_HEAL_RATE            = 0.000       -- Health gained per second when not bleeding.
 
 -- Sepsis & Infection
 local SEPSIS_FEVER_THRESH       = 300.0       -- Seconds of sepsis before fever spikes
 local SEPSIS_CURE_RATE          = 0.5         -- Sepsis reduction per second with antibiotics
 local INFECTION_CHANCE          = 0.15        -- Chance to get infected when wading in water
 local INFECTION_SEPSIS_PENALTY  = 20.0        -- Sepsis seconds added on water infection
+
+local BRUISE_RECOVERY_TIME      = 3600.0      -- 1 in-game hour to naturally recover from a bruise
+local BRUISE_BASE_MULT          = 0.5         -- Base pain multiplier on first hit
+local BRUISE_STEP_MULT          = 0.2         -- Pain multiplier addition per consecutive hit
 
 -- Wound Aggravation
 local WOUND_AGGRO_CHANCE        = 0.03        -- Chance for clot to rupture while sprinting
@@ -96,6 +100,26 @@ bio_state = {
         l_thigh    = 1.0,  r_thigh    = 1.0,
         l_shin     = 1.0,  r_shin     = 1.0,
     },
+    splinted_limbs = {},
+    organ_health = {
+        brain    = 1.0,
+        lungs    = 1.0,
+        heart    = 1.0,
+        liver    = 1.0,
+        gi_tract = 1.0,
+        spine    = 1.0,
+    },
+    bone_health = {
+        skull = 1.0, cervical_spine = 1.0, lower_spine = 1.0,
+        ribs = 1.0, ilium = 1.0, sacrum = 1.0,
+        l_humerus = 1.0, r_humerus = 1.0,
+        l_ulna = 1.0, r_ulna = 1.0,
+        l_femur = 1.0, r_femur = 1.0,
+        l_tibia = 1.0, r_tibia = 1.0
+    },
+    treated_flesh = {},
+    stabilized_organs = {},
+    bruises = {},
 }
 
 -- Blood type distribution: O=44%, A=42%, B=10%, AB=4% 
@@ -120,31 +144,59 @@ function get_wounds() return bio_state.wounds end
 function get_blood_type() return bio_state.blood_type end
 function get_blood_type_name() return BLOOD_TYPE_NAMES[bio_state.blood_type] or "UNKNOWN" end
 
-function get_sorted_wounds()
+function get_active_wounds()
     local sorted = {}
     if not bio_state.wounds then return sorted end
-    
     for i, w in ipairs(bio_state.wounds) do
-        local b_rate = tonumber(w.bleed_rate) or 0
-        if b_rate > 0 or w.type == "fracture" then
-            local w_name = ""
-            if w.type == "fracture" then
-                w_name = w.organ or "bone"
-            else
-                w_name = w.limb or "body"
-                if w_name == "" then w_name = "body" end
-            end
-            
-            table.insert(sorted, {
-                name = w_name,
-                type = w.type or "unknown",
-                bleed = b_rate
-            })
+        if w.status == "active" and w.bleed_rate > 0 and w.type ~= "fracture" then
+            local w_name = w.limb or "body"
+            if w_name == "" then w_name = "body" end
+            table.insert(sorted, { name = w_name, type = w.type or "unknown", bleed = w.bleed_rate, status = w.status })
         end
     end
-    
     table.sort(sorted, function(a, b) return a.bleed > b.bleed end)
     return sorted
+end
+
+function get_flesh_wounds()
+    local list = {}
+    if not bio_state.wounds then return { list = {}, total = 0 } end
+    for i, w in ipairs(bio_state.wounds) do
+        if w.type ~= "fracture" then
+            local w_name = w.limb or "body"
+            if w_name == "" then w_name = "body" end
+            local severity = w.original_bleed or w.bleed_rate or 0
+            table.insert(list, { name = w_name, type = w.type or "unknown", status = w.status, severity = severity })
+        end
+    end
+    table.sort(list, function(a, b) 
+        if a.status == "active" and b.status ~= "active" then return true end
+        if a.status ~= "active" and b.status == "active" then return false end
+        return a.severity > b.severity 
+    end)
+    local top5 = {}
+    for i=1, math_min(5, #list) do table.insert(top5, list[i]) end
+    return { list = top5, total = #list }
+end
+
+function get_bone_fractures()
+    local list = {}
+    if not bio_state.wounds then return { list = {}, total = 0 } end
+    for i, w in ipairs(bio_state.wounds) do
+        if w.type == "fracture" then
+            local w_name = w.organ or "bone"
+            if w_name == "" then w_name = "bone" end
+            table.insert(list, { name = w_name, type = w.type or "unknown", status = w.status })
+        end
+    end
+    table.sort(list, function(a, b)
+        if a.status == "active" and b.status ~= "active" then return true end
+        if a.status ~= "active" and b.status == "active" then return false end
+        return false
+    end)
+    local top5 = {}
+    for i=1, math_min(5, #list) do table.insert(top5, list[i]) end
+    return { list = top5, total = #list }
 end
 
 function set_blood_volume(val) bio_state.blood_volume = math_max(0.0, math_min(MAX_BLOOD_VOLUME, val)) end
@@ -162,14 +214,15 @@ end
 local function map_bone_to_limb(bone_name)
     if not bone_name or bone_name == "" then return "torso" end
     local b = string.lower(bone_name)
+    if string.find(b, "clavicle") then return "torso" end
     if string.find(b, "l_upperarm") or string.find(b, "l_shoulder") then return "l_upperarm" end
     if string.find(b, "r_upperarm") or string.find(b, "r_shoulder") then return "r_upperarm" end
-    if string.find(b, "l_forearm") then return "l_forearm" end
-    if string.find(b, "r_forearm") then return "r_forearm" end
+    if string.find(b, "l_forearm") or string.find(b, "l_hand") or string.find(b, "l_finger") then return "l_forearm" end
+    if string.find(b, "r_forearm") or string.find(b, "r_hand") or string.find(b, "r_finger") then return "r_forearm" end
     if string.find(b, "l_thigh") then return "l_thigh" end
     if string.find(b, "r_thigh") then return "r_thigh" end
-    if string.find(b, "l_calf") or string.find(b, "l_foot") then return "l_shin" end
-    if string.find(b, "r_calf") or string.find(b, "r_foot") then return "r_shin" end
+    if string.find(b, "l_calf") or string.find(b, "l_foot") or string.find(b, "l_toe") then return "l_shin" end
+    if string.find(b, "r_calf") or string.find(b, "r_foot") or string.find(b, "r_toe") then return "r_shin" end
     if string.find(b, "head") or string.find(b, "jaw") or string.find(b, "eye") or string.find(b, "neck") then return "head" end
     return "torso"
 end
@@ -182,7 +235,9 @@ function add_wound(wound_data)
         bleed_rate = wound_data.bleed_rate,
         organ      = wound_data.organ,
         limb       = mapped_limb,
-        original_bleed = wound_data.bleed_rate,  -- For tourniquet removal mechanic
+        original_bleed = wound_data.bleed_rate,
+        status     = wound_data.status or "active",
+        clot_timer = wound_data.clot_timer
     }
     table.insert(bio_state.wounds, copy)
     
@@ -200,6 +255,22 @@ function add_wound(wound_data)
             add_death_rating(dr)
         end
     end
+    
+    -- Track organ health specifically for the paperdoll UI
+    if org then
+        local target_org = org
+        if org == "left_lung" or org == "right_lung" then target_org = "lungs" end
+        if string.find(org, "spine") then target_org = "spine" end
+        if bio_state.organ_health[target_org] ~= nil then
+            local organ_dmg = (wound_data.lethality or 0.1) + ((wound_data.bleed_rate or 0) * 0.005)
+            bio_state.organ_health[target_org] = math_max(0.0, bio_state.organ_health[target_org] - organ_dmg)
+        end
+    end
+    
+    -- Track bone health specifically for the skeletal paperdoll UI
+    if wound_data.type == "fracture" and org and bio_state.bone_health[org] ~= nil then
+        bio_state.bone_health[org] = math_max(0.0, bio_state.bone_health[org] - 0.6)
+    end
 
 end
 
@@ -211,6 +282,32 @@ end
 
 function clear_wounds()
     bio_state.wounds = {}
+end
+
+function add_bruise(zone)
+    local mapped_zone = map_bone_to_limb(zone)
+    if not bio_state.bruises then bio_state.bruises = {} end
+    if not bio_state.bruises[mapped_zone] then
+        bio_state.bruises[mapped_zone] = { hits = 1, timer = BRUISE_RECOVERY_TIME }
+        return BRUISE_BASE_MULT
+    else
+        local b = bio_state.bruises[mapped_zone]
+        b.hits = b.hits + 1
+        b.timer = BRUISE_RECOVERY_TIME
+        return BRUISE_BASE_MULT + (b.hits - 1) * BRUISE_STEP_MULT
+    end
+end
+
+function reduce_bruise_timers(amount)
+    if not bio_state.bruises then return end
+    local to_remove = {}
+    for k, b in pairs(bio_state.bruises) do
+        b.timer = math_max(0, b.timer - amount)
+        if b.timer <= 0 then table.insert(to_remove, k) end
+    end
+    for _, k in ipairs(to_remove) do
+        bio_state.bruises[k] = nil
+    end
 end
 
 -- Limb health API
@@ -230,6 +327,28 @@ function heal_limb(limb, amount)
     end
 end
 
+local limb_to_bones = {
+    ["r_upperarm"] = {"r_humerus"}, ["l_upperarm"] = {"l_humerus"},
+    ["r_forearm"]  = {"r_ulna"},    ["l_forearm"]  = {"l_ulna"},
+    ["r_thigh"]    = {"r_femur"},   ["l_thigh"]    = {"l_femur"},
+    ["r_shin"]     = {"r_tibia"},   ["l_shin"]     = {"l_tibia"},
+    ["torso"]      = {"lower_spine", "sacrum", "ilium", "ribs"},
+    ["head"]       = {"skull", "cervical_spine"}
+}
+function splint_limb(limb)
+    bio_state.splinted_limbs[limb] = true
+    if bio_state.limb_health[limb] then
+        bio_state.limb_health[limb] = math_max(bio_state.limb_health[limb], 0.5)
+    end
+    if limb_to_bones[limb] then
+        for _, b in ipairs(limb_to_bones[limb]) do
+            if bio_state.bone_health[b] and bio_state.bone_health[b] < 0.5 then
+                bio_state.bone_health[b] = 0.5
+            end
+        end
+    end
+end
+
 function reset_biological_state()
     bio_state.blood_volume = MAX_BLOOD_VOLUME
     bio_state.pain_level = 0.0
@@ -238,6 +357,16 @@ function reset_biological_state()
     for k, _ in pairs(bio_state.limb_health) do
         bio_state.limb_health[k] = 1.0
     end
+    for k, _ in pairs(bio_state.organ_health) do
+        bio_state.organ_health[k] = 1.0
+    end
+    for k, _ in pairs(bio_state.bone_health) do
+        bio_state.bone_health[k] = 1.0
+    end
+    bio_state.splinted_limbs = {}
+    bio_state.treated_flesh = {}
+    bio_state.stabilized_organs = {}
+    bio_state.bruises = {}
 end
 
 -- ==========================================================
@@ -253,6 +382,32 @@ local function save_state(m_data)
     s.pain_level   = bio_state.pain_level
     s.sepsis_timer = bio_state.sepsis_timer
     s.blood_type   = bio_state.blood_type
+    
+    s.splinted_limbs = {}
+    for k, v in pairs(bio_state.splinted_limbs) do
+        s.splinted_limbs[k] = v
+    end
+    
+    s.organ_health = {}
+    for k, v in pairs(bio_state.organ_health) do
+        s.organ_health[k] = v
+    end
+    
+    s.bone_health = {}
+    for k, v in pairs(bio_state.bone_health) do
+        s.bone_health[k] = v
+    end
+    
+    s.treated_flesh = {}
+    for k, v in pairs(bio_state.treated_flesh) do s.treated_flesh[k] = v end
+    
+    s.stabilized_organs = {}
+    for k, v in pairs(bio_state.stabilized_organs) do s.stabilized_organs[k] = v end
+    
+    s.bruises = {}
+    if bio_state.bruises then
+        for k, v in pairs(bio_state.bruises) do s.bruises[k] = { hits = v.hits, timer = v.timer } end
+    end
     
     -- Save wounds
     s.wounds = {}
@@ -294,6 +449,44 @@ local function load_state_internal(m_data)
                     bio_state.limb_health[k] = v
                 end
             end
+        end
+        
+        bio_state.splinted_limbs = {}
+        if s.splinted_limbs then
+            for k, v in pairs(s.splinted_limbs) do
+                bio_state.splinted_limbs[k] = v
+            end
+        end
+        
+        if s.organ_health then
+            for k, v in pairs(s.organ_health) do
+                if bio_state.organ_health[k] ~= nil then
+                    bio_state.organ_health[k] = v
+                end
+            end
+        end
+        
+        if s.bone_health then
+            for k, v in pairs(s.bone_health) do
+                if bio_state.bone_health[k] ~= nil then
+                    bio_state.bone_health[k] = v
+                end
+            end
+        end
+        
+        bio_state.treated_flesh = {}
+        if s.treated_flesh then
+            for k, v in pairs(s.treated_flesh) do bio_state.treated_flesh[k] = v end
+        end
+        
+        bio_state.stabilized_organs = {}
+        if s.stabilized_organs then
+            for k, v in pairs(s.stabilized_organs) do bio_state.stabilized_organs[k] = v end
+        end
+        
+        bio_state.bruises = {}
+        if s.bruises then
+            for k, v in pairs(s.bruises) do bio_state.bruises[k] = { hits = v.hits, timer = v.timer } end
         end
         
         -- Load wounds
@@ -338,6 +531,8 @@ local last_update_time = 0
 local PPE_VIGNETTE_ID = 8501
 local PPE_PAIN_ID     = 8502
 local PPE_FEVER_ID    = 8504
+local PPE_HEAD_BLUR_ID = 8515
+local PPE_HEAD_CONCUSSION_ID = 8516
 
 local snd_heartbeat = nil  -- Lazy-init to avoid crash before engine ready
 
@@ -352,15 +547,22 @@ local CAM_ID_ARM_SWAY  = 8510
 local CAM_ID_LEFT_LEG  = 8511
 local CAM_ID_RIGHT_LEG = 8512
 local CAM_ID_BOTH_LEGS = 8513
+local CAM_ID_HEAD      = 8514
 
 -- Limb animation throttle
 local tg_leg_anm = 0
+local tg_head_anm = 0
+
+-- Systemic audio loops
+local tg_breath_loop = 0
 
 -- Environmental infection throttle
 local tg_env_check = 0
 
 -- Wound aggravation throttle
 local tg_aggro_check = 0
+
+local spine_speed_applied = false
 
 -- Footstep material tracking for water detection
 local last_footstep_material = ""
@@ -407,13 +609,14 @@ local function actor_on_update()
     if bio_state.wounds then
         for i = #bio_state.wounds, 1, -1 do
             local w = bio_state.wounds[i]
-            if w.type == "flesh" and w.bleed_rate and w.bleed_rate <= 0.5 then
+            if w.type == "flesh" and w.bleed_rate and w.bleed_rate <= 0.5 and w.status == "active" then
                 if not w.clot_timer then
                     w.clot_timer = FLESH_CLOT_TIME
                 else
                     w.clot_timer = w.clot_timer - dt
                     if w.clot_timer <= 0 then
-                        table.remove(bio_state.wounds, i)
+                        w.bleed_rate = 0
+                        w.status = "clotted"
                     end
                 end
             end
@@ -423,7 +626,7 @@ local function actor_on_update()
     -- 4. Limb Health Degradation (wounds reduce their associated limb)
     if bio_state.wounds then
         for i, w in ipairs(bio_state.wounds) do
-            if w.limb and w.limb ~= "" and w.bleed_rate and w.bleed_rate > 0.5 then
+            if w.limb and w.limb ~= "" and w.bleed_rate and w.bleed_rate > 0.5 and w.status == "active" then
                 local degradation = (w.bleed_rate * LIMB_DEGRADATION_MULT) * dt
                 damage_limb(w.limb, degradation)
             end
@@ -436,7 +639,7 @@ local function actor_on_update()
             local has_wound_on_limb = false
             if bio_state.wounds then
                 for i, w in ipairs(bio_state.wounds) do
-                    if w.limb == limb_key and w.bleed_rate and w.bleed_rate > 0.5 then
+                    if w.limb == limb_key and w.bleed_rate and w.bleed_rate > 0.5 and w.status == "active" then
                         has_wound_on_limb = true
                         break
                     end
@@ -496,6 +699,49 @@ local function actor_on_update()
         end
     end
     
+    -- Bruise Recovery Loop
+    if bio_state.bruises then
+        local to_remove = {}
+        for k, b in pairs(bio_state.bruises) do
+            b.timer = b.timer - dt
+            if b.timer <= 0 then table.insert(to_remove, k) end
+        end
+        for _, k in ipairs(to_remove) do
+            bio_state.bruises[k] = nil
+        end
+    end
+    
+    -- Organ Debuffs Application
+    if bio_state.stabilized_organs then
+        if bio_state.stabilized_organs["heart"] then
+            db.actor.power = -0.02 * dt  -- Counteract passive stamina regen
+        end
+        if bio_state.stabilized_organs["gi_tract"] then
+            local conds = db.actor:cast_Actor():conditions()
+            if conds then
+                if conds.ChangeSatiety then conds:ChangeSatiety(-0.00015 * dt) end
+                if conds.ChangeThirst then conds:ChangeThirst(-0.00025 * dt) end
+            end
+        end
+        if bio_state.stabilized_organs["liver"] then
+            db.actor.radiation = 0.0005 * dt
+        end
+        if bio_state.stabilized_organs["spine"] then
+            if speed and speed.add_speed then
+                if not spine_speed_applied then
+                    speed.add_speed("spine_stab", 0.75, false, true)
+                    speed.add_speed("spine_stab_sprint", 0.6, true, true)
+                    spine_speed_applied = true
+                end
+            end
+        else
+            if speed and speed.remove_speed and spine_speed_applied then
+                speed.remove_speed("spine_stab"); speed.remove_speed("spine_stab_sprint")
+                spine_speed_applied = false
+            end
+        end
+    end
+    
     -- 9. Stamina Cap System
     local stamina_cap = 1.0
     
@@ -514,6 +760,10 @@ local function actor_on_update()
         stamina_cap = math_min(stamina_cap, narc_cap)
     end
     
+    if bio_state.stabilized_organs and bio_state.stabilized_organs["lungs"] then
+        stamina_cap = math_min(stamina_cap, 0.75)
+    end
+    
     if mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.adrenaline_active then
         stamina_cap = 1.0
     end
@@ -524,9 +774,27 @@ local function actor_on_update()
         db.actor.power = stamina_cap
     end
     
+    -- 9.5 Systemic Breathing Audio Engine (Biological Degeneration)
+    if tg > tg_breath_loop then
+        if bio_state.blood_volume <= 2000.0 or bio_state.death_rating > 0.8 then
+            utils_obj.play_sound("actor\\health_1_" .. tostring(math_random(0, 4)))
+            tg_breath_loop = tg + math_random(2500, 3500)
+        elseif bio_state.pain_level > 80 then
+            utils_obj.play_sound("actor\\health_2_" .. tostring(math_random(1, 4)))
+            tg_breath_loop = tg + math_random(3000, 4500)
+        elseif bio_state.sepsis_timer > SEPSIS_FEVER_THRESH or stamina_cap < 0.5 then
+            -- Scale panting intensity based on stamina exhaustion
+            local run_intensity = math_floor((1.0 - stamina_cap) * 4.0)
+            run_intensity = math_max(0, math_min(4, run_intensity))
+            utils_obj.play_sound("actor\\run_" .. tostring(run_intensity))
+            tg_breath_loop = tg + math_random(1500, 2500)
+        end
+    end
+    
     -- 10. Limb-Specific Movement Penalties (inspired by Grok's BHS)
     process_leg_penalties(tg, dt)
     process_arm_penalties(tg)
+    process_head_penalties(tg)
     
     -- 11. Environmental Wound Infection
     if tg > tg_env_check then
@@ -563,8 +831,21 @@ end
 -- ==========================================================
 
 function process_leg_penalties(tg, dt)
-    local l_leg = math_min(bio_state.limb_health.l_thigh, bio_state.limb_health.l_shin)
-    local r_leg = math_min(bio_state.limb_health.r_thigh, bio_state.limb_health.r_shin)
+    local l_thigh_hp = math_min(bio_state.limb_health.l_thigh, bio_state.bone_health.l_femur or 1.0)
+    local l_shin_hp  = math_min(bio_state.limb_health.l_shin,  bio_state.bone_health.l_tibia or 1.0)
+    local r_thigh_hp = math_min(bio_state.limb_health.r_thigh, bio_state.bone_health.r_femur or 1.0)
+    local r_shin_hp  = math_min(bio_state.limb_health.r_shin,  bio_state.bone_health.r_tibia or 1.0)
+    
+    local l_leg = math_min(l_thigh_hp, l_shin_hp)
+    local r_leg = math_min(r_thigh_hp, r_shin_hp)
+    
+    local l_damaged = 0
+    if l_thigh_hp <= 0.5 then l_damaged = l_damaged + 1 end
+    if l_shin_hp <= 0.5 then l_damaged = l_damaged + 1 end
+    
+    local r_damaged = 0
+    if r_thigh_hp <= 0.5 then r_damaged = r_damaged + 1 end
+    if r_shin_hp <= 0.5 then r_damaged = r_damaged + 1 end
     
     -- Speed penalty via speed.script (Grok's approach)
     -- Formula: linear interpolation. At 1.0 health = 1.0x speed. At 0.0 = 0.375x speed.
@@ -599,51 +880,58 @@ function process_leg_penalties(tg, dt)
         local l_limp = (l_leg > 0.01) and math_exp(0.3 / l_leg) or 10.0
         local r_limp = (r_leg > 0.01) and math_exp(0.3 / r_leg) or 10.0
         local both_limp = (l_limp + r_limp) / 2
-        local anim_power = 0
         
-        if l_leg <= 0.0 and r_leg <= 0.0 then
-            -- Both legs destroyed
-            anim_power = (both_limp - 1) * 0.8
-            anim_power = math_min(anim_power, 3.0)
-            level.add_cam_effector("camera_effects\\switch\\" .. bothlegs_anm[math_random(#bothlegs_anm)] .. ".anm",
-                CAM_ID_BOTH_LEGS, false, "", 0, false, anim_power)
-            tg_leg_anm = tg + (is_sprinting and (LEG_ANM_DELAY * 1.6) or LEG_ANM_DELAY)
-            
-        elseif l_leg < 0.4 and l_leg < r_leg then
-            anim_power = (l_limp - 1) * 0.6
-            anim_power = math_min(anim_power, 3.0)
-            if not is_sprinting then
-                level.add_cam_effector("camera_effects\\switch\\" .. leftleg_anm[math_random(#leftleg_anm)] .. ".anm",
-                    CAM_ID_LEFT_LEG, false, "", 0, false, anim_power)
-                tg_leg_anm = tg + LEG_ANM_DELAY
-            end
-            
-        elseif r_leg < 0.4 and r_leg < l_leg then
-            anim_power = (r_limp - 1) * 0.6
-            anim_power = math_min(anim_power, 3.0)
-            if not is_sprinting then
-                level.add_cam_effector("camera_effects\\switch\\" .. rightleg_anm[math_random(#rightleg_anm)] .. ".anm",
-                    CAM_ID_RIGHT_LEG, false, "", 0, false, anim_power)
-                tg_leg_anm = tg + LEG_ANM_DELAY
-            end
-            
-        elseif l_leg < 0.4 and r_leg < 0.4 then
+        local anim_power = 0
+        local anm_name = nil
+        local cam_id = nil
+        
+        if l_damaged > 0 and r_damaged > 0 then
             anim_power = (both_limp - 1) * 0.6
-            anim_power = math_min(anim_power, 3.0)
-            level.add_cam_effector("camera_effects\\switch\\" .. bothlegs_anm[math_random(#bothlegs_anm)] .. ".anm",
-                CAM_ID_BOTH_LEGS, false, "", 0, false, anim_power)
+            if l_leg <= 0.0 and r_leg <= 0.0 then anim_power = (both_limp - 1) * 0.8 end
+            
+            local total_damaged = l_damaged + r_damaged
+            if total_damaged == 2 then anm_name = "strong1"
+            elseif total_damaged == 3 then anm_name = "strong2"
+            else anm_name = "strong4" end
+            
+            cam_id = CAM_ID_BOTH_LEGS
             tg_leg_anm = tg + (is_sprinting and (LEG_ANM_DELAY * 1.6) or LEG_ANM_DELAY)
+            
+        elseif l_damaged > 0 then
+            anim_power = (l_limp - 1) * 0.6
+            anm_name = (l_damaged == 1) and "med2" or "med3"
+            cam_id = CAM_ID_LEFT_LEG
+            tg_leg_anm = tg + LEG_ANM_DELAY
+            
+        elseif r_damaged > 0 then
+            anim_power = (r_limp - 1) * 0.6
+            anm_name = (r_damaged == 1) and "med1" or "med4"
+            cam_id = CAM_ID_RIGHT_LEG
+            tg_leg_anm = tg + LEG_ANM_DELAY
+        end
+        
+        if anm_name then
+            anim_power = math_min(anim_power, 3.0)
+            if not is_sprinting or (l_damaged > 0 and r_damaged > 0) then
+                level.add_cam_effector("camera_effects\\switch\\" .. anm_name .. ".anm",
+                    cam_id, false, "", 0, false, anim_power)
+            end
         end
     end
 end
 
 function process_arm_penalties(tg)
-    local l_arm = math_min(bio_state.limb_health.l_upperarm, bio_state.limb_health.l_forearm)
-    local r_arm = math_min(bio_state.limb_health.r_upperarm, bio_state.limb_health.r_forearm)
+    local l_up_hp = math_min(bio_state.limb_health.l_upperarm, bio_state.bone_health.l_humerus or 1.0)
+    local l_fo_hp = math_min(bio_state.limb_health.l_forearm,  bio_state.bone_health.l_ulna or 1.0)
+    local r_up_hp = math_min(bio_state.limb_health.r_upperarm, bio_state.bone_health.r_humerus or 1.0)
+    local r_fo_hp = math_min(bio_state.limb_health.r_forearm,  bio_state.bone_health.r_ulna or 1.0)
+    
+    local l_arm = math_min(l_up_hp, l_fo_hp)
+    local r_arm = math_min(r_up_hp, r_fo_hp)
     local arms_sum = l_arm + r_arm  -- 0.0 to 2.0
     
-    -- Only apply if below 50% total arm health
-    if arms_sum < 1.0 then
+    -- Only apply if below 50% total arm health or a segment is critically damaged
+    if arms_sum < 1.0 or l_arm <= 0.5 or r_arm <= 0.5 then
         local active_slot = db.actor:active_slot()
         if active_slot == 1 or active_slot == 2 or active_slot == 3 then
             local item_in_slot = db.actor:item_in_slot(active_slot)
@@ -651,7 +939,7 @@ function process_arm_penalties(tg)
                 local weight = SYS_GetParam(2, item_in_slot:section(), "inv_weight") or 1.0
                 local cam_power = 0
                 
-                -- Asymmetric damage = worse sway (one arm compensating)
+                -- Asymmetric damage = worse sway
                 if (l_arm < r_arm / 1.5) or (r_arm < l_arm / 1.5) then
                     cam_power = 1.15 * weight / math_max(arms_sum, 0.1)
                 else
@@ -680,6 +968,24 @@ function process_arm_penalties(tg)
         end
     else
         level.remove_cam_effector(CAM_ID_ARM_SWAY)
+    end
+end
+
+function process_head_penalties(tg)
+    local head_hp = math_min(bio_state.limb_health.head, bio_state.bone_health.skull or 1.0)
+    if head_hp <= 0.5 then
+        level.add_pp_effector("blur_bhs.ppe", PPE_HEAD_BLUR_ID, true)
+        level.set_pp_effector_factor(PPE_HEAD_BLUR_ID, (0.5 - head_hp) * 2.0)
+        
+        if tg > tg_head_anm then
+            if math_random() < 0.2 then
+                level.add_cam_effector("camera_effects\\switch\\wake_up.anm", CAM_ID_HEAD, false, "", 0, false, 0.5 + (0.5 - head_hp))
+                level.add_pp_effector("concussion_bhs.ppe", PPE_HEAD_CONCUSSION_ID, false)
+            end
+            tg_head_anm = tg + 5000 + math_random(2000, 5000)
+        end
+    else
+        level.remove_pp_effector(PPE_HEAD_BLUR_ID)
     end
 end
 
@@ -749,11 +1055,12 @@ function process_wound_aggravation(dt)
     
     for i, w in ipairs(bio_state.wounds) do
         -- Only aggravate clotted-but-not-closed wounds (bleed_rate between 0.5 and 5.0)
-        if w.bleed_rate and w.bleed_rate > 0.0 and w.bleed_rate <= 5.0 then
+        if w.bleed_rate and w.bleed_rate > 0.0 and w.bleed_rate <= 5.0 and w.status == "clotted" then
             if math_random() < WOUND_AGGRO_CHANCE then 
                 local old_rate = w.bleed_rate
                 w.bleed_rate = math_min(w.bleed_rate * WOUND_AGGRO_MULT, w.original_bleed or (w.bleed_rate * WOUND_AGGRO_MULT))
                 w.clot_timer = nil  -- Reset auto-clot
+                w.status = "active"
                 if ui_ama_combat_feed then
                     ui_ama_combat_feed.push_msg(
                         string.format("CLOT RUPTURED — %s BLEED: %.1f→%.1f mL/s",
@@ -813,6 +1120,24 @@ function get_surgery_cost()
         end
     end
     
+    -- Organ health restoration cost
+    if bio_state.organ_health then
+        for k, v in pairs(bio_state.organ_health) do
+            if v < 1.0 then
+                cost = cost + math_floor((1.0 - v) * SURG_COST_ORGAN)
+            end
+        end
+    end
+    
+    -- Bone health restoration cost
+    if bio_state.bone_health then
+        for k, v in pairs(bio_state.bone_health) do
+            if v < 1.0 then
+                cost = cost + math_floor((1.0 - v) * (SURG_COST_FRACTURE * 0.5))
+            end
+        end
+    end
+    
     -- Reputation scaling
     local npc = mob_trade and mob_trade.GetTalkingNpc and mob_trade.GetTalkingNpc()
     if npc then
@@ -861,6 +1186,9 @@ function perform_surgery(first_speaker, second_speaker)
     if speed and speed.remove_speed then
         speed.remove_speed("ama_leg_run")
         speed.remove_speed("ama_leg_sprint")
+        speed.remove_speed("spine_stab")
+        speed.remove_speed("spine_stab_sprint")
+        spine_speed_applied = false
     end
     level.remove_cam_effector(CAM_ID_ARM_SWAY)
     

@@ -12,6 +12,15 @@ local SPACING = 25          -- Pixels between messages
 local SLIDE_OFFSET = 150    -- Distance to slide in/out
 local LERP_SPEED = 0.12     -- How fast the animations snap to place
 
+local cached_feed_xml = nil
+local function get_feed_xml()
+    if not cached_feed_xml then
+        cached_feed_xml = CScriptXmlInit()
+        cached_feed_xml:ParseFile("ui_hud_ama_feed.xml")
+    end
+    return cached_feed_xml
+end
+
 class "AMA_CombatFeed" (CUIScriptWnd)
 
 function AMA_CombatFeed:__init() super()
@@ -29,8 +38,7 @@ function AMA_CombatFeed:InitControls()
 end
 
 function AMA_CombatFeed:AddMessage(text, msg_type)
-    local xml = CScriptXmlInit()
-    xml:ParseFile("ui_hud_ama_feed.xml")
+    local xml = get_feed_xml()
     local ui_text = xml:InitTextWnd("msg_item", self.dialog)
     
     local c = {r = 200, g = 200, b = 200} -- Default
@@ -145,9 +153,22 @@ function push_msg(text, msg_type)
 end
 
 function clear_hud()
-    if HUD then get_hud():RemoveDialogToRender(HUD); HUD = nil end
+    if HUD then
+        local hud_obj = get_hud()
+        if hud_obj then
+            hud_obj:RemoveDialogToRender(HUD)
+        end
+        HUD = nil
+    end
+end
+
+local function actor_on_update()
+    if HUD then
+        HUD:Update()
+    end
 end
 
 function on_game_start()
     RegisterScriptCallback("actor_on_net_destroy", clear_hud)
+    RegisterScriptCallback("actor_on_update", actor_on_update)
 end

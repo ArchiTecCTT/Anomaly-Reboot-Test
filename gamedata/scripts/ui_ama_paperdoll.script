@@ -34,8 +34,8 @@ function AMAPaperdoll:InitControls()
         ["r_forearm"]  = xml:InitStatic("paperdoll:r_fo", self.main_container),
         ["l_thigh"]    = xml:InitStatic("paperdoll:l_th", self.main_container),
         ["r_thigh"]    = xml:InitStatic("paperdoll:r_th", self.main_container),
-        ["l_calf"]     = xml:InitStatic("paperdoll:l_ca", self.main_container),
-        ["r_calf"]     = xml:InitStatic("paperdoll:r_ca", self.main_container),
+        ["l_shin"]     = xml:InitStatic("paperdoll:l_ca", self.main_container),
+        ["r_shin"]     = xml:InitStatic("paperdoll:r_ca", self.main_container),
     }
 
     self.plates_container = xml:InitStatic("plates_hud", self)
@@ -199,7 +199,3 @@ function on_game_start()
     RegisterScriptCallback("on_key_press", on_key_press)
     RegisterScriptCallback("ActorMenu_on_mode_changed", on_inventory_toggle)
 end
-
-
-
-

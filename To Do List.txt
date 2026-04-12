@@ -12,11 +12,16 @@ We will also be overhauling stamina. As to how we'll do it, we will have to brai
 Epinephrine shot will be the medical item that will be converted into adrenaline.
 We will also be overhauling the radiation mechanics with our own and finetuning the medical items for that.
 Add a side effect for the player if he consumes too many narcotics in a short amount of time. The player could die if this value is maxed out.
-Fix a bug where the game crashes if an NPC dies. It only happened one time, but just to make sure that it isn't caused by our script, let's investigate.
 Add external and internal bleeding count to the medical actor terminal. Also, add the limbs that are bleeding underneath active bleeds.
+Add an item known as the surgeon kit. This will allow the player to do operations to fully restore bodily condition to maximum without paying a surgeon. Though, it will be extremely rare and expensive.
+Dynamic pain accumulation instead of a flat value.
+Dynamic damage to flesh, bones, and organs.
+Add a function later on where if a player is on terminal armor mod, and they hover over a specific coordinate where a limb armor might be, then it'll show the current state of that armor and more information about it. All the other terminals will have this kind of feature. We can use Haruka's skill system for a window popping up when hovering on a specific coordinate while that window is open.
+We can make a new value for ammo that's "Ammo Type" where it can be FMJ, AP, HP, API, etc. and then we can build a table for them where they'll have different effects to armor and flesh.
 We will eventually overhaul the .ppe and .anms of the different states for our mod. For example, the player will experience a slight woozy effect and bloody screen when he is bleeding. The effect will get stronger as the player's blood loss crosses specific thresholds.
 
 ### COMPLETED (FIXED)
+- We will add a mechanic where if the player's limb/bone has been damaged, they will have a debuff on speed or aim, depending on what limb is damaged. If a bone has been patched with a splint, instead of turning back to white, it'll turn yellow. The debuffs won't be removed until the player visits a surgeon. Also, we will be updating the organ view paperdoll. For some reason, the organs don't change colors.
 - We will add plate degradation for NPCs. They will spawn with their plates and the degradation will be similar to the players degradation. We will also add outfit degradation for NPCs so that after hitting an NPC with a nosorog with 30 fmj bullets to the chest, their armor won't be in pristine condition.
 - We will fix a bug where the player is still taking vanilla damage if a grenade shrapnel hits or a grenade hits near the player.
 - We will also fix a bug where hits to the limb armors consumes outfit durability. If I'd have to guess, it has something to do with the soft armor catch mechanic. We will make it so that hits to the plates will shred the outfit condition.
@@ -26,3 +31,5 @@ We will eventually overhaul the .ppe and .anms of the different states for our m
 - Currently, Large Glucose shot only give 500 blood while small glucose shot gives you 750. Update it so that small glucose shot gives you 300 blood while large glucose shot will give you 750.
 - Fix a bug where the terminal does not update it's visuals when a wound has been packed or bandaged. It still looks like it's orange. And medkits can still be applied even if there are technically no active wounds. After further testing, for some reason, using a scientific medkit removes the color overlay to the torso. Also, the torso is currently the only thing that get's updated in the paperdoll terminal. Penetration to limbs does not do anything. No pain, no bleeding.
 - Patch with FDDA
+- Fix a bug where the game crashes if an NPC dies. It only happened one time, but just to make sure that it isn't caused by our script, let's investigate.
+- We will add a mechanic where bullets could penetrate multiple body parts. For example, if the bullet hits the forearm first but overpenetrates because the bullet has so much speed and power, then we can draw a line from where the bullet exited the wound towards any potential flesh if it will come into contact with a body part. It's quite annoying to shoot a bandit with a heavy subsonic 12x55 and they only take half of the damage because their arm intercepted it (since when an NPC is on its combat stance and facing towards you, the torso is blocked by their arms).

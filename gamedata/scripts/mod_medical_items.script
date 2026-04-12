@@ -10,7 +10,7 @@ local math_random = math.random
 -- CONSTANTS & TUNING
 -- ==========================================================
 -- Basic Field Care
-local BANDAGE_POWER             = 0.50
+local BANDAGE_POWER             = 0.75
 local BANDAGE_SEPSIS_RISK       = 0.25
 local JGUT_POWER                = 1.00
 local JGUT_ISCHEMIA_TIME_MS     = 600000 -- 10 minutes
@@ -81,7 +81,7 @@ item_effects = {
 -- ==========================================================
 --
 -- TIER 1 - Basic Field Care:
---   bandage       → hemostatic (flesh wounds only, 50% bleed reduction)
+--   bandage       → hemostatic (flesh wounds only, 75% bleed reduction)
 --   jgut          → tourniquet (limb arterials, full stop, ischemia timer)
 --
 -- TIER 2 - Wound Treatment:
@@ -97,7 +97,7 @@ item_effects = {
 -- EMERGENCY: epinephrine, CNS stimulants
 -- VOLUME: IV saline
 --
-local item_map = {
+item_map = {
     -- Tier 1: Basic Field Care
     ["bandage"]        = { type = "hemostatic", power = BANDAGE_POWER, sepsis_risk = BANDAGE_SEPSIS_RISK },
     ["jgut"]           = { type = "tourniquet", power = JGUT_POWER },
@@ -135,24 +135,20 @@ local item_map = {
 }
 
 -- ==========================================================
--- ITEM EXECUTION LOGIC
--- ==========================================================
-
--- ==========================================================
 -- TARGETED ITEM EXECUTION LOGIC
 -- ==========================================================
 
 local target_patterns = {
-    head       = { organs = {"head", "jaw", "eye", "neck", "jugular", "trachea"}, limbs = {"head"} },
-    torso      = { organs = {"torso", "spine", "heart", "lung", "liver", "pelvis", "clavicle"}, limbs = {"torso"} },
+    head       = { organs = {"head", "jaw", "eye", "neck", "jugular", "trachea", "brain"}, limbs = {"head"} },
+    torso      = { organs = {"torso", "spine", "heart", "lung", "liver", "pelvis", "clavicle", "gi_tract"}, limbs = {"torso"} },
     l_upperarm = { organs = {"l_upperarm", "l_brachial"}, limbs = {"l_upperarm"} },
     r_upperarm = { organs = {"r_upperarm", "r_brachial"}, limbs = {"r_upperarm"} },
-    l_forearm  = { organs = {"l_forearm", "l_radial"}, limbs = {"l_forearm"} },
-    r_forearm  = { organs = {"r_forearm", "r_radial"}, limbs = {"r_forearm"} },
+    l_forearm  = { organs = {"l_forearm", "l_radial", "l_hand", "l_finger"}, limbs = {"l_forearm"} },
+    r_forearm  = { organs = {"r_forearm", "r_radial", "r_hand", "r_finger"}, limbs = {"r_forearm"} },
     l_thigh    = { organs = {"l_thigh", "l_femoral"}, limbs = {"l_thigh"} },
     r_thigh    = { organs = {"r_thigh", "r_femoral"}, limbs = {"r_thigh"} },
-    l_shin     = { organs = {"l_calf", "l_tibial", "l_shin"}, limbs = {"l_shin", "l_calf"} },
-    r_shin     = { organs = {"r_calf", "r_tibial", "r_shin"}, limbs = {"r_shin", "r_calf"} }
+    l_shin     = { organs = {"l_calf", "l_tibial", "l_shin", "l_foot", "l_toe"}, limbs = {"l_shin", "l_calf"} },
+    r_shin     = { organs = {"r_calf", "r_tibial", "r_shin", "r_foot", "r_toe"}, limbs = {"r_shin", "r_calf"} }
 }
 
 local function is_wound_in_target(w, t)
@@ -175,33 +171,74 @@ local function is_wound_in_target(w, t)
 end
 
 local function process_hemostatic(item_data, t_limb)
+    if t_limb == "torso" or t_limb == "head" then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - BANDAGES ARE FOR EXTREMITIES", "critical") end
+        return false
+    end
     if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
-    local treated = false
+    local applied = false
+    local rejected = false
+    
+    if mod_medical_core.bio_state.treated_flesh and mod_medical_core.bio_state.treated_flesh[t_limb] then
+        rejected = true
+    end
+    
     for _, w in ipairs(mod_medical_core.bio_state.wounds) do
-        if w.type == "external" and w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
-            w.bleed_rate = w.bleed_rate * (1.0 - item_data.power)
-            if w.bleed_rate < 0.1 then w.bleed_rate = 0 end
-            treated = true
+        if w.type == "external" and w.bleed_rate and w.bleed_rate > 0 and w.status == "active" and is_wound_in_target(w, t_limb) then
+            if rejected then
+                w.bleed_rate = 0
+                w.status = "treated"
+                applied = true
+            else
+                w.bleed_rate = w.bleed_rate * (1.0 - item_data.power)
+                if w.bleed_rate < 0.1 then w.bleed_rate = 0; w.status = "treated" end
+                applied = true
+            end
         end
     end
-    if not treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO APPLICABLE WOUNDS", "critical") end
-    return treated
+    if applied then
+        if mod_medical_core.bio_state.limb_health and mod_medical_core.bio_state.limb_health[t_limb] and mod_medical_core.bio_state.limb_health[t_limb] < 0.5 then
+            mod_medical_core.bio_state.limb_health[t_limb] = 0.5
+            mod_medical_core.bio_state.treated_flesh = mod_medical_core.bio_state.treated_flesh or {}
+            mod_medical_core.bio_state.treated_flesh[t_limb] = true
+        end
+        if rejected then
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("WOUND REPACKED - TISSUE DAMAGED", "flesh") end
+        else
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("BANDAGE APPLIED", "flesh") end
+        end
+    elseif rejected then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - WOUND ALREADY PACKED", "critical") end
+    else
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO APPLICABLE WOUNDS", "critical") end
+    end
+    return applied
 end
 
 local function process_tourniquet(item_data, t_limb)
-    if t_limb == "head" or t_limb == "torso" then return false end
+    if t_limb == "head" or t_limb == "torso" then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - TOURNIQUETS ARE FOR EXTREMITIES", "critical") end
+        return false
+    end
     if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
     local applied = false
     for _, w in ipairs(mod_medical_core.bio_state.wounds) do
-        if (w.type == "internal" or w.type == "external" or w.type == "fracture") and w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
+        local is_arterial = w.type == "internal" and (string.find(w.organ or "", "artery") or string.find(w.organ or "", "jugular"))
+        if not is_arterial and (w.type == "internal" or w.type == "external") and w.bleed_rate and w.bleed_rate > 0 and w.status == "active" and is_wound_in_target(w, t_limb) then
             w.bleed_rate = 0
+            w.status = "tourniqueted"
             applied = true
         end
     end
     if applied then
+        if mod_medical_core.bio_state.limb_health and mod_medical_core.bio_state.limb_health[t_limb] and mod_medical_core.bio_state.limb_health[t_limb] < 0.5 then
+            mod_medical_core.bio_state.limb_health[t_limb] = 0.5
+            mod_medical_core.bio_state.treated_flesh = mod_medical_core.bio_state.treated_flesh or {}
+            mod_medical_core.bio_state.treated_flesh[t_limb] = true
+        end
         item_effects.tourniquet_active = true
         item_effects.tourniquet_timer = time_global() + JGUT_ISCHEMIA_TIME_MS
-        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("TOURNIQUET APPLIED - ARTERIAL BLEEDING STOPPED", "flesh") end
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("TOURNIQUET APPLIED - BLEEDING STOPPED", "flesh") end
     else
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO EXTREMITY WOUNDS", "critical") end
     end
@@ -209,71 +246,167 @@ local function process_tourniquet(item_data, t_limb)
 end
 
 local function process_field_dressing(item_data, t_limb)
+    if t_limb ~= "torso" and t_limb ~= "head" then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - MEDKITS ARE FOR TORSO/HEAD", "critical") end
+        return false
+    end
     if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
-    local treated = false
+    local applied, rejected, sealed = false, false, false
+    
+    if mod_medical_core.bio_state.treated_flesh and mod_medical_core.bio_state.treated_flesh[t_limb] then
+        rejected = true
+    end
+    
     for _, w in ipairs(mod_medical_core.bio_state.wounds) do
-        if w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
-            if w.type == "external" or w.type == "fracture" then
-                    if string.find(w.organ or "", "lung") or string.find(w.organ or "", "trachea") then sealed = true end
+        local is_arterial = w.type == "internal" and (string.find(w.organ or "", "artery") or string.find(w.organ or "", "jugular"))
+        if not is_arterial and w.bleed_rate and w.bleed_rate > 0 and w.status == "active" and is_wound_in_target(w, t_limb) then
+            if w.type == "external" then
+                if string.find(w.organ or "", "lung") or string.find(w.organ or "", "trachea") then sealed = true end
+                if rejected then
+                    w.bleed_rate = 0
+                    w.status = "treated"
+                    applied = true
+                else
+                    w.bleed_rate = w.bleed_rate * (1.0 - (item_data.flesh_power or 0.70))
+                    if w.bleed_rate < 0.1 then w.bleed_rate = 0; w.status = "treated" end
+                    applied = true
+                end
             elseif w.type == "internal" then
-                w.bleed_rate = w.bleed_rate * (1.0 - item_data.organ_power); treated = true
+                w.bleed_rate = w.bleed_rate * (1.0 - (item_data.organ_power or 0.40))
+                if w.bleed_rate < 0.1 then w.bleed_rate = 0; w.status = "treated" end
+                applied = true
             end
-            if w.bleed_rate < 0.1 then w.bleed_rate = 0 end
         end
     end
-    if treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("WOUND PACKED", "flesh") end
-    if not treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO TREATABLE WOUNDS", "critical") end
-    return treated
+    if applied then
+        if mod_medical_core.bio_state.limb_health and mod_medical_core.bio_state.limb_health[t_limb] and mod_medical_core.bio_state.limb_health[t_limb] < 0.5 then
+            mod_medical_core.bio_state.limb_health[t_limb] = 0.5
+            mod_medical_core.bio_state.treated_flesh = mod_medical_core.bio_state.treated_flesh or {}
+            mod_medical_core.bio_state.treated_flesh[t_limb] = true
+        end
+        if sealed then db.actor.power = 1.0; if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CHEST SEALED", "flesh") end end
+        if rejected then
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("WOUND REPACKED - TISSUE DAMAGED", "flesh") end
+        else
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FIELD DRESSING APPLIED", "flesh") end
+        end
+    elseif rejected then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - WOUND ALREADY PACKED", "critical") end
+    else
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO TREATABLE WOUNDS", "critical") end
+    end
+    return applied
 end
 
 local function process_trauma_kit(item_data, t_limb)
+    if t_limb ~= "torso" and t_limb ~= "head" then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - MEDKITS ARE FOR TORSO/HEAD", "critical") end
+        return false
+    end
     if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
-    local treated, sealed = false, false
+    local applied, rejected, sealed = false, false, false
+    
+    if mod_medical_core.bio_state.treated_flesh and mod_medical_core.bio_state.treated_flesh[t_limb] then
+        rejected = true
+    end
+    
     for _, w in ipairs(mod_medical_core.bio_state.wounds) do
-        if w.bleed_rate and w.bleed_rate > 0 and is_wound_in_target(w, t_limb) then
-            local organ = w.organ or ""
-            local is_artery = string.find(organ, "artery") 
-                or string.find(organ, "jugular")
-                or string.find(organ, "brachial")
-                or string.find(organ, "radial")
-                or string.find(organ, "femoral")
-                or string.find(organ, "tibial")
-            if w.type == "external" or w.type == "fracture" then 
-                w.bleed_rate = w.bleed_rate * (1.0 - item_data.flesh_power); treated = true
-            elseif w.type == "internal" then
-                if is_artery then
-                    w.bleed_rate = w.bleed_rate * (1.0 - item_data.arterial_power); treated = true
-                else
-                    w.bleed_rate = w.bleed_rate * (1.0 - item_data.organ_power); treated = true
-                    if string.find(w.organ or "", "lung") or string.find(w.organ or "", "trachea") then sealed = true end
-                end
-            end
-            if w.bleed_rate < 0.1 then w.bleed_rate = 0 end
+        local is_arterial = w.type == "internal" and (string.find(w.organ or "", "artery") or string.find(w.organ or "", "jugular"))
+        if not is_arterial and w.bleed_rate and w.bleed_rate > 0 and w.status == "active" and is_wound_in_target(w, t_limb) then
+            w.bleed_rate = 0
+            w.status = "stabilized"
+            if string.find(w.organ or "", "lung") or string.find(w.organ or "", "trachea") then sealed = true end
+            applied = true
         end
     end
-    if sealed then db.actor.power = 1.0; if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CHEST SEALED", "flesh") end end
-    if treated and not sealed and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("TRAUMA KIT APPLIED", "flesh") end
-    if not treated and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO TREATABLE WOUNDS", "critical") end
-    return treated
+    if applied then
+        if mod_medical_core.bio_state.limb_health and mod_medical_core.bio_state.limb_health[t_limb] and mod_medical_core.bio_state.limb_health[t_limb] < 0.5 then
+            mod_medical_core.bio_state.limb_health[t_limb] = 0.5
+            mod_medical_core.bio_state.treated_flesh = mod_medical_core.bio_state.treated_flesh or {}
+            mod_medical_core.bio_state.treated_flesh[t_limb] = true
+        end
+        if sealed then db.actor.power = 1.0; if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CHEST SEALED", "flesh") end end
+        if rejected then
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("WOUND REPACKED - TISSUE DAMAGED", "flesh") end
+        else
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("TRAUMA KIT APPLIED", "flesh") end
+        end
+    elseif rejected then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - WOUND ALREADY PACKED", "critical") end
+    else
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO TREATABLE WOUNDS", "critical") end
+    end
+    return applied
 end
 
 local function process_surgical_kit(item_data, t_limb)
+    if t_limb ~= "torso" and t_limb ~= "head" then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - MEDKITS ARE FOR TORSO/HEAD", "critical") end
+        return false
+    end
     if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
     local wounds = mod_medical_core.bio_state.wounds
-    local closed = false
-    for i = #wounds, 1, -1 do
-        local w = wounds[i]
-        if w.bleed_rate and w.bleed_rate <= item_data.close_threshold and is_wound_in_target(w, t_limb) then
-            table.remove(wounds, i)
-            closed = true
+    local stabilized = false
+    
+    local target_organs = {}
+    if t_limb == "head" then
+        target_organs = {"brain"}
+    elseif t_limb == "torso" then
+        target_organs = {"lungs", "heart", "liver", "gi_tract", "spine"}
+    end
+    
+    mod_medical_core.bio_state.organ_health = mod_medical_core.bio_state.organ_health or {}
+    mod_medical_core.bio_state.stabilized_organs = mod_medical_core.bio_state.stabilized_organs or {}
+
+    for _, org in ipairs(target_organs) do
+        if mod_medical_core.bio_state.organ_health[org] and mod_medical_core.bio_state.organ_health[org] < 0.5 then
+            mod_medical_core.bio_state.organ_health[org] = 0.5
+            mod_medical_core.bio_state.stabilized_organs[org] = true
+            stabilized = true
         end
     end
-    if closed then
-        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FIELD SURGERY COMPLETE", "flesh") end
-    else
-        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - WOUNDS BLEEDING TOO FAST", "critical") end
+    
+    for i = #wounds, 1, -1 do
+        local w = wounds[i]
+        local is_arterial = w.type == "internal" and (string.find(w.organ or "", "artery") or string.find(w.organ or "", "jugular"))
+        if not is_arterial and w.status == "active" and is_wound_in_target(w, t_limb) then
+            w.bleed_rate = 0
+            if string.find(w.type, "internal") or string.find(w.organ or "", "lung") then
+                w.status = "stabilized"
+            else
+                w.status = "treated"
+            end
+            stabilized = true
+        end
     end
-    return closed
+    if stabilized then
+        if item_data.blood_restore and mod_medical_core.set_blood_volume then
+            mod_medical_core.set_blood_volume(mod_medical_core.get_blood_volume() + item_data.blood_restore)
+        end
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FIELD SURGERY COMPLETE - ORGANS TREATED", "flesh") end
+    else
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO CRITICAL WOUNDS", "critical") end
+    end
+    return stabilized
+end
+
+local function process_arterial_bleed(item_data, t_limb)
+    if not mod_medical_core or not mod_medical_core.bio_state.wounds then return false end
+    local applied = false
+    local power = item_data.arterial_power or item_data.power or 0.50
+    for _, w in ipairs(mod_medical_core.bio_state.wounds) do
+        local is_arterial = w.type == "internal" and (string.find(w.organ or "", "artery") or string.find(w.organ or "", "jugular"))
+        if is_arterial and w.bleed_rate and w.bleed_rate > 0 and w.status == "active" and is_wound_in_target(w, t_limb) then
+            w.bleed_rate = w.bleed_rate * (1.0 - power)
+            applied = true
+        end
+    end
+    if applied then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg(string.format("ARTERIAL BLEEDING REDUCED (%d%%)", power * 100), "flesh") end
+    else
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO ARTERIAL WOUNDS", "critical") end
+    end
+    return applied
 end
 
 local function process_splint(item_data, t_limb)
@@ -282,12 +415,15 @@ local function process_splint(item_data, t_limb)
     local applied = false
     for i = #wounds, 1, -1 do
         local w = wounds[i]
-        if w.type == "fracture" and is_wound_in_target(w, t_limb) then
-            table.remove(wounds, i)
+        if w.type == "fracture" and w.status == "active" and is_wound_in_target(w, t_limb) then
+            w.status = "stabilized"
             applied = true
         end
     end
     if applied then
+        if mod_medical_core and mod_medical_core.splint_limb then
+            mod_medical_core.splint_limb(t_limb)
+        end
         db.actor.power = 1.0
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("SPLINT APPLIED - FRACTURES STABILIZED", "flesh") end
     else
@@ -306,6 +442,11 @@ local function process_analgesic(item_data)
     if not mod_medical_core then return end
     local current_pain = mod_medical_core.get_pain_level()
     mod_medical_core.set_pain_level(math_max(0, current_pain - item_data.pain_reduction))
+    
+    if mod_medical_core.reduce_bruise_timers then
+        mod_medical_core.reduce_bruise_timers(item_data.pain_reduction * 60.0)
+    end
+    
     if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ANALGESIC ADMINISTERED - PAIN REDUCED", "flesh") end
 end
 
@@ -549,6 +690,18 @@ function apply_localized_item(item, t_limb)
     elseif data.type == "splint" then success = process_splint(data, t_limb)
     end
     
+    if success then
+        utils_obj.play_sound("interface\\inv_iam_open")
+        alife_release_id(item:id())
+    end
+end
+
+function apply_localized_artery(item, t_limb)
+    local sec = item:section()
+    local data = item_map[sec]
+    if not data then return end
+    
+    local success = process_arterial_bleed(data, t_limb)
     if success then
         utils_obj.play_sound("interface\\inv_iam_open")
         alife_release_id(item:id())

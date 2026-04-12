@@ -22,13 +22,94 @@ local function get_text_color(cond)
     else return GetARGB(255, 255, 0, 0) end
 end
 
+local function apply_state_color(ui_item, status)
+    if status == "active" then
+        local c = GetARGB(255, 255, 0, 0)
+        ui_item.name:SetTextColor(c)
+        ui_item.state:SetTextColor(c)
+    elseif status == "treated" or status == "stabilized" then
+        local c = GetARGB(255, 255, 255, 0)
+        ui_item.name:SetTextColor(c)
+        ui_item.state:SetTextColor(c)
+    elseif status == "tourniqueted" then
+        local c = GetARGB(255, 255, 128, 0)
+        ui_item.name:SetTextColor(c)
+        ui_item.state:SetTextColor(c)
+    else
+        local c = GetARGB(255, 200, 200, 200)
+        ui_item.name:SetTextColor(c)
+        ui_item.state:SetTextColor(c)
+    end
+end
+
+local function get_health_and_state(bio, wounds, part, view)
+    local health = 1.0
+    local limb_key = nil
+    local is_stabilized = false
+    
+    local limb_map = {
+        ["skull"] = "head", ["cervical_spine"] = "head", ["neck"] = "head",
+        ["lower_spine"] = "torso", ["sacrum"] = "torso", ["ilium"] = "torso", ["ribs"] = "torso", ["flesh"] = "torso",
+        ["r_humerus"] = "r_upperarm", ["r_ulna"] = "r_forearm", ["r_femur"] = "r_thigh", ["r_tibia"] = "r_shin",
+        ["l_humerus"] = "l_upperarm", ["l_ulna"] = "l_forearm", ["l_femur"] = "l_thigh", ["l_tibia"] = "l_shin"
+    }
+    limb_key = limb_map[part] or part
+    
+    if view == 2 then -- Organ View
+        local target_org = part
+        if part == "left_lung" or part == "right_lung" then target_org = "lungs" end
+        if part == "intestinal_tract" then target_org = "gi_tract" end
+        
+        health = bio.organ_health and bio.organ_health[target_org] or 1.0
+        is_stabilized = bio.stabilized_organs and bio.stabilized_organs[target_org] or false
+    elseif view == 3 then -- Skeletal View
+        health = bio.bone_health and bio.bone_health[part] or 1.0
+    else -- Flesh (1) or Circulatory (4) View
+        health = bio.limb_health[limb_key] or 1.0
+    end
+        
+    local is_splinted = limb_key and bio.splinted_limbs and bio.splinted_limbs[limb_key]
+    local is_critical = false
+    
+    for _, w in ipairs(wounds) do
+        if w.status == "active" then
+            local w_org = w.organ or ""
+            local w_limb = w.limb or ""
+            
+            if view == 1 then
+                if w_limb == limb_key and w.bleed_rate and w.bleed_rate > 0.1 then
+                    is_critical = true
+                    break
+                end
+            elseif view == 2 then
+                local match_organ = false
+                if (part == "left_lung" or part == "right_lung") and string.find(w_org, "lung") then match_organ = true
+                elseif part == "intestinal_tract" and string.find(w_org, "gi_tract") then match_organ = true
+                elseif w_org == part then match_organ = true end
+                
+                if match_organ and w.bleed_rate and w.bleed_rate > 0.1 then
+                    is_critical = true
+                    break
+                end
+            elseif view == 3 then
+                if (w_org == part or (part == "ribs" and w_org == "rib")) and w.type == "fracture" then
+                    is_critical = true -- Used to force red color for active fractures
+                    break
+                end
+            end
+        end
+    end
+    
+    return health, is_splinted, is_critical, is_stabilized
+end
+
 local PAPERDOLL_ATLAS = {
     ["brain"]            = {x=2, y=2, view=2},
     ["heart"]            = {x=768, y=706, view=2},
     ["intestinal_tract"] = {x=1151, y=706, view=2},
     ["liver"]            = {x=1917, y=1410, view=2},
-    ["left_lung"]        = {x=1151, y=1410, view=2},
-    ["right_lung"]       = {x=2300, y=706, view=2},
+    ["left_lung"]        = {x=2300, y=706, view=2},
+    ["right_lung"]       = {x=1151, y=1410, view=2},
     
     ["cervical_spine"]   = {x=385, y=2, view=3},
     ["lower_spine"]      = {x=2, y=2114, view=3},
@@ -37,30 +118,30 @@ local PAPERDOLL_ATLAS = {
     ["skull"]            = {x=385, y=2818, view=3},
     ["ribs"]             = {x=1151, y=2114, view=3},
     
-    ["r_humerus"]        = {x=768, y=1410, view=3},
-    ["r_ulna"]           = {x=1917, y=2, view=3},
-    ["r_femur"]          = {x=2, y=1410, view=3},
-    ["r_tibia"]          = {x=1534, y=1410, view=3},
+    ["r_humerus"]        = {x=2300, y=2, view=3},
+    ["r_ulna"]           = {x=2683, y=706, view=3},
+    ["r_femur"]          = {x=1534, y=2114, view=3},
+    ["r_tibia"]          = {x=2683, y=2, view=3},
 
-    ["l_humerus"]        = {x=2300, y=2, view=3},
-    ["l_ulna"]           = {x=2683, y=706, view=3},
-    ["l_femur"]          = {x=1534, y=2114, view=3},
-    ["l_tibia"]          = {x=2683, y=2, view=3},
+    ["l_humerus"]        = {x=768, y=1410, view=3},
+    ["l_ulna"]           = {x=1917, y=2, view=3},
+    ["l_femur"]          = {x=2, y=1410, view=3},
+    ["l_tibia"]          = {x=1534, y=1410, view=3},
 
     ["head"]             = {x=768, y=2, view=1},
     ["torso"]            = {x=768, y=2818, view=1},
     ["neck"]             = {x=385, y=2114, view=1},
     ["flesh"]            = {x=768, y=2818, view=1},
     
-    ["r_upperarm"]       = {x=1917, y=706, view=1},
-    ["r_forearm"]        = {x=385, y=1410, view=1},
-    ["r_thigh"]          = {x=1534, y=706, view=1},
-    ["r_shin"]           = {x=2300, y=1410, view=1},
+    ["r_upperarm"]       = {x=2683, y=1410, view=1},
+    ["r_forearm"]        = {x=1917, y=2114, view=1},
+    ["r_thigh"]          = {x=2300, y=2114, view=1},
+    ["r_shin"]           = {x=1534, y=2, view=1},
 
-    ["l_upperarm"]       = {x=2683, y=1410, view=1},
-    ["l_forearm"]        = {x=1917, y=2114, view=1},
-    ["l_thigh"]          = {x=2300, y=2114, view=1},
-    ["l_shin"]           = {x=1534, y=2, view=1},
+    ["l_upperarm"]       = {x=1917, y=706, view=1},
+    ["l_forearm"]        = {x=385, y=1410, view=1},
+    ["l_thigh"]          = {x=1534, y=706, view=1},
+    ["l_shin"]           = {x=2300, y=1410, view=1},
 }
 
 -- ======================================================================
@@ -197,22 +278,50 @@ function AMATerminalUI:InitActorControls()
     self.txt_bleeds = xml:InitTextWnd("ama_actor_terminal:background:active_bleeds_val", self.actor_bg)
     self.txt_loss = xml:InitTextWnd("ama_actor_terminal:background:total_loss_val", self.actor_bg)
     self.txt_sepsis = xml:InitTextWnd("ama_actor_terminal:background:sepsis_val", self.actor_bg)
+    self.txt_flesh = xml:InitTextWnd("ama_actor_terminal:background:flesh_wounds_val", self.actor_bg)
+    self.txt_bones = xml:InitTextWnd("ama_actor_terminal:background:bone_fractures_val", self.actor_bg)
     
     -- Initialize as native progress bars
     self.bar_blood = xml:InitProgressBar("ama_actor_terminal:background:blood_vol_bar", self.actor_bg)
     self.bar_pain = xml:InitProgressBar("ama_actor_terminal:background:pain_level_bar", self.actor_bg)
     
-    -- Initialize Static Wound Pool (Bypassing ScrollView crashes entirely)
-    self.wound_pool = {}
+    -- Initialize Active Bleed Pool
+    self.bleed_pool = {}
     for i = 1, 5 do
         local wnd = CUIWindow()
         xml:InitWindow("wound_list_item", 0, wnd)
-        wnd:SetWndPos(vector2():set(25, 188 + ((i - 1) * 24)))
+        wnd:SetWndPos(vector2():set(25, 195 + ((i - 1) * 25)))
         self.actor_main:AttachChild(wnd)
         wnd:Show(false)
         local rate_txt = xml:InitTextWnd("wound_list_item:wound_rate_text", wnd)
         local type_txt = xml:InitTextWnd("wound_list_item:wound_type_text", wnd)
-        table.insert(self.wound_pool, { main = wnd, rate = rate_txt, type = type_txt })
+        table.insert(self.bleed_pool, { main = wnd, name = rate_txt, state = type_txt })
+    end
+    
+    -- Initialize Flesh Wound Pool
+    self.flesh_pool = {}
+    for i = 1, 5 do
+        local wnd = CUIWindow()
+        xml:InitWindow("wound_list_item", 0, wnd)
+        wnd:SetWndPos(vector2():set(25, 353 + ((i - 1) * 25)))
+        self.actor_main:AttachChild(wnd)
+        wnd:Show(false)
+        local rate_txt = xml:InitTextWnd("wound_list_item:wound_rate_text", wnd)
+        local type_txt = xml:InitTextWnd("wound_list_item:wound_type_text", wnd)
+        table.insert(self.flesh_pool, { main = wnd, name = rate_txt, state = type_txt })
+    end
+    
+    -- Initialize Bone Fracture Pool
+    self.bone_pool = {}
+    for i = 1, 5 do
+        local wnd = CUIWindow()
+        xml:InitWindow("wound_list_item", 0, wnd)
+        wnd:SetWndPos(vector2():set(25, 514 + ((i - 1) * 25)))
+        self.actor_main:AttachChild(wnd)
+        wnd:Show(false)
+        local rate_txt = xml:InitTextWnd("wound_list_item:wound_rate_text", wnd)
+        local type_txt = xml:InitTextWnd("wound_list_item:wound_type_text", wnd)
+        table.insert(self.bone_pool, { main = wnd, name = rate_txt, state = type_txt })
     end
     
     -- State hash to prevent per-frame rebuilding
@@ -352,42 +461,29 @@ function AMATerminalUI:UpdateMedicalMode()
     end
     
     if not mod_medical_core or not mod_medical_core.bio_state then return end
-    local wounds = mod_medical_core.bio_state.wounds or {}
+    local bio = mod_medical_core.bio_state
+    local wounds = bio.wounds or {}
     
-    for i, w in ipairs(wounds) do
-        local org = w.organ
-        if org == "flesh" or org == "limb_flesh" then org = w.limb end
-        local layer = self.medical_overlays[org]
-        
-        if layer and layer.view == self.medical_view_mode then
-            local wt = w.type
-            local bleed = w.bleed_rate or 0
+    
+    for part_name, layer in pairs(self.medical_overlays) do
+        if layer.view == self.medical_view_mode then
+            local health, is_splinted, is_critical, is_stabilized = get_health_and_state(bio, wounds, part_name, layer.view)
             
-            if layer.view == 1 then
-                if bleed > 0.5 then
-                    layer.ui:Show(true)
-                    if wt == "external" then
-                        layer.ui:SetTextureColor(GetARGB(255, 255, 128, 0))
-                    else
-                        layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))
-                    end
-                elseif bleed > 0 then
-                    layer.ui:Show(true)
-                    layer.ui:SetTextureColor(GetARGB(255, 255, 255, 0))
-                end
-            elseif layer.view == 2 then
-                if bleed > 0 then
-                    layer.ui:Show(true)
-                    layer.ui:SetTextureColor(GetARGB(255, 20, 20, 20))
-                end
-            elseif layer.view == 3 then
+            if health < 0.99 or is_critical then
                 layer.ui:Show(true)
-                if bleed > 0.5 then
-                    layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))
-                elseif bleed > 0 then
-                    layer.ui:SetTextureColor(GetARGB(255, 255, 255, 0))
+                
+                if (health <= 0.15 and not is_stabilized) or (is_critical and not is_stabilized) then
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 0, 0))       -- Red (Destroyed / Bleeding)
+                elseif is_splinted or is_stabilized or (health > 0.4 and health <= 0.6) then
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 255, 0))     -- Yellow (Splinted / Stabilized)
+                elseif health < 0.5 then
+                    layer.ui:SetTextureColor(GetARGB(255, 255, 128, 0))     -- Orange (Severely Damaged)
                 else
-                    layer.ui:SetTextureColor(GetARGB(255, 255, 128, 0))
+                    if layer.view == 2 then
+                        layer.ui:SetTextureColor(GetARGB(255, 100, 100, 100)) -- Darker for organs
+                    else
+                        layer.ui:SetTextureColor(GetARGB(255, 200, 200, 200)) -- Pale for bones/flesh
+                    end
                 end
             end
         end
@@ -414,47 +510,90 @@ function AMATerminalUI:UpdateActorMode()
         self.txt_sepsis:SetTextColor(GetARGB(255, 0, 255, 0))
     end
 
-    local sorted_wounds = mod_medical_core.get_sorted_wounds() or {}
+    local active_wounds = mod_medical_core.get_active_wounds() or {}
+    local flesh_data = mod_medical_core.get_flesh_wounds() or {list={}, total=0}
+    local bone_data = mod_medical_core.get_bone_fractures() or {list={}, total=0}
     
     -- Generate State Hash to prevent rebuilding the UI every frame
-    local active_wounds = 0
+    local active_count = 0
     local total_bleed = 0
     local current_hash = ""
     
-    for i, w_data in ipairs(sorted_wounds) do
+    for i, w_data in ipairs(active_wounds) do
         if w_data.bleed > 0 then
-            active_wounds = active_wounds + 1
+            active_count = active_count + 1
             total_bleed = total_bleed + w_data.bleed
         end
-        -- Hash EVERYTHING (including 0-bleed fractures) so they trigger UI updates
-        current_hash = current_hash .. string.format("%s_%.1f_%s|", tostring(w_data.name), w_data.bleed, tostring(w_data.type))
+        current_hash = current_hash .. string.format("A_%s_%.1f_%s|", tostring(w_data.name), w_data.bleed, tostring(w_data.type))
     end
+    
+    for i, w_data in ipairs(flesh_data.list) do
+        current_hash = current_hash .. string.format("F_%s_%s|", tostring(w_data.name), tostring(w_data.status))
+    end
+    
+    for i, w_data in ipairs(bone_data.list) do
+        current_hash = current_hash .. string.format("B_%s_%s|", tostring(w_data.name), tostring(w_data.status))
+    end
+    current_hash = current_hash .. "F" .. flesh_data.total .. "B" .. bone_data.total
     
     -- Only rebuild list if the wounds actually changed
     if self.cached_wounds_hash ~= current_hash then
         self.cached_wounds_hash = current_hash
         
-        self.txt_bleeds:SetText("ACTIVE BLEEDS: " .. active_wounds)
+        self.txt_bleeds:SetText("ACTIVE BLEEDS: " .. active_count)
         self.txt_loss:SetText(string.format("TOTAL BLOOD LOSS: %.1f mL/s", total_bleed))
+        self.txt_flesh:SetText("FLESH WOUNDS: " .. flesh_data.total)
+        self.txt_bones:SetText("BONE FRACTURES: " .. bone_data.total)
         
         local cond = 1.0 - math_min(total_bleed / 15.0, 1.0)
         local bleed_color = get_text_color(cond)
         self.txt_bleeds:SetTextColor(bleed_color)
         self.txt_loss:SetTextColor(bleed_color)
         
-        -- Only display the Top 5 most critical wounds to fit the UI space
+        
         for i = 1, 5 do
-            local w_data = sorted_wounds[i]
-            local ui_item = self.wound_pool[i]
+            local w_data = active_wounds[i]
+            local ui_item = self.bleed_pool[i]
             
             if w_data then
-                ui_item.rate:SetText(string.format("%s: %.1f mL/s", string.upper(tostring(w_data.name)), w_data.bleed))
-                ui_item.type:SetText(string.upper(tostring(w_data.type)))
+                local display_name = string.gsub(tostring(w_data.name), "_", " ")
+                ui_item.name:SetText(string.upper(display_name))
+                ui_item.state:SetText(string.format("%.1f mL/s", w_data.bleed))
                 
                 local w_cond = 1.0 - math_min(w_data.bleed / 15.0, 1.0)
                 local w_color = get_text_color(w_cond)
-                ui_item.rate:SetTextColor(w_color)
-                ui_item.type:SetTextColor(w_color)
+                ui_item.name:SetTextColor(w_color)
+                ui_item.state:SetTextColor(w_color)
+                ui_item.main:Show(true)
+            else
+                ui_item.main:Show(false)
+            end
+        end
+        
+        for i = 1, 5 do
+            local w_data = flesh_data.list[i]
+            local ui_item = self.flesh_pool[i]
+            
+            if w_data then
+                local display_name = string.gsub(tostring(w_data.name), "_", " ")
+                ui_item.name:SetText(string.upper(display_name))
+                ui_item.state:SetText(string.upper(tostring(w_data.status)))
+                apply_state_color(ui_item, w_data.status)
+                ui_item.main:Show(true)
+            else
+                ui_item.main:Show(false)
+            end
+        end
+        
+        for i = 1, 5 do
+            local w_data = bone_data.list[i]
+            local ui_item = self.bone_pool[i]
+            
+            if w_data then
+                local display_name = string.gsub(tostring(w_data.name), "_", " ")
+                ui_item.name:SetText(string.upper(display_name))
+                ui_item.state:SetText(string.upper(tostring(w_data.status)))
+                
                 ui_item.main:Show(true)
             else
                 ui_item.main:Show(false)

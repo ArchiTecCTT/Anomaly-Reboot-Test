@@ -26,6 +26,10 @@ local function action_router(obj_id, slot, mode, action)
             if mod_medical_items and mod_medical_items.apply_localized_item then
                 mod_medical_items.apply_localized_item(obj, slot)
             end
+        elseif action == "single_artery" then
+            if mod_medical_items and mod_medical_items.apply_localized_artery then
+                mod_medical_items.apply_localized_artery(obj, slot)
+            end
         end
     else
         if action == "all" then
@@ -64,12 +68,52 @@ function start(obj, mode)
 
     if mode == "medical" then
         local valid_limbs = {}
-        if mod_medical_core and mod_medical_core.bio_state and mod_medical_core.bio_state.wounds then
-            for _, w in ipairs(mod_medical_core.bio_state.wounds) do
-                if (w.bleed_rate and w.bleed_rate > 0) or w.type == "fracture" then
-                    local t_limb = w.limb or "torso"
-                    if t_limb == "" then t_limb = "torso" end
-                    valid_limbs[t_limb] = true
+        local valid_arteries = {}
+        local item_sec = obj:section()
+        local item_data = mod_medical_items and mod_medical_items.item_map and mod_medical_items.item_map[item_sec]
+        local med_type = item_data and item_data.type or ""
+        
+        local is_medkit = (med_type == "field_dressing" or med_type == "trauma_kit" or med_type == "surgical_kit")
+        local is_limb_med = (med_type == "hemostatic" or med_type == "tourniquet")
+        local is_splint = (med_type == "splint")
+        local is_surgical = (med_type == "surgical_kit")
+        local is_army = (item_sec == "medkit_army")
+
+        if mod_medical_core and mod_medical_core.bio_state then
+            if mod_medical_core.bio_state.wounds then
+                for _, w in ipairs(mod_medical_core.bio_state.wounds) do
+                    local is_active_fracture = (w.type == "fracture" and w.status == "active")
+                    local is_active_bleed = (w.bleed_rate and w.bleed_rate > 0 and w.status == "active")
+                    local is_arterial = (w.type == "internal" and (string.find(w.organ or "", "artery") or string.find(w.organ or "", "jugular")))
+                    
+                    if is_active_bleed or is_active_fracture then
+                        local t_limb = w.limb or "torso"
+                        if t_limb == "" then t_limb = "torso" end
+                        
+                        local allowed = false
+                        if is_splint and is_active_fracture then allowed = true
+                        elseif is_active_bleed and not is_active_fracture and not is_arterial then
+                            if is_medkit and (t_limb == "torso" or t_limb == "head") then allowed = true
+                            elseif is_limb_med and (t_limb ~= "torso" and t_limb ~= "head") then allowed = true
+                            end
+                        end
+                        
+                        if allowed then valid_limbs[t_limb] = true end
+                        
+                        if is_army and is_arterial and is_active_bleed then
+                            valid_arteries[t_limb] = true
+                        end
+                    end
+                end
+            end
+            
+            -- Failsafe: Allow surgical kits if an organ is damaged, even if bleeding clotted
+            if is_surgical and mod_medical_core.bio_state.organ_health then
+                for org, hp in pairs(mod_medical_core.bio_state.organ_health) do
+                    if hp < 0.99 then
+                        local t_limb = (org == "brain") and "head" or "torso"
+                        valid_limbs[t_limb] = true
+                    end
                 end
             end
         end
@@ -80,6 +124,14 @@ function start(obj, mode)
             table.insert(context_str, display_name)
             table.insert(context_action, "apply_ama_med")
             table.insert(context_params, {obj_id, limb, mode, "single"})
+            count = count + 1
+        end
+        
+        for limb, _ in pairs(valid_arteries) do
+            local display_name = "Stop Arterial Bleeding (" .. (limb_names[limb] or limb) .. ")"
+            table.insert(context_str, display_name)
+            table.insert(context_action, "apply_ama_med")
+            table.insert(context_params, {obj_id, limb, mode, "single_artery"})
             count = count + 1
         end
         

@@ -25,7 +25,15 @@
                 <text font="letterica16" align="l">ACTIVE BLEEDS: 0</text>
             </active_bleeds_val>
 
-            <sepsis_val x="14" y="323" width="230" height="20">
+            <flesh_wounds_val x="92" y="333" width="230" height="20">
+                <text font="letterica16" align="l">FLESH WOUNDS: 0</text>
+            </flesh_wounds_val>
+
+            <bone_fractures_val x="92" y="494" width="230" height="20">
+                <text font="letterica16" align="l">BONE FRACTURES: 0</text>
+            </bone_fractures_val>
+
+            <sepsis_val x="16" y="645" width="230" height="20">
                 <text font="letterica16" align="l">SEPSIS: CLEAN</text>
             </sepsis_val>
 
@@ -39,8 +47,6 @@
                 <progress stretch="1"><texture>ui_ama_pain_fill</texture></progress>
             </pain_level_bar>
         </background>
-        
-        <wound_list x="25" y="188" width="230" height="119" always_show_scroll="0" right_ident="0" left_ident="0" vert_interval="0" />
     </ama_actor_terminal>
 
     <wound_list_item x="0" y="0" width="230" height="24">
