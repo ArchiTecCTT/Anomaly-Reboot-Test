@@ -92,12 +92,20 @@ end
 
 function use_item(obj)
 	item = obj:section()
-	obj_m = obj
-	used_item = item
-	hide_hud_inventory()
 	anim_section = ini_eff:r_string_ex(item, "anm")
+	used_item = item
+	
+	if not anim_section then 
+		anim_section = ini_eff:r_string_ex("bandage", "anm")
+		used_item = "bandage"
+		if not anim_section then return false end
+	end
+
+	obj_m = obj
+	hide_hud_inventory()
 	mask_hud_switcher()
 	anim_prepare()
+	return true
 end
 
 function monster_on_actor_use(obj)

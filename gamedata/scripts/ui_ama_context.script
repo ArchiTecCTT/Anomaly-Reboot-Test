@@ -14,7 +14,11 @@ local limb_names = {
     ["l_thigh"]    = "Left Thigh",
     ["r_thigh"]    = "Right Thigh",
     ["l_shin"]     = "Left Shin",
-    ["r_shin"]     = "Right Shin"
+    ["r_shin"]     = "Right Shin",
+    ["l_hand"]     = "Left Hand",
+    ["r_hand"]     = "Right Hand",
+    ["l_foot"]     = "Left Foot",
+    ["r_foot"]     = "Right Foot"
 }
 
 local function action_router(obj_id, slot, mode, action)

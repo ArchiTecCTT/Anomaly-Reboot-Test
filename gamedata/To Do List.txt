@@ -1,6 +1,5 @@
 ### PENDING TASKS
 We will also make the outfit degradation faster because that's more realistic. But to compensate for that, repairing will be more generous and forgiving. (STANDBY)
-We will make it so that morphine and other vanilla meds that used to give increased ballistic resistance will now reduce received death rating and pain levels by 15-30% depending on the strength of the medicine.
 Add the new ballistic values to vanilla weapons and vanilla ammunition.
 Adrenaline, stimpacks, and other performance boosters will also allow the player to not lose stamina when getting hit.
 Buff the bleed rate, it's currently very low right now. Any penetrating hit to the flesh will cause bleeding.
@@ -9,13 +8,10 @@ Similar to how we neutered the vanilla medical items and removed the redundant v
 Add a feature where psy attacks won't just consume your psy bar, it will actively send the player into a frenzy. We might add a new value known as "Sanity" or something similar. The mechanics will basically give the player a set amount of sanity (100 for example), each psy attack will reduce this sanity meter. There will be certain thresholds that, if crossed, will give effects to the player that basically makes them woozy, confused, seeing things or maybe we can spawn entities. They won't outright die from having 0 sanity, but it will basically neuter all of the players senses as they are just in a deep state of horrifying hallucinations until something in the real world eventually kills them. To combat this, we will overhaul one of the items so that it can constantly give sanity to the player for a set amount of time. Maybe artifacts can also help with this.
 We will make it so that medical packages will become a must for players. I have barely used it when I played Anomaly. In fact, no, I never used it, not even once. Part of the reason is because it doesn't get dropped by NPCs. So we'll have to tailor it so that NPCs can drop it. We might have to brainstorm a bit more on how to make this valuable to the player. We can make it so that the players get a lot of medical items from the packs.
 We will also be overhauling stamina. As to how we'll do it, we will have to brainstorm. I want it to be a barless version of stamina where it will be connected to features that will be implemented later on such as the overhaul for the thirst and hunger mechanics. Weight carried, stamina loss, and stamina value will also be affected by these new mechanics.
-Epinephrine shot will be the medical item that will be converted into adrenaline.
 We will also be overhauling the radiation mechanics with our own and finetuning the medical items for that.
 Add a side effect for the player if he consumes too many narcotics in a short amount of time. The player could die if this value is maxed out.
 Add external and internal bleeding count to the medical actor terminal. Also, add the limbs that are bleeding underneath active bleeds.
 Add an item known as the surgeon kit. This will allow the player to do operations to fully restore bodily condition to maximum without paying a surgeon. Though, it will be extremely rare and expensive.
-Dynamic pain accumulation instead of a flat value.
-Dynamic damage to flesh, bones, and organs.
 Add directional function to limb armors. Similar to the plates. Like, the back of your shin guard might have less armor or nothing at all, while the front and sides have.
 Add a function later on where if a player is on terminal armor mod, and they hover over a specific coordinate where a limb armor might be, then it'll show the current state of that armor and more information about it. All the other terminals will have this kind of feature. We can use Haruka's skill system for a window popping up when hovering on a specific coordinate while that window is open.
 We can make a new value for ammo that's "Ammo Type" where it can be FMJ, AP, HP, API, etc. and then we can build a table for them where they'll have different effects to armor and flesh.
@@ -32,5 +28,9 @@ We will eventually overhaul the .ppe and .anms of the different states for our m
 - Currently, Large Glucose shot only give 500 blood while small glucose shot gives you 750. Update it so that small glucose shot gives you 300 blood while large glucose shot will give you 750.
 - Fix a bug where the terminal does not update it's visuals when a wound has been packed or bandaged. It still looks like it's orange. And medkits can still be applied even if there are technically no active wounds. After further testing, for some reason, using a scientific medkit removes the color overlay to the torso. Also, the torso is currently the only thing that get's updated in the paperdoll terminal. Penetration to limbs does not do anything. No pain, no bleeding.
 - Patch with FDDA
+- We will make it so that morphine and other vanilla meds that used to give increased ballistic resistance will now reduce received death rating and pain levels by 15-30% depending on the strength of the medicine.
+- Dynamic pain accumulation instead of a flat value.
+- Epinephrine shot will be the medical item that will be converted into adrenaline.
 - Fix a bug where the game crashes if an NPC dies. It only happened one time, but just to make sure that it isn't caused by our script, let's investigate.
 - We will add a mechanic where bullets could penetrate multiple body parts. For example, if the bullet hits the forearm first but overpenetrates because the bullet has so much speed and power, then we can draw a line from where the bullet exited the wound towards any potential flesh if it will come into contact with a body part. It's quite annoying to shoot a bandit with a heavy subsonic 12x55 and they only take half of the damage because their arm intercepted it (since when an NPC is on its combat stance and facing towards you, the torso is blocked by their arms).
+- Dynamic damage to flesh, bones, and organs.

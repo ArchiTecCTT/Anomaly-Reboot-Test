@@ -389,10 +389,8 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
         local display_name = curve_data.target_slot
         if display_name == "helmet" then display_name = "head" end
         
-        if string_find(hit_bone_str, "hand") then display_name = string_find(hit_bone_str, "l_") and "l_hand" or "r_hand"
-        elseif string_find(hit_bone_str, "finger") then display_name = string_find(hit_bone_str, "l_") and "l_finger" or "r_finger"
-        elseif string_find(hit_bone_str, "foot") then display_name = string_find(hit_bone_str, "l_") and "l_foot" or "r_foot"
-        elseif string_find(hit_bone_str, "toe") then display_name = string_find(hit_bone_str, "l_") and "l_toe" or "r_toe"
+        if string_find(hit_bone_str, "hand") or string_find(hit_bone_str, "finger") then display_name = string_find(hit_bone_str, "l_") and "left_hand" or "right_hand"
+        elseif string_find(hit_bone_str, "foot") or string_find(hit_bone_str, "toe") then display_name = string_find(hit_bone_str, "l_") and "left_foot" or "right_foot"
         end
         
         local clean_name = display_name:gsub("_", " "):upper()
@@ -401,7 +399,11 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
         if has_plate then
             display_zone = clean_name .. " ARMOR"
         else
-            display_zone = clean_name .. " SOFT ARMOR"
+            if clean_name == "LEFT HAND" or clean_name == "RIGHT HAND" or clean_name == "LEFT FOOT" or clean_name == "RIGHT FOOT" then
+                display_zone = clean_name
+            else
+                display_zone = clean_name .. " SOFT ARMOR"
+            end
         end
         impact_angle_deg = calculate_shared_limb_geometry(shit.direction, curve_data.radius)
     end

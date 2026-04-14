@@ -51,7 +51,11 @@ local function get_health_and_state(bio, wounds, part, view)
         ["skull"] = "head", ["cervical_spine"] = "head", ["neck"] = "head",
         ["lower_spine"] = "torso", ["sacrum"] = "torso", ["ilium"] = "torso", ["ribs"] = "torso", ["flesh"] = "torso",
         ["r_humerus"] = "r_upperarm", ["r_ulna"] = "r_forearm", ["r_femur"] = "r_thigh", ["r_tibia"] = "r_shin",
-        ["l_humerus"] = "l_upperarm", ["l_ulna"] = "l_forearm", ["l_femur"] = "l_thigh", ["l_tibia"] = "l_shin"
+        ["l_humerus"] = "l_upperarm", ["l_ulna"] = "l_forearm", ["l_femur"] = "l_thigh", ["l_tibia"] = "l_shin",
+        ["l_hand_flesh"] = "l_hand", ["r_hand_flesh"] = "r_hand",
+        ["l_foot_flesh"] = "l_foot", ["r_foot_flesh"] = "r_foot",
+        ["l_hand_bone"] = "l_hand", ["r_hand_bone"] = "r_hand",
+        ["l_foot_bone"] = "l_foot", ["r_foot_bone"] = "r_foot"
     }
     limb_key = limb_map[part] or part
     
@@ -66,10 +70,10 @@ local function get_health_and_state(bio, wounds, part, view)
         local bh = bio.bone_health
         health = bh and bh[part] or 1.0
         if bh then
-            if part == "l_ulna" then health = math_min(health, bh["l_hand"] or 1.0, bh["l_finger"] or 1.0)
-            elseif part == "r_ulna" then health = math_min(health, bh["r_hand"] or 1.0, bh["r_finger"] or 1.0)
-            elseif part == "l_tibia" then health = math_min(health, bh["l_foot"] or 1.0, bh["l_toe"] or 1.0)
-            elseif part == "r_tibia" then health = math_min(health, bh["r_foot"] or 1.0, bh["r_toe"] or 1.0)
+            if part == "l_hand_bone" then health = math_min(bh["l_hand"] or 1.0, bh["l_finger"] or 1.0)
+            elseif part == "r_hand_bone" then health = math_min(bh["r_hand"] or 1.0, bh["r_finger"] or 1.0)
+            elseif part == "l_foot_bone" then health = math_min(bh["l_foot"] or 1.0, bh["l_toe"] or 1.0)
+            elseif part == "r_foot_bone" then health = math_min(bh["r_foot"] or 1.0, bh["r_toe"] or 1.0)
             end
         end
     else -- Flesh (1) or Circulatory (4) View
@@ -106,10 +110,10 @@ local function get_health_and_state(bio, wounds, part, view)
             elseif view == 3 then
                 local match = false
                 if w_org == part or (part == "ribs" and w_org == "rib") then match = true
-                elseif part == "l_ulna" and (w_org == "l_hand" or w_org == "l_finger") then match = true
-                elseif part == "r_ulna" and (w_org == "r_hand" or w_org == "r_finger") then match = true
-                elseif part == "l_tibia" and (w_org == "l_foot" or w_org == "l_toe") then match = true
-                elseif part == "r_tibia" and (w_org == "r_foot" or w_org == "r_toe") then match = true
+                elseif part == "l_hand_bone" and (w_org == "l_hand" or w_org == "l_finger") then match = true
+                elseif part == "r_hand_bone" and (w_org == "r_hand" or w_org == "r_finger") then match = true
+                elseif part == "l_foot_bone" and (w_org == "l_foot" or w_org == "l_toe") then match = true
+                elseif part == "r_foot_bone" and (w_org == "r_foot" or w_org == "r_toe") then match = true
                 end
                 
                 if match and (w.type == "fracture" or w.type == "internal") then
@@ -162,6 +166,16 @@ local PAPERDOLL_ATLAS = {
     ["l_forearm"]        = {x=385, y=1410, view=1},
     ["l_thigh"]          = {x=1534, y=706, view=1},
     ["l_shin"]           = {x=2300, y=1410, view=1},
+
+    -- EXTREMITY TEXTURES
+    ["l_hand_bone"]      = {x=1149, y=2813, view=3},
+    ["r_hand_bone"]      = {x=1530, y=2813, view=3},
+    ["l_foot_bone"]      = {x=1891, y=2813, view=3},
+    ["r_foot_bone"]      = {x=2272, y=2813, view=3},
+    ["l_hand_flesh"]     = {x=3064, y=2, view=1},
+    ["r_hand_flesh"]     = {x=3445, y=2, view=1},
+    ["l_foot_flesh"]     = {x=3064, y=704, view=1},
+    ["r_foot_flesh"]     = {x=3445, y=704, view=1},
 }
 
 -- ======================================================================
@@ -510,6 +524,14 @@ function AMATerminalUI:UpdateMedicalMode()
     end
 end
 
+local function format_display_name(raw_name)
+    local name = tostring(raw_name)
+    name = string.gsub(name, "^l_", "left ")
+    name = string.gsub(name, "^r_", "right ")
+    name = string.gsub(name, "_", " ")
+    return string.upper(name)
+end
+
 function AMATerminalUI:UpdateActorMode()
     if not mod_medical_core then return end
     
@@ -576,8 +598,7 @@ function AMATerminalUI:UpdateActorMode()
             local ui_item = self.bleed_pool[i]
             
             if w_data then
-                local display_name = string.gsub(tostring(w_data.name), "_", " ")
-                ui_item.name:SetText(string.upper(display_name))
+                ui_item.name:SetText(format_display_name(w_data.name))
                 
                 local type_tag = "EXTERNAL"
                 if w_data.type == "fracture" or w_data.type == "internal" then
@@ -601,8 +622,7 @@ function AMATerminalUI:UpdateActorMode()
             local ui_item = self.flesh_pool[i]
             
             if w_data then
-                local display_name = string.gsub(tostring(w_data.name), "_", " ")
-                ui_item.name:SetText(string.upper(display_name))
+                ui_item.name:SetText(format_display_name(w_data.name))
                 ui_item.state:SetText(string.upper(tostring(w_data.status)))
                 apply_state_color(ui_item, w_data.status)
                 ui_item.main:Show(true)
@@ -616,8 +636,7 @@ function AMATerminalUI:UpdateActorMode()
             local ui_item = self.bone_pool[i]
             
             if w_data then
-                local display_name = string.gsub(tostring(w_data.name), "_", " ")
-                ui_item.name:SetText(string.upper(display_name))
+                ui_item.name:SetText(format_display_name(w_data.name))
                 ui_item.state:SetText(string.upper(tostring(w_data.status)))
                 
                 ui_item.main:Show(true)

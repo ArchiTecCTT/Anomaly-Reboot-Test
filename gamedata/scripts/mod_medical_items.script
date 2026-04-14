@@ -43,11 +43,10 @@ local PURGE_TETANUS_POWER       = 0.50
 local PURGE_AKVATAB_POWER       = 0.30
 
 -- Stimulants
-local EPI_ADRENALIN_DUR         = 60
-local EPI_STIMPACK_DUR          = 30
-local EPI_STIMPACK_ARMY_DUR     = 45
-local EPI_STIMPACK_SCI_DUR      = 60
-local EPI_CRASH_PAIN            = 50
+local EPI_DEFAULT_DOSE_ADRENALIN = 100
+local EPI_DEFAULT_DOSE_STIMPACK  = 60
+local EPI_DEFAULT_DOSE_ARMY      = 80
+local EPI_DEFAULT_DOSE_SCI       = 90
 local CNS_COCAINE_DUR           = 300
 local CNS_CAFFEINE_DUR          = 180
 
@@ -68,13 +67,14 @@ item_effects = {
     coagulant_power         = 0.30,
     antibiotic_timer        = 0,
     antibiotic_active       = false,
-    adrenaline_timer        = 0,
-    adrenaline_active       = false,
     cns_stimulant_timer     = 0,
     cns_stimulant_active    = false,
     narcotic_timer          = 0,
     narcotic_active         = false,
     narcotic_stamina_cap    = 0.40,
+    analgesic_timer         = 0,
+    analgesic_active        = false,
+    analgesic_rate          = 0.0,
 }
 
 -- ==========================================================
@@ -106,27 +106,28 @@ item_map = {
     -- Tier 2: Wound Treatment
     ["medkit"]         = { type = "field_dressing", flesh_power = MEDKIT_FLESH_POWER, organ_power = MEDKIT_ORGAN_POWER, anim_time = 10 },
     ["medkit_army"]    = { type = "trauma_kit", flesh_power = MEDKIT_ARMY_FLESH, organ_power = MEDKIT_ARMY_ORGAN, arterial_power = MEDKIT_ARMY_ART, anim_time = 12 },
-    ["drug_coagulant"] = { type = "systemic_coagulant", duration = COAGULANT_DURATION_S, power = COAGULANT_POWER },
+    ["drug_coagulant"] = { type = "systemic_coagulant", duration = COAGULANT_DURATION_S, power = COAGULANT_POWER, pain_reduction = 20 },
+    ["rebirth"]        = { type = "instant_painkiller", pain_reduction = 100 },
 
     -- Tier 3: Critical Care / Field Surgery
     ["medkit_scientic"]= { type = "surgical_kit", close_threshold = SURGERY_CLOSE_THRESH, blood_restore = SURGERY_BLOOD_RESTORE, anim_time = 45 },
     ["survival_kit"]   = { type = "splint", anim_time = 15 },
 
     -- Chemical Management (Pain & Sepsis)
-    ["analgetic"]      = { type = "analgesic", pain_reduction = ANALGESIC_STRONG_PAIN },
-    ["salicidic_acid"] = { type = "analgesic", pain_reduction = ANALGESIC_WEAK_PAIN },
+    ["analgetic"]      = { type = "analgesic", pain_rate = 0.5, duration = 60 },
+    ["salicidic_acid"] = { type = "analgesic", pain_rate = 0.5, duration = 30 },
     ["yadylin"]        = { type = "narcotic", pain_reduction = NARCOTIC_PAIN_REDUCTION, stamina_cap = NARCOTIC_STAMINA_CAP, duration = NARCOTIC_DURATION_S, death_reduction = NARCOTIC_DEATH_REDUCTION },
     ["morphine"]       = { type = "narcotic", pain_reduction = NARCOTIC_PAIN_REDUCTION, stamina_cap = NARCOTIC_STAMINA_CAP, duration = NARCOTIC_DURATION_S, death_reduction = NARCOTIC_DEATH_REDUCTION },
     ["antibio_sulfad"] = { type = "antibiotic", duration = ANTIBIOTIC_SULFAD_DUR },
     ["antibio_chlor"]  = { type = "antibiotic", duration = ANTIBIOTIC_CHLOR_DUR },
-    ["tetanus"]        = { type = "purge", power = PURGE_TETANUS_POWER },
+    ["tetanus"]        = { type = "analgesic", pain_rate = 1.0, duration = 90 },
     ["akvatab"]        = { type = "purge", power = PURGE_AKVATAB_POWER },
 
     -- Emergency Stimulants
-    ["adrenalin"]      = { type = "epinephrine", duration = EPI_ADRENALIN_DUR },
-    ["stimpack"]       = { type = "epinephrine", duration = EPI_STIMPACK_DUR },
-    ["stimpack_army"]  = { type = "epinephrine", duration = EPI_STIMPACK_ARMY_DUR },
-    ["stimpack_scientic"] = { type = "epinephrine", duration = EPI_STIMPACK_SCI_DUR },
+    ["adrenalin"]      = { type = "epinephrine", default_dose = EPI_DEFAULT_DOSE_ADRENALIN },
+    ["stimpack"]       = { type = "epinephrine", default_dose = EPI_DEFAULT_DOSE_STIMPACK },
+    ["stimpack_army"]  = { type = "epinephrine", default_dose = EPI_DEFAULT_DOSE_ARMY },
+    ["stimpack_scientic"] = { type = "epinephrine", default_dose = EPI_DEFAULT_DOSE_SCI },
     ["cocaine"]        = { type = "cns_stimulant", duration = CNS_COCAINE_DUR },
     ["caffeine"]       = { type = "cns_stimulant", duration = CNS_CAFFEINE_DUR },
 
@@ -144,12 +145,16 @@ local target_patterns = {
     torso      = { organs = {"torso", "spine", "heart", "lung", "liver", "pelvis", "clavicle", "gi_tract"}, limbs = {"torso"} },
     l_upperarm = { organs = {"l_upperarm", "l_brachial"}, limbs = {"l_upperarm"} },
     r_upperarm = { organs = {"r_upperarm", "r_brachial"}, limbs = {"r_upperarm"} },
-    l_forearm  = { organs = {"l_forearm", "l_radial", "l_hand", "l_finger"}, limbs = {"l_forearm"} },
-    r_forearm  = { organs = {"r_forearm", "r_radial", "r_hand", "r_finger"}, limbs = {"r_forearm"} },
+    l_forearm  = { organs = {"l_forearm", "l_radial"}, limbs = {"l_forearm"} },
+    r_forearm  = { organs = {"r_forearm", "r_radial"}, limbs = {"r_forearm"} },
     l_thigh    = { organs = {"l_thigh", "l_femoral"}, limbs = {"l_thigh"} },
     r_thigh    = { organs = {"r_thigh", "r_femoral"}, limbs = {"r_thigh"} },
-    l_shin     = { organs = {"l_calf", "l_tibial", "l_shin", "l_foot", "l_toe"}, limbs = {"l_shin", "l_calf"} },
-    r_shin     = { organs = {"r_calf", "r_tibial", "r_shin", "r_foot", "r_toe"}, limbs = {"r_shin", "r_calf"} }
+    l_shin     = { organs = {"l_calf", "l_tibial", "l_shin"}, limbs = {"l_shin", "l_calf"} },
+    r_shin     = { organs = {"r_calf", "r_tibial", "r_shin"}, limbs = {"r_shin", "r_calf"} },
+    l_hand     = { organs = {"l_hand", "l_finger"}, limbs = {"l_hand"} },
+    r_hand     = { organs = {"r_hand", "r_finger"}, limbs = {"r_hand"} },
+    l_foot     = { organs = {"l_foot", "l_toe"}, limbs = {"l_foot"} },
+    r_foot     = { organs = {"r_foot", "r_toe"}, limbs = {"r_foot"} }
 }
 
 local function is_wound_in_target(w, t)
@@ -440,25 +445,48 @@ local function process_coagulant(item_data)
     item_effects.coagulant_active = true
     item_effects.coagulant_timer = time_global() + (item_data.duration * 1000)
     item_effects.coagulant_power = item_data.power
+    
+    if item_data.pain_reduction and mod_medical_core then
+        local current_pain = mod_medical_core.get_pain_level()
+        if current_pain > 0 then
+            mod_medical_core.set_pain_level(math_max(0, current_pain - item_data.pain_reduction))
+        end
+    end
+    
     if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("SYSTEMIC COAGULANT ADMINISTERED", "flesh") end
+end
+
+local function process_instant_painkiller(item_data)
+    if not mod_medical_core then return end
+    local current_pain = mod_medical_core.get_pain_level()
+    mod_medical_core.set_pain_level(math_max(0, current_pain - (item_data.pain_reduction or 0)))
+    
+    if mod_medical_core.reduce_bruise_timers then
+        mod_medical_core.reduce_bruise_timers((item_data.pain_reduction or 0) * 30.0)
+    end
+    
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("INSTANT PAINKILLER ADMINISTERED - PAIN REDUCED", "flesh") end
 end
 
 local function process_analgesic(item_data)
     if not mod_medical_core then return end
-    local current_pain = mod_medical_core.get_pain_level()
-    mod_medical_core.set_pain_level(math_max(0, current_pain - item_data.pain_reduction))
+    
+    item_effects.analgesic_active = true
+    item_effects.analgesic_timer = time_global() + ((item_data.duration or 30) * 1000)
+    item_effects.analgesic_rate = item_data.pain_rate or 0.5
     
     if mod_medical_core.reduce_bruise_timers then
-        mod_medical_core.reduce_bruise_timers(item_data.pain_reduction * 60.0)
+        mod_medical_core.reduce_bruise_timers(item_data.duration * 30.0) -- rough approximation
     end
     
-    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ANALGESIC ADMINISTERED - PAIN REDUCED", "flesh") end
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ANALGESIC ADMINISTERED - PAIN RELIEF STARTED", "flesh") end
 end
 
 -- BUG-12 fix: narcotic now sets persistent flag + stamina cap
 local function process_narcotic(item_data)
     if not mod_medical_core then return end
     mod_medical_core.set_pain_level(0)
+    db.actor.power = 1.0  -- Immediate stamina burst
     level.add_pp_effector("yantar_underground_psi.ppe", 2050, false)
     level.set_pp_effector_factor(2050, 0.5)
     
@@ -470,20 +498,31 @@ local function process_narcotic(item_data)
         mod_medical_core.reduce_death_rating(item_data.death_reduction)
     end
     
-    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("HEAVY NARCOTIC ADMINISTERED - CNS SUPPRESSED", "flesh") end
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("HEAVY NARCOTIC ADMINISTERED - ALL PAIN SUPPRESSED", "flesh") end
 end
 
-local function process_epinephrine(item_data)
-    item_effects.adrenaline_active = true
-    item_effects.adrenaline_timer = time_global() + (item_data.duration * 1000)
+local function process_epinephrine(item_data, item_sec)
+    if not mod_medical_core or not mod_medical_core.inject_artificial_adrenaline then return end
+    
+    -- Read dose from LTX, fall back to item_map default, then hardcoded default
+    local dose = item_data.default_dose or EPI_DEFAULT_DOSE_STIMPACK
+    if item_sec then
+        local ltx_dose = SYS_GetParam(2, item_sec, "ama_adrenaline_dose")
+        if ltx_dose and ltx_dose > 0 then dose = ltx_dose end
+    end
+    
+    mod_medical_core.inject_artificial_adrenaline(dose)
+    db.actor.power = 1.0  -- Immediate stamina burst
     level.add_pp_effector("blink.ppe", 2051, false)
-    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("EPINEPHRINE ADMINISTERED - SYSTEM SHOCK", "critical") end
+    if ui_ama_combat_feed then 
+        ui_ama_combat_feed.push_msg(string.format("EPINEPHRINE ADMINISTERED - +%d UNITS INJECTED", dose), "critical") 
+    end
 end
 
 local function process_cns_stimulant(item_data)
     item_effects.cns_stimulant_active = true
     item_effects.cns_stimulant_timer = time_global() + (item_data.duration * 1000)
-    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CNS STIMULANT ADMINISTERED - SHOCK THRESHOLD LOWERED", "flesh") end
+    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("CNS STIMULANT ADMINISTERED - ADRENAL RECOVERY BOOSTED", "flesh") end
 end
 
 local function process_antibiotic(item_data)
@@ -545,10 +584,12 @@ local function actor_on_item_use(item)
         process_coagulant(data)
     elseif data.type == "analgesic" then
         process_analgesic(data)
+    elseif data.type == "instant_painkiller" then
+        process_instant_painkiller(data)
     elseif data.type == "narcotic" then
         process_narcotic(data)
     elseif data.type == "epinephrine" then
-        process_epinephrine(data)
+        process_epinephrine(data, sec)
     elseif data.type == "cns_stimulant" then
         process_cns_stimulant(data)
     elseif data.type == "antibiotic" then
@@ -580,6 +621,20 @@ local function actor_on_update()
         end
     end
     
+    -- Analgesic Heal-over-Time
+    if item_effects.analgesic_active then
+        if tg <= item_effects.analgesic_timer then
+            if mod_medical_core then
+                local current_pain = mod_medical_core.get_pain_level()
+                if current_pain > 0 then
+                    mod_medical_core.set_pain_level(math_max(0, current_pain - (item_effects.analgesic_rate * dt)))
+                end
+            end
+        else
+            item_effects.analgesic_active = false
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ANALGESICS METABOLIZED", "flesh") end
+        end
+    end
     -- Coagulant Timer
     if item_effects.coagulant_active and tg > item_effects.coagulant_timer then
         item_effects.coagulant_active = false
@@ -612,16 +667,9 @@ local function actor_on_update()
         end
     end
     
-    -- Adrenaline Crash
-    if item_effects.adrenaline_active and tg > item_effects.adrenaline_timer then
-        item_effects.adrenaline_active = false
-        if mod_medical_core then
-            mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + EPI_CRASH_PAIN)
-        end
-        db.actor.power = -1.0
-        level.add_pp_effector("snd_shock.ppe", 2052, false)
-        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("EPINEPHRINE CRASH - MASSIVE SHOCK CRASH", "critical") end
-    end
+    -- Note: Adrenaline crash is now handled by mod_medical_core's adrenaline tick processor.
+    -- The old binary adrenaline_active/adrenaline_timer system has been replaced by the
+    -- two-pool adrenaline model (biological + artificial) in the core script.
 end
 
 -- ==========================================================
@@ -643,13 +691,14 @@ local function save_state(m_data)
     d.coagulant_power         = item_effects.coagulant_power
     d.antibiotic_active       = item_effects.antibiotic_active
     d.antibiotic_remaining    = item_effects.antibiotic_active and math_max(0, item_effects.antibiotic_timer - tg) or 0
-    d.adrenaline_active       = item_effects.adrenaline_active
-    d.adrenaline_remaining    = item_effects.adrenaline_active and math_max(0, item_effects.adrenaline_timer - tg) or 0
     d.cns_stimulant_active    = item_effects.cns_stimulant_active
     d.cns_stimulant_remaining = item_effects.cns_stimulant_active and math_max(0, item_effects.cns_stimulant_timer - tg) or 0
     d.narcotic_active         = item_effects.narcotic_active
     d.narcotic_remaining      = item_effects.narcotic_active and math_max(0, item_effects.narcotic_timer - tg) or 0
     d.narcotic_stamina_cap    = item_effects.narcotic_stamina_cap
+    d.analgesic_active        = item_effects.analgesic_active
+    d.analgesic_remaining     = item_effects.analgesic_active and math_max(0, item_effects.analgesic_timer - tg) or 0
+    d.analgesic_rate          = item_effects.analgesic_rate
 end
 
 local function load_state(m_data)
@@ -665,13 +714,21 @@ local function load_state(m_data)
         item_effects.coagulant_power      = d.coagulant_power or 0.30
         item_effects.antibiotic_active    = d.antibiotic_active or false
         item_effects.antibiotic_timer     = tg + (d.antibiotic_remaining or 0)
-        item_effects.adrenaline_active    = d.adrenaline_active or false
-        item_effects.adrenaline_timer     = tg + (d.adrenaline_remaining or 0)
         item_effects.cns_stimulant_active    = d.cns_stimulant_active or false
         item_effects.cns_stimulant_timer     = tg + (d.cns_stimulant_remaining or 0)
         item_effects.narcotic_active         = d.narcotic_active or false
         item_effects.narcotic_timer          = tg + (d.narcotic_remaining or 0)
         item_effects.narcotic_stamina_cap    = d.narcotic_stamina_cap or 0.40
+        item_effects.analgesic_active        = d.analgesic_active or false
+        item_effects.analgesic_timer         = tg + (d.analgesic_remaining or 0)
+        item_effects.analgesic_rate          = d.analgesic_rate or 0.0
+        
+        -- Backward compatibility: if old save had adrenaline_active, convert to artificial adrenaline
+        if d.adrenaline_active and d.adrenaline_remaining and d.adrenaline_remaining > 0 then
+            if mod_medical_core and mod_medical_core.inject_artificial_adrenaline then
+                mod_medical_core.inject_artificial_adrenaline(80)  -- Approximate mid-range dose
+            end
+        end
     end
 end
 
@@ -704,9 +761,16 @@ function apply_localized_item(item, t_limb)
     end
     
     if success then
+        local anim_played = false
         if enhanced_animations and enhanced_animations.enable_animations and enhanced_animations.use_item then
-            enhanced_animations.use_item(item)
-        else
+            enhanced_animations.ama_fdda_consuming = true
+            anim_played = enhanced_animations.use_item(item)
+            if not anim_played then
+                enhanced_animations.ama_fdda_consuming = false
+            end
+        end
+        
+        if not anim_played then
             utils_obj.play_sound("interface\\inv_iam_open")
             alife_release_id(item:id())
         end
@@ -720,9 +784,16 @@ function apply_localized_artery(item, t_limb)
     
     local success = process_arterial_bleed(data, t_limb)
     if success then
+        local anim_played = false
         if enhanced_animations and enhanced_animations.enable_animations and enhanced_animations.use_item then
-            enhanced_animations.use_item(item)
-        else
+            enhanced_animations.ama_fdda_consuming = true
+            anim_played = enhanced_animations.use_item(item)
+            if not anim_played then
+                enhanced_animations.ama_fdda_consuming = false
+            end
+        end
+        
+        if not anim_played then
             utils_obj.play_sound("interface\\inv_iam_open")
             alife_release_id(item:id())
         end

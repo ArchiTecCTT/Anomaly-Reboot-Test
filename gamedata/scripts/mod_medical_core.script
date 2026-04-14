@@ -71,13 +71,66 @@ local LEG_ANM_DELAY             = 800
 local ENV_CHECK_DELAY           = 5000
 local AGGRO_CHECK_DELAY         = 1000
 
+-- Adrenaline System
+local ADRENAL_RESERVE_MAX       = 100.0   -- Maximum catecholamine storage
+local ADRENAL_RESERVE_REGEN     = 0.5     -- Reserve regen per second (when calm)
+local ADRENAL_RESERVE_FATIGUE   = 10.0    -- Max capacity lost per full depletion
+local ADRENALINE_DECAY_RATE     = 2.0     -- Natural adrenaline decay per second
+local ADRENALINE_COMBAT_DECAY   = 1.0     -- Halved decay during combat window
+local ARTIFICIAL_DECAY_RATE     = 0.5     -- Artificial adrenaline decay per second
+local ADRENALINE_COMBAT_WINDOW  = 600.0   -- 10 in-game minutes before "out of combat"
+local ADRENALINE_CRASH_COOLDOWN = 60000   -- 60 seconds before bio adrenaline can re-trigger
+local ADRENALINE_CRASH_THRESH   = 60.0    -- Must have been above this to trigger crash
+local ADRENALINE_CRASH_LOW      = 10.0    -- Must drop below this to trigger crash
+local CARDIAC_DANGER_THRESH     = 150.0   -- Combined level where cardiac danger begins
+local CARDIAC_LETHAL_THRESH     = 200.0   -- Combined level that is lethal
+local CARDIAC_DR_RATE           = 0.02    -- Death rating increase per second in cardiac danger
+local ADRENALINE_PAIN_REDUCE    = 0.30    -- 30% pain/death reduction while adrenaline active
+local ADRENALINE_CNS_REGEN_MULT = 3.0     -- CNS stimulant multiplier for reserve regen
+local NARCOTIC_ADRENALINE_BLOCK = 1.0     -- 100% suppression of natural adrenaline while on narcotics
+
+-- Adrenaline Spike Magnitudes (drawn from reserve)
+local ADREN_SPIKE_FLESH_MIN     = 8       -- Minor flesh wound
+local ADREN_SPIKE_FLESH_MAX     = 15
+local ADREN_SPIKE_DEEP_MIN      = 15      -- Deep wound (bleed 5-20)
+local ADREN_SPIKE_DEEP_MAX      = 30
+local ADREN_SPIKE_ARTERIAL_MIN  = 30      -- Arterial hit
+local ADREN_SPIKE_ARTERIAL_MAX  = 45
+local ADREN_SPIKE_ORGAN_MIN     = 40      -- Organ damage
+local ADREN_SPIKE_ORGAN_MAX     = 60
+local ADREN_SPIKE_FRACTURE_MIN  = 20      -- Bone fracture
+local ADREN_SPIKE_FRACTURE_MAX  = 35
+local ADREN_SPIKE_BRUISE_MIN    = 5       -- Blunt trauma bruise
+local ADREN_SPIKE_BRUISE_MAX    = 10
+
+-- Adrenaline Effect Tier Thresholds (combined = natural + artificial)
+local ADREN_TIER_CALM           = 20      -- Below this: no effects
+local ADREN_TIER_ALERT          = 50      -- Alert: minor buffs
+local ADREN_TIER_FIGHT          = 80      -- Fight-or-flight: significant buffs
+local ADREN_TIER_OVERRIDE       = 120     -- Combat override: full suppression
+-- Above OVERRIDE = overdrive (with tremors)
+-- Above CARDIAC_DANGER_THRESH = cardiac danger
+
+-- Adrenaline PPE/Cam IDs
+local PPE_TUNNEL_VISION_ID      = 8520
+local CAM_ADRENALINE_TREMOR_ID  = 8521
+local PPE_CARDIAC_ID            = 8522
+
 -- Organ Death Rating Matrix
 local ORGAN_DEATH_RATINGS = {
-    heart = 1.0, aorta = 1.0, cervical_spine = 1.0, spine = 1.0, brain = 1.0, trachea = 1.0,
+    -- Critical Organs (Instant/Extreme Lethality)
+    heart = 1.0, aorta = 1.0, cervical_spine = 1.0, lumbar_spine = 1.0, spine = 1.0, brain = 1.0, trachea = 1.0, skull = {0.30, 0.70},
+    
+    -- Arteries
     carotid_artery = {0.15, 0.30}, jugular = {0.05, 0.10}, femoral_artery = 0.10,
-    iliac_artery = 0.05, brachial_artery = 0.02, radial_artery = 0.01,
+    iliac_artery = 0.05, brachial_artery = 0.02, radial_artery = 0.01, artery = 0.10,
+    
+    -- Internal Organs
     liver = {0.15, 0.40}, lung = {0.15, 0.40}, lungs = {0.15, 0.40}, left_lung = {0.15, 0.40}, right_lung = {0.15, 0.40}, gi_tract = {0.15, 0.40},
-    pelvis = {0.05, 0.25}, leg_bone = {0.05, 0.25}, arm_bone = {0.01, 0.05}, ribs = {0.01, 0.05}
+    
+    -- Bones and Extremities
+    pelvis = {0.05, 0.25}, ilium = {0.05, 0.20}, sacrum = {0.05, 0.25}, leg_bone = {0.05, 0.25}, femur = {0.05, 0.25}, tibia = {0.02, 0.10}, 
+    arm_bone = {0.01, 0.05}, humerus = {0.01, 0.05}, radius_ulna = {0.01, 0.05}, ribs = {0.01, 0.05}, rib = {0.01, 0.05}, flesh = 0.01
 }
 
 -- ==========================================================
@@ -99,6 +152,8 @@ bio_state = {
         l_forearm  = 1.0,  r_forearm  = 1.0,
         l_thigh    = 1.0,  r_thigh    = 1.0,
         l_shin     = 1.0,  r_shin     = 1.0,
+        l_hand     = 1.0,  r_hand     = 1.0,
+        l_foot     = 1.0,  r_foot     = 1.0,
     },
     splinted_limbs = {},
     organ_health = {
@@ -121,6 +176,15 @@ bio_state = {
     treated_flesh = {},
     stabilized_organs = {},
     bruises = {},
+    
+    -- Adrenaline System (Two-Pool Model)
+    adrenal_reserve      = 100.0,   -- Stored catecholamines in adrenal medulla (0 to adrenal_reserve_max)
+    adrenal_reserve_max  = 100.0,   -- Max capacity (reduced by adrenal fatigue, restored by sleep/surgery)
+    adrenaline_level     = 0.0,     -- Circulating natural adrenaline (0-100)
+    artificial_adrenaline = 0.0,    -- Circulating synthetic epinephrine (0-200)
+    last_combat_time     = 0,       -- time_global() of last enemy damage received
+    adrenaline_crash_cd  = 0,       -- Cooldown timer preventing re-trigger after crash
+    adrenaline_peak      = 0.0,     -- Highest adrenaline_level reached in current spike (for crash detection)
 }
 
 -- Blood type distribution: O=44%, A=42%, B=10%, AB=4% 
@@ -225,12 +289,16 @@ local function map_bone_to_limb(bone_name)
     if string.find(b, "clavicle") then return "torso" end
     if string.find(b, "l_upperarm") or string.find(b, "l_shoulder") then return "l_upperarm" end
     if string.find(b, "r_upperarm") or string.find(b, "r_shoulder") then return "r_upperarm" end
-    if string.find(b, "l_forearm") or string.find(b, "l_hand") or string.find(b, "l_finger") then return "l_forearm" end
-    if string.find(b, "r_forearm") or string.find(b, "r_hand") or string.find(b, "r_finger") then return "r_forearm" end
+    if string.find(b, "l_hand") or string.find(b, "l_finger") then return "l_hand" end
+    if string.find(b, "r_hand") or string.find(b, "r_finger") then return "r_hand" end
+    if string.find(b, "l_forearm") then return "l_forearm" end
+    if string.find(b, "r_forearm") then return "r_forearm" end
     if string.find(b, "l_thigh") then return "l_thigh" end
     if string.find(b, "r_thigh") then return "r_thigh" end
-    if string.find(b, "l_calf") or string.find(b, "l_foot") or string.find(b, "l_toe") or string.find(b, "l_shin") then return "l_shin" end
-    if string.find(b, "r_calf") or string.find(b, "r_foot") or string.find(b, "r_toe") or string.find(b, "r_shin") then return "r_shin" end
+    if string.find(b, "l_foot") or string.find(b, "l_toe") then return "l_foot" end
+    if string.find(b, "r_foot") or string.find(b, "r_toe") then return "r_foot" end
+    if string.find(b, "l_calf") or string.find(b, "l_shin") then return "l_shin" end
+    if string.find(b, "r_calf") or string.find(b, "r_shin") then return "r_shin" end
     if string.find(b, "head") or string.find(b, "jaw") or string.find(b, "eye") or string.find(b, "neck") then return "head" end
     return "torso"
 end
@@ -238,6 +306,15 @@ end
 -- Deep-copy wound data to decouple from caller's table (BUG-22 fix)
 function add_wound(wound_data)
     local mapped_limb = map_bone_to_limb(wound_data.limb)
+    
+    -- Adrenaline Combat Reduction: while adrenaline is active, incoming pain and
+    -- death rating from wounds are reduced by 30% (body ignoring damage signals)
+    local adrenaline_combined = get_combined_adrenaline()
+    local adren_reduction = 1.0
+    if adrenaline_combined >= ADREN_TIER_ALERT then
+        adren_reduction = 1.0 - ADRENALINE_PAIN_REDUCE  -- 0.70
+    end
+    
     local copy = {
         type       = wound_data.type,
         bleed_rate = wound_data.bleed_rate,
@@ -245,11 +322,12 @@ function add_wound(wound_data)
         limb       = mapped_limb,
         original_bleed = wound_data.bleed_rate,
         status     = wound_data.status or "active",
-        clot_timer = wound_data.clot_timer
+        clot_timer = wound_data.clot_timer,
+        pen_ratio  = wound_data.pen_ratio or 1.0
     }
     table.insert(bio_state.wounds, copy)
     
-    -- Organ Death Rating Calculation
+    -- Organ Death Rating Calculation (reduced by adrenaline)
     local org = wound_data.organ
     if org and ORGAN_DEATH_RATINGS[org] then
         local val = ORGAN_DEATH_RATINGS[org]
@@ -260,7 +338,7 @@ function add_wound(wound_data)
             dr = val
         end
         if dr > 0 then
-            add_death_rating(dr)
+            add_death_rating(dr * copy.pen_ratio * adren_reduction)
         end
     end
     
@@ -277,9 +355,19 @@ function add_wound(wound_data)
     
     -- Track bone health specifically for the skeletal paperdoll UI
     if (wound_data.type == "fracture" or wound_data.type == "internal") and org and bio_state.bone_health[org] ~= nil then
-        bio_state.bone_health[org] = math_max(0.0, bio_state.bone_health[org] - 0.6)
+        bio_state.bone_health[org] = math_max(0.0, bio_state.bone_health[org] - (0.6 * copy.pen_ratio))
     end
-
+    
+    -- Taking fresh trauma shreds packed tissue and destroys splints
+    if bio_state.treated_flesh and bio_state.treated_flesh[mapped_limb] then
+        bio_state.treated_flesh[mapped_limb] = nil
+    end
+    if wound_data.type == "fracture" and bio_state.splinted_limbs and bio_state.splinted_limbs[mapped_limb] then
+        bio_state.splinted_limbs[mapped_limb] = nil
+    end
+    
+    -- Biological Adrenaline Trigger: wound severity determines spike magnitude
+    trigger_bio_adrenaline_from_wound(wound_data)
 end
 
 function remove_wound(index)
@@ -337,9 +425,11 @@ end
 
 local limb_to_bones = {
     ["r_upperarm"] = {"r_humerus"}, ["l_upperarm"] = {"l_humerus"},
-    ["r_forearm"]  = {"r_ulna", "r_hand", "r_finger"},    ["l_forearm"]  = {"l_ulna", "l_hand", "l_finger"},
+    ["r_forearm"]  = {"r_ulna"},    ["l_forearm"]  = {"l_ulna"},
+    ["r_hand"]     = {"r_hand", "r_finger"}, ["l_hand"] = {"l_hand", "l_finger"},
     ["r_thigh"]    = {"r_femur"},   ["l_thigh"]    = {"l_femur"},
-    ["r_shin"]     = {"r_tibia", "r_foot", "r_toe"},   ["l_shin"]     = {"l_tibia", "l_foot", "l_toe"},
+    ["r_shin"]     = {"r_tibia"},   ["l_shin"]     = {"l_tibia"},
+    ["r_foot"]     = {"r_foot", "r_toe"}, ["l_foot"] = {"l_foot", "l_toe"},
     ["torso"]      = {"lower_spine", "sacrum", "ilium", "ribs"},
     ["head"]       = {"skull", "cervical_spine"}
 }
@@ -376,6 +466,110 @@ function reset_biological_state()
     bio_state.treated_flesh = {}
     bio_state.stabilized_organs = {}
     bio_state.bruises = {}
+    -- Adrenaline full reset (surgery/sleep restores glands completely)
+    bio_state.adrenal_reserve = ADRENAL_RESERVE_MAX
+    bio_state.adrenal_reserve_max = ADRENAL_RESERVE_MAX
+    bio_state.adrenaline_level = 0.0
+    bio_state.artificial_adrenaline = 0.0
+    bio_state.last_combat_time = 0
+    bio_state.adrenaline_crash_cd = 0
+    bio_state.adrenaline_peak = 0.0
+end
+
+-- ==========================================================
+-- ADRENALINE SYSTEM API
+-- ==========================================================
+function get_adrenaline_level() return bio_state.adrenaline_level end
+function get_artificial_adrenaline() return bio_state.artificial_adrenaline end
+function get_adrenal_reserve() return bio_state.adrenal_reserve end
+function get_adrenal_reserve_max() return bio_state.adrenal_reserve_max end
+
+function get_combined_adrenaline()
+    return bio_state.adrenaline_level + bio_state.artificial_adrenaline
+end
+
+-- Returns the current adrenaline tier name for UI/debug
+function get_adrenaline_tier()
+    local combined = get_combined_adrenaline()
+    if combined >= CARDIAC_DANGER_THRESH then return "cardiac_danger"
+    elseif combined >= ADREN_TIER_OVERRIDE then return "overdrive"
+    elseif combined >= ADREN_TIER_FIGHT then return "combat_override"
+    elseif combined >= ADREN_TIER_ALERT then return "fight_or_flight"
+    elseif combined >= ADREN_TIER_CALM then return "alert"
+    else return "calm" end
+end
+
+-- Inject artificial adrenaline (called by mod_medical_items when using stimpacks/epinephrine)
+function inject_artificial_adrenaline(dose)
+    bio_state.artificial_adrenaline = bio_state.artificial_adrenaline + dose
+    bio_state.last_combat_time = time_global()
+    bio_state.adrenaline_peak = math_max(bio_state.adrenaline_peak, get_combined_adrenaline())
+    log(string.format("[AMA] Artificial adrenaline injected: +%.0f (total: %.0f)", dose, bio_state.artificial_adrenaline))
+end
+
+-- Trigger biological adrenaline spike from wound severity
+function trigger_bio_adrenaline_from_wound(wound_data)
+    -- Narcotics completely suppress natural adrenaline production
+    if mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.narcotic_active then
+        return
+    end
+    
+    -- Crash cooldown prevents immediate re-trigger
+    if bio_state.adrenaline_crash_cd > 0 and time_global() < bio_state.adrenaline_crash_cd then
+        return
+    end
+    
+    -- Determine spike magnitude based on wound type/severity
+    local spike_min, spike_max = ADREN_SPIKE_FLESH_MIN, ADREN_SPIKE_FLESH_MAX
+    local w_type = wound_data.type or "flesh"
+    local w_bleed = wound_data.bleed_rate or 0
+    local w_organ = wound_data.organ or ""
+    
+    if w_type == "fracture" then
+        spike_min, spike_max = ADREN_SPIKE_FRACTURE_MIN, ADREN_SPIKE_FRACTURE_MAX
+    elseif w_type == "internal" then
+        if string.find(w_organ, "artery") or string.find(w_organ, "jugular") then
+            spike_min, spike_max = ADREN_SPIKE_ARTERIAL_MIN, ADREN_SPIKE_ARTERIAL_MAX
+        elseif string.find(w_organ, "lung") or string.find(w_organ, "heart") or string.find(w_organ, "liver") or string.find(w_organ, "brain") or string.find(w_organ, "spine") or string.find(w_organ, "gi_tract") then
+            spike_min, spike_max = ADREN_SPIKE_ORGAN_MIN, ADREN_SPIKE_ORGAN_MAX
+        else
+            spike_min, spike_max = ADREN_SPIKE_DEEP_MIN, ADREN_SPIKE_DEEP_MAX
+        end
+    elseif w_bleed > 5.0 then
+        spike_min, spike_max = ADREN_SPIKE_DEEP_MIN, ADREN_SPIKE_DEEP_MAX
+    end
+    
+    local raw_spike = spike_min + math_random() * (spike_max - spike_min)
+    
+    -- Scale by available reserve (exhausted glands can't produce as much)
+    local reserve_ratio = bio_state.adrenal_reserve / math_max(1.0, bio_state.adrenal_reserve_max)
+    local actual_spike = raw_spike * reserve_ratio
+    
+    -- Draw from reserve
+    local drawn = math_min(actual_spike, bio_state.adrenal_reserve)
+    bio_state.adrenal_reserve = math_max(0.0, bio_state.adrenal_reserve - drawn)
+    bio_state.adrenaline_level = math_min(100.0, bio_state.adrenaline_level + drawn)
+    bio_state.last_combat_time = time_global()
+    bio_state.adrenaline_peak = math_max(bio_state.adrenaline_peak, bio_state.adrenaline_level)
+    
+    -- First spike notification
+    if drawn > 0 and bio_state.adrenaline_level >= ADREN_TIER_CALM and (bio_state.adrenaline_level - drawn) < ADREN_TIER_CALM then
+        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ADRENALINE SURGE - FIGHT OR FLIGHT ENGAGED", "critical") end
+    end
+end
+
+-- Trigger from bruise (called from mod_flesh_math blunt trauma)
+function trigger_bio_adrenaline_bruise()
+    if mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.narcotic_active then return end
+    if bio_state.adrenaline_crash_cd > 0 and time_global() < bio_state.adrenaline_crash_cd then return end
+    
+    local raw_spike = ADREN_SPIKE_BRUISE_MIN + math_random() * (ADREN_SPIKE_BRUISE_MAX - ADREN_SPIKE_BRUISE_MIN)
+    local reserve_ratio = bio_state.adrenal_reserve / math_max(1.0, bio_state.adrenal_reserve_max)
+    local drawn = math_min(raw_spike * reserve_ratio, bio_state.adrenal_reserve)
+    bio_state.adrenal_reserve = math_max(0.0, bio_state.adrenal_reserve - drawn)
+    bio_state.adrenaline_level = math_min(100.0, bio_state.adrenaline_level + drawn)
+    bio_state.last_combat_time = time_global()
+    bio_state.adrenaline_peak = math_max(bio_state.adrenaline_peak, bio_state.adrenaline_level)
 end
 
 -- ==========================================================
@@ -428,6 +622,17 @@ local function save_state(m_data)
         end
         table.insert(s.wounds, w_copy)
     end
+    -- Save adrenaline state
+    s.adrenal_reserve = bio_state.adrenal_reserve
+    s.adrenal_reserve_max = bio_state.adrenal_reserve_max
+    s.adrenaline_level = bio_state.adrenaline_level
+    s.artificial_adrenaline = bio_state.artificial_adrenaline
+    s.adrenaline_peak = bio_state.adrenaline_peak
+    -- Combat time stored as remaining ms from now
+    local tg = time_global()
+    s.combat_time_remaining = (bio_state.last_combat_time > 0) and math_max(0, bio_state.last_combat_time - tg + (ADRENALINE_COMBAT_WINDOW * 1000)) or 0
+    s.adrenaline_crash_cd_remaining = (bio_state.adrenaline_crash_cd > tg) and (bio_state.adrenaline_crash_cd - tg) or 0
+    
     log(string.format("[AMA] Medical State Saved. Wounds count: %d", #s.wounds))
 end
 
@@ -511,6 +716,15 @@ local function load_state_internal(m_data)
                 table.insert(bio_state.wounds, w_copy)
             end
         end
+        -- Load adrenaline state
+        bio_state.adrenal_reserve = s.adrenal_reserve or ADRENAL_RESERVE_MAX
+        bio_state.adrenal_reserve_max = s.adrenal_reserve_max or ADRENAL_RESERVE_MAX
+        bio_state.adrenaline_level = s.adrenaline_level or 0.0
+        bio_state.artificial_adrenaline = s.artificial_adrenaline or 0.0
+        bio_state.adrenaline_peak = s.adrenaline_peak or 0.0
+        local tg = time_global()
+        bio_state.last_combat_time = (s.combat_time_remaining and s.combat_time_remaining > 0) and (tg + s.combat_time_remaining - (ADRENALINE_COMBAT_WINDOW * 1000)) or 0
+        bio_state.adrenaline_crash_cd = (s.adrenaline_crash_cd_remaining and s.adrenaline_crash_cd_remaining > 0) and (tg + s.adrenaline_crash_cd_remaining) or 0
     else
         log("[AMA] No Medical State found in m_data. Resetting to default.")
         reset_biological_state()
@@ -546,6 +760,8 @@ local PPE_HEAD_BLUR_ID = 8515
 local PPE_HEAD_CONCUSSION_ID = 8516
 
 local snd_heartbeat = nil  -- Lazy-init to avoid crash before engine ready
+local snd_heartbeat_adrenaline = nil  -- Separate instance for adrenaline heartbeat loop
+local tg_adrenaline_heartbeat = 0     -- Throttle for adrenaline heartbeat playback
 
 -- Limb penalty animation tables (same as Grok's BHS - all vanilla .anm files)
 local aim_anm      = { "earthquake_1", "earthquake_2" }
@@ -563,6 +779,7 @@ local CAM_ID_HEAD      = 8514
 -- Limb animation throttle
 local tg_leg_anm = 0
 local tg_head_anm = 0
+local tg_arm_drop = 0
 
 -- Systemic audio loops
 local tg_breath_loop = 0
@@ -578,6 +795,40 @@ local spine_speed_applied = false
 -- Footstep material tracking for water detection
 local last_footstep_material = ""
 local footstep_material_time = 0
+
+-- Combat Drug Override: uses graduated adrenaline level + narcotic flag
+-- Returns true when combined adrenaline >= Combat Override tier (80+) OR narcotic is active
+local function is_combat_drug_active()
+    -- Narcotics still provide full override independently
+    if mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.narcotic_active then
+        return true
+    end
+    -- Graduated adrenaline: full override at tier 80+ (Fight-or-Flight becomes Combat Override)
+    local combined = bio_state.adrenaline_level + bio_state.artificial_adrenaline
+    return combined >= ADREN_TIER_FIGHT
+end
+
+-- Returns the adrenaline dampening factor for pain effects (1.0 = no dampening, 0.0 = full suppression)
+local function get_adrenaline_pain_factor()
+    local combined = bio_state.adrenaline_level + bio_state.artificial_adrenaline
+    if combined >= ADREN_TIER_FIGHT then return 0.0 end       -- Full suppression
+    if combined >= ADREN_TIER_ALERT then                       -- Partial dampening
+        local t = (combined - ADREN_TIER_ALERT) / (ADREN_TIER_FIGHT - ADREN_TIER_ALERT)
+        return 1.0 - (t * 0.5)  -- 1.0 at 20 down to 0.5 at 50, then 0.0 at 80
+    end
+    return 1.0  -- No dampening
+end
+
+-- Returns the stamina boost from adrenaline (0.0 = none, 1.0 = infinite)
+function get_adrenaline_stamina_boost()
+    local combined = bio_state.adrenaline_level + bio_state.artificial_adrenaline
+    if combined >= ADREN_TIER_FIGHT then return 1.0 end        -- Infinite stamina
+    if combined >= ADREN_TIER_ALERT then                        -- Partial boost
+        local t = (combined - ADREN_TIER_ALERT) / (ADREN_TIER_FIGHT - ADREN_TIER_ALERT)
+        return t * 0.5  -- 0.0 at 20 up to 0.5 at 50
+    end
+    return 0.0
+end
 
 local function actor_on_update()
     if not db.actor or not db.actor:alive() then return end
@@ -613,6 +864,13 @@ local function actor_on_update()
     if bio_state.pain_level > 0 and not has_active_bleed then
         local has_any_wound = (bio_state.wounds and #bio_state.wounds > 0)
         local decay_rate = has_any_wound and PAIN_DECAY_RATE_CLOTTED or PAIN_DECAY_RATE_CLEAN
+        -- Adrenaline accelerates pain decay based on graduated level
+        local pain_factor = get_adrenaline_pain_factor()
+        if pain_factor <= 0.0 then
+            decay_rate = decay_rate * 50.0  -- Full suppression = rapid decay
+        elseif pain_factor < 1.0 then
+            decay_rate = decay_rate * (1.0 + (1.0 - pain_factor) * 10.0)  -- Partial acceleration
+        end
         bio_state.pain_level = math_max(0, bio_state.pain_level - (decay_rate * dt))
     end
     
@@ -674,8 +932,10 @@ local function actor_on_update()
     end
     
     -- 7. Pain Engine (Camera Sway / Effects)
-    if bio_state.pain_level > 0 then
-        local sway_severity = math_min(1.0, bio_state.pain_level / 100.0)
+    -- Adrenaline dampens pain effects based on graduated level
+    local pain_factor = get_adrenaline_pain_factor()
+    if bio_state.pain_level > 0 and pain_factor > 0.0 then
+        local sway_severity = math_min(1.0, bio_state.pain_level / 100.0) * pain_factor
         level.add_pp_effector("radiation.ppe", PPE_PAIN_ID, true)
         level.set_pp_effector_factor(PPE_PAIN_ID, sway_severity)
         
@@ -683,7 +943,7 @@ local function actor_on_update()
             level.add_cam_effector("camera_effects\\hit_front.anm", 8503, false, "")
         end
         
-        if bio_state.pain_level > 50 and math_random() < 0.01 * dt then
+        if bio_state.pain_level > 50 and pain_factor > 0.5 and math_random() < 0.01 * dt then
             local active_weapon = db.actor:active_item()
             if active_weapon and IsWeapon and IsWeapon(active_weapon) then
                 db.actor:drop_item(active_weapon)
@@ -695,19 +955,22 @@ local function actor_on_update()
     end
     
     -- 8. Sepsis Engine
+    -- Combat drugs suppress sepsis symptoms (fever, etc.) but do NOT cure the infection
     if bio_state.sepsis_timer > 0 then
         local antibiotics_active = mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.antibiotic_active
+        local drug_override = is_combat_drug_active()
         
-        if not antibiotics_active then
+        if not antibiotics_active and not drug_override then
             bio_state.sepsis_timer = bio_state.sepsis_timer + dt
             
             if bio_state.sepsis_timer > SEPSIS_FEVER_THRESH and math_random() < 0.05 * dt then
                 level.add_pp_effector("psi_fade.ppe", PPE_FEVER_ID, false)
                 if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FEVER SPIKE", "flesh") end
             end
-        else
+        elseif antibiotics_active then
             bio_state.sepsis_timer = math_max(0, bio_state.sepsis_timer - (SEPSIS_CURE_RATE * dt))
         end
+        -- If only drug_override (no antibiotics), sepsis timer is frozen (not progressing, not curing)
     end
     
     -- Bruise Recovery Loop
@@ -760,39 +1023,187 @@ local function actor_on_update()
     end
     
     -- 9. Stamina Cap System
+    local drug_override = is_combat_drug_active()
+    local stamina_boost = get_adrenaline_stamina_boost()
     local stamina_cap = 1.0
     
-    if bio_state.sepsis_timer > 0 then
-        local sepsis_penalty = math_min(0.7, bio_state.sepsis_timer / 1800.0)
-        stamina_cap = stamina_cap - sepsis_penalty
+    if stamina_boost >= 1.0 then
+        -- Full adrenaline override: infinite stamina
+        db.actor.power = 1.0
+    elseif stamina_boost > 0.0 then
+        -- Partial adrenaline boost: reduce penalties proportionally
+        if bio_state.sepsis_timer > 0 then
+            local sepsis_penalty = math_min(0.7, bio_state.sepsis_timer / 1800.0) * (1.0 - stamina_boost)
+            stamina_cap = stamina_cap - sepsis_penalty
+        end
+        if bio_state.pain_level > 0 then
+            local pain_penalty = math_min(0.4, bio_state.pain_level / 200.0) * (1.0 - stamina_boost)
+            stamina_cap = stamina_cap - pain_penalty
+        end
+        if bio_state.stabilized_organs and bio_state.stabilized_organs["lungs"] then
+            stamina_cap = math_min(stamina_cap, 0.75 + (stamina_boost * 0.25))
+        end
+        stamina_cap = math_max(0.1, stamina_cap)
+        if db.actor.power > stamina_cap then db.actor.power = stamina_cap end
+        -- Adrenaline provides a stamina regen tick
+        db.actor.power = math_min(1.0, db.actor.power + (stamina_boost * 0.05 * dt))
+    else
+        -- No adrenaline boost: full physiological penalties
+        if bio_state.sepsis_timer > 0 then
+            local sepsis_penalty = math_min(0.7, bio_state.sepsis_timer / 1800.0)
+            stamina_cap = stamina_cap - sepsis_penalty
+        end
+        if bio_state.pain_level > 0 then
+            local pain_penalty = math_min(0.4, bio_state.pain_level / 200.0)
+            stamina_cap = stamina_cap - pain_penalty
+        end
+        if mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.narcotic_active then
+            local narc_cap = mod_medical_items.item_effects.narcotic_stamina_cap or 0.40
+            stamina_cap = math_min(stamina_cap, narc_cap)
+        end
+        if bio_state.stabilized_organs and bio_state.stabilized_organs["lungs"] then
+            stamina_cap = math_min(stamina_cap, 0.75)
+        end
+        stamina_cap = math_max(0.1, stamina_cap)
+        if db.actor.power > stamina_cap then db.actor.power = stamina_cap end
     end
     
-    if bio_state.pain_level > 0 then
-        local pain_penalty = math_min(0.4, bio_state.pain_level / 200.0)
-        stamina_cap = stamina_cap - pain_penalty
+    -- 9.5 Adrenaline Tick Processor (Decay, Recovery, Heartbeat, Crash, Cardiac)
+    local combined_adrenaline = get_combined_adrenaline()
+    local in_combat = (bio_state.last_combat_time > 0) and (tg - bio_state.last_combat_time) < (ADRENALINE_COMBAT_WINDOW * 1000)
+    
+    -- A. Natural adrenaline decay
+    if bio_state.adrenaline_level > 0 then
+        local nat_decay = in_combat and ADRENALINE_COMBAT_DECAY or ADRENALINE_DECAY_RATE
+        bio_state.adrenaline_level = math_max(0.0, bio_state.adrenaline_level - (nat_decay * dt))
     end
     
-    if mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.narcotic_active then
-        local narc_cap = mod_medical_items.item_effects.narcotic_stamina_cap or 0.40
-        stamina_cap = math_min(stamina_cap, narc_cap)
+    -- B. Artificial adrenaline decay
+    if bio_state.artificial_adrenaline > 0 then
+        bio_state.artificial_adrenaline = math_max(0.0, bio_state.artificial_adrenaline - (ARTIFICIAL_DECAY_RATE * dt))
     end
     
-    if bio_state.stabilized_organs and bio_state.stabilized_organs["lungs"] then
-        stamina_cap = math_min(stamina_cap, 0.75)
+    -- C. Adrenal reserve regeneration (only when calm and out of combat)
+    if bio_state.adrenaline_level < ADRENALINE_CRASH_LOW and not in_combat then
+        local regen_rate = ADRENAL_RESERVE_REGEN
+        -- CNS stimulants boost regeneration rate
+        if mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.cns_stimulant_active then
+            regen_rate = regen_rate * ADRENALINE_CNS_REGEN_MULT
+        end
+        bio_state.adrenal_reserve = math_min(bio_state.adrenal_reserve_max, bio_state.adrenal_reserve + (regen_rate * dt))
     end
     
-    if mod_medical_items and mod_medical_items.item_effects and mod_medical_items.item_effects.adrenaline_active then
-        stamina_cap = 1.0
+    -- D. Adrenal fatigue: deplete max capacity when reserve fully empties
+    if bio_state.adrenal_reserve <= 0 and bio_state.adrenal_reserve_max > 50 then
+        bio_state.adrenal_reserve_max = math_max(50.0, bio_state.adrenal_reserve_max - (ADRENAL_RESERVE_FATIGUE * dt * 0.01))
     end
     
-    stamina_cap = math_max(0.1, stamina_cap)
-    
-    if db.actor.power > stamina_cap then
-        db.actor.power = stamina_cap
+    -- E. Adrenaline Crash Detection
+    if bio_state.adrenaline_peak >= ADRENALINE_CRASH_THRESH then
+        -- Biological crash (milder)
+        if bio_state.adrenaline_level < ADRENALINE_CRASH_LOW and bio_state.artificial_adrenaline < ADRENALINE_CRASH_LOW then
+            -- Calculate crash severity based on what type of adrenaline was dominant
+            local was_artificial = bio_state.artificial_adrenaline < 1.0 and bio_state.adrenaline_peak > 0
+            
+            if bio_state.adrenaline_peak >= ADRENALINE_CRASH_THRESH then
+                if was_artificial then
+                    -- Biological crash: milder
+                    db.actor.power = -0.5
+                    local rebound_pain = 0
+                    if bio_state.wounds then
+                        for _, w in ipairs(bio_state.wounds) do
+                            if w.status == "active" and w.bleed_rate and w.bleed_rate > 0 then
+                                rebound_pain = rebound_pain + 5
+                            end
+                        end
+                    end
+                    if rebound_pain > 0 then
+                        bio_state.pain_level = math_min(MAX_PAIN_LEVEL, bio_state.pain_level + rebound_pain)
+                    end
+                    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ADRENALINE FADING - FATIGUE SETTING IN", "flesh") end
+                else
+                    -- Artificial crash: harsher (chemical withdrawal)
+                    db.actor.power = -1.0
+                    level.add_pp_effector("snd_shock.ppe", 2052, false)
+                    local rebound_pain = 25
+                    if bio_state.wounds then
+                        rebound_pain = rebound_pain + (#bio_state.wounds * 8)
+                    end
+                    bio_state.pain_level = math_min(MAX_PAIN_LEVEL, bio_state.pain_level + rebound_pain)
+                    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("EPINEPHRINE CRASH - MASSIVE SYSTEM SHOCK", "critical") end
+                end
+                
+                -- Start crash cooldown
+                bio_state.adrenaline_crash_cd = tg + ADRENALINE_CRASH_COOLDOWN
+                bio_state.adrenaline_peak = 0.0  -- Reset peak to prevent re-triggering
+                
+                -- Aim wobble during crash (15 seconds)
+                level.add_cam_effector("camera_effects\\earthquake_1.anm", CAM_ADRENALINE_TREMOR_ID, true, "", 0, true, 0.3)
+                CreateTimeEvent("ama_adrenaline", "clear_crash_tremor", 15, function()
+                    level.remove_cam_effector(CAM_ADRENALINE_TREMOR_ID)
+                    return true
+                end)
+            end
+        end
     end
     
-    -- 9.5 Systemic Breathing Audio Engine (Biological Degeneration)
-    if tg > tg_breath_loop then
+    -- F. Cardiac Danger (combined adrenaline too high)
+    combined_adrenaline = get_combined_adrenaline()  -- Recalculate after decay
+    if combined_adrenaline >= CARDIAC_DANGER_THRESH then
+        -- Arrhythmia: increasing death rating
+        local cardiac_severity = (combined_adrenaline - CARDIAC_DANGER_THRESH) / (CARDIAC_LETHAL_THRESH - CARDIAC_DANGER_THRESH)
+        cardiac_severity = math_min(1.0, cardiac_severity)
+        bio_state.death_rating = bio_state.death_rating + (CARDIAC_DR_RATE * cardiac_severity * dt)
+        
+        -- Cardiac PPE flutter
+        if math_random() < 0.1 * dt then
+            level.add_pp_effector("snd_shock.ppe", PPE_CARDIAC_ID, false)
+            if ui_ama_combat_feed then 
+                ui_ama_combat_feed.push_msg("CARDIAC ARRHYTHMIA - ADRENALINE OVERDOSE", "critical") 
+            end
+        end
+    end
+    
+    -- G. Overdrive Tremors (above combat override but below cardiac)
+    if combined_adrenaline >= ADREN_TIER_OVERRIDE and combined_adrenaline < CARDIAC_DANGER_THRESH then
+        local tremor_power = (combined_adrenaline - ADREN_TIER_OVERRIDE) / (CARDIAC_DANGER_THRESH - ADREN_TIER_OVERRIDE) * 0.15
+        level.add_cam_effector("camera_effects\\earthquake_1.anm", CAM_ADRENALINE_TREMOR_ID, true, "", 0, true, tremor_power)
+    elseif combined_adrenaline < ADREN_TIER_OVERRIDE and combined_adrenaline >= ADREN_TIER_FIGHT then
+        level.remove_cam_effector(CAM_ADRENALINE_TREMOR_ID)
+    end
+    
+    -- H. Tunnel Vision PPE (Fight-or-Flight and above)
+    if combined_adrenaline >= ADREN_TIER_ALERT then
+        local tunnel_severity = math_min(1.0, (combined_adrenaline - ADREN_TIER_ALERT) / (ADREN_TIER_OVERRIDE - ADREN_TIER_ALERT))
+        level.add_pp_effector("sleep_fade.ppe", PPE_TUNNEL_VISION_ID, true)
+        level.set_pp_effector_factor(PPE_TUNNEL_VISION_ID, tunnel_severity * 0.3)
+    else
+        level.remove_pp_effector(PPE_TUNNEL_VISION_ID)
+    end
+    
+    -- I. Adrenaline Heartbeat Audio Engine
+    if combined_adrenaline >= ADREN_TIER_CALM and tg > tg_adrenaline_heartbeat then
+        if not snd_heartbeat_adrenaline then
+            snd_heartbeat_adrenaline = sound_object("actor\\heartbeat")
+        end
+        
+        local interval, pitch = 3000, 1.0
+        if combined_adrenaline >= ADREN_TIER_OVERRIDE then
+            interval, pitch = 800, 1.8
+        elseif combined_adrenaline >= ADREN_TIER_FIGHT then
+            interval, pitch = 1200, 1.5
+        elseif combined_adrenaline >= ADREN_TIER_ALERT then
+            interval, pitch = 2000, 1.2
+        end
+        
+        snd_heartbeat_adrenaline:play(db.actor, 0, sound_object.s2d)
+        snd_heartbeat_adrenaline.frequency = pitch
+        tg_adrenaline_heartbeat = tg + interval
+    end
+    
+    -- 9.7 Systemic Breathing Audio Engine (Biological Degeneration)
+    -- Suppressed when adrenaline is active (heartbeat replaces distress sounds)
+    if tg > tg_breath_loop and not drug_override and combined_adrenaline < ADREN_TIER_ALERT then
         if bio_state.blood_volume <= 2000.0 or bio_state.death_rating > 0.8 then
             utils_obj.play_sound("actor\\health_1_" .. tostring(math_random(1, 4)))
             tg_breath_loop = tg + math_random(2500, 3500)
@@ -800,7 +1211,6 @@ local function actor_on_update()
             utils_obj.play_sound("actor\\health_2_" .. tostring(math_random(1, 4)))
             tg_breath_loop = tg + math_random(3000, 4500)
         elseif bio_state.sepsis_timer > SEPSIS_FEVER_THRESH or stamina_cap < 0.5 then
-            -- Scale panting intensity based on stamina exhaustion
             local run_intensity = math_floor((1.0 - stamina_cap) * 4.0)
             run_intensity = math_max(1, math_min(4, run_intensity))
             utils_obj.play_sound("actor\\run_" .. tostring(run_intensity))
@@ -809,9 +1219,24 @@ local function actor_on_update()
     end
     
     -- 10. Limb-Specific Movement Penalties (inspired by Grok's BHS)
-    process_leg_penalties(tg, dt)
-    process_arm_penalties(tg)
-    process_head_penalties(tg)
+    -- Combat override (adrenaline >= fight tier or narcotic) bypasses limb penalties
+    if not drug_override then
+        process_leg_penalties(tg, dt)
+        process_arm_penalties(tg)
+        process_head_penalties(tg)
+    else
+        -- Clear any active limb penalty effectors while overridden
+        if speed and speed.remove_speed then
+            speed.remove_speed("ama_leg_run")
+            speed.remove_speed("ama_leg_sprint")
+        end
+        level.remove_cam_effector(CAM_ID_ARM_SWAY)
+        level.remove_cam_effector(CAM_ID_LEFT_LEG)
+        level.remove_cam_effector(CAM_ID_RIGHT_LEG)
+        level.remove_cam_effector(CAM_ID_BOTH_LEGS)
+        level.remove_cam_effector(CAM_ID_HEAD)
+        level.remove_pp_effector(PPE_HEAD_BLUR_ID)
+    end
     
     -- 11. Environmental Wound Infection
     if tg > tg_env_check then
@@ -850,20 +1275,31 @@ end
 function process_leg_penalties(tg, dt)
     local l_thigh_hp = math_min(bio_state.limb_health.l_thigh, bio_state.bone_health.l_femur or 1.0)
     local l_shin_hp  = math_min(bio_state.limb_health.l_shin,  bio_state.bone_health.l_tibia or 1.0)
+    local l_foot_hp  = math_min(bio_state.limb_health.l_foot,  bio_state.bone_health.l_foot or 1.0)
+    
     local r_thigh_hp = math_min(bio_state.limb_health.r_thigh, bio_state.bone_health.r_femur or 1.0)
     local r_shin_hp  = math_min(bio_state.limb_health.r_shin,  bio_state.bone_health.r_tibia or 1.0)
+    local r_foot_hp  = math_min(bio_state.limb_health.r_foot,  bio_state.bone_health.r_foot or 1.0)
     
-    local l_leg = math_min(l_thigh_hp, l_shin_hp)
-    local r_leg = math_min(r_thigh_hp, r_shin_hp)
+    local l_leg = math_min(l_thigh_hp, l_shin_hp, l_foot_hp)
+    local r_leg = math_min(r_thigh_hp, r_shin_hp, r_foot_hp)
     
     local l_damaged = 0
     if l_thigh_hp <= 0.5 then l_damaged = l_damaged + 1 end
     if l_shin_hp <= 0.5 then l_damaged = l_damaged + 1 end
+    if l_foot_hp <= 0.5 then l_damaged = l_damaged + 1 end
     
     local r_damaged = 0
     if r_thigh_hp <= 0.5 then r_damaged = r_damaged + 1 end
     if r_shin_hp <= 0.5 then r_damaged = r_damaged + 1 end
+    if r_foot_hp <= 0.5 then r_damaged = r_damaged + 1 end
     
+    local broken_lower_leg_bones = 0
+    if (bio_state.bone_health.l_tibia or 1.0) <= 0.5 then broken_lower_leg_bones = broken_lower_leg_bones + 1 end
+    if (bio_state.bone_health.r_tibia or 1.0) <= 0.5 then broken_lower_leg_bones = broken_lower_leg_bones + 1 end
+    if (bio_state.bone_health.l_foot or 1.0) <= 0.5 then broken_lower_leg_bones = broken_lower_leg_bones + 1 end
+    if (bio_state.bone_health.r_foot or 1.0) <= 0.5 then broken_lower_leg_bones = broken_lower_leg_bones + 1 end
+
     -- Speed penalty via speed.script (Grok's approach)
     -- Formula: linear interpolation. At 1.0 health = 1.0x speed. At 0.0 = 0.375x speed.
     local legs_sum = l_leg + r_leg  -- 0.0 to 2.0
@@ -875,6 +1311,12 @@ function process_leg_penalties(tg, dt)
     
     -- Both legs destroyed = immobilized
     if l_leg <= 0.0 and r_leg <= 0.0 then
+        run_coef = 0.15
+        sprint_coef = 0.0
+    end
+    
+    -- 3 or more shattered lower leg bones = immobilized
+    if broken_lower_leg_bones >= 3 then
         run_coef = 0.15
         sprint_coef = 0.0
     end
@@ -907,8 +1349,8 @@ function process_leg_penalties(tg, dt)
             if l_leg <= 0.0 and r_leg <= 0.0 then anim_power = (both_limp - 1) * 0.8 end
             
             local total_damaged = l_damaged + r_damaged
-            if total_damaged == 2 then anm_name = "strong1"
-            elseif total_damaged == 3 then anm_name = "strong2"
+            if total_damaged <= 2 then anm_name = "strong1"
+            elseif total_damaged <= 4 then anm_name = "strong2"
             else anm_name = "strong4" end
             
             cam_id = CAM_ID_BOTH_LEGS
@@ -940,19 +1382,41 @@ end
 function process_arm_penalties(tg)
     local l_up_hp = math_min(bio_state.limb_health.l_upperarm, bio_state.bone_health.l_humerus or 1.0)
     local l_fo_hp = math_min(bio_state.limb_health.l_forearm,  bio_state.bone_health.l_ulna or 1.0)
+    local l_hd_hp = math_min(bio_state.limb_health.l_hand,     bio_state.bone_health.l_hand or 1.0)
+    
     local r_up_hp = math_min(bio_state.limb_health.r_upperarm, bio_state.bone_health.r_humerus or 1.0)
     local r_fo_hp = math_min(bio_state.limb_health.r_forearm,  bio_state.bone_health.r_ulna or 1.0)
+    local r_hd_hp = math_min(bio_state.limb_health.r_hand,     bio_state.bone_health.r_hand or 1.0)
     
-    local l_arm = math_min(l_up_hp, l_fo_hp)
-    local r_arm = math_min(r_up_hp, r_fo_hp)
+    local l_arm = math_min(l_up_hp, l_fo_hp, l_hd_hp)
+    local r_arm = math_min(r_up_hp, r_fo_hp, r_hd_hp)
     local arms_sum = l_arm + r_arm  -- 0.0 to 2.0
     
-    -- Only apply if below 50% total arm health or a segment is critically damaged
-    if arms_sum < 1.0 or l_arm <= 0.5 or r_arm <= 0.5 then
-        local active_slot = db.actor:active_slot()
-        if active_slot == 1 or active_slot == 2 or active_slot == 3 then
-            local item_in_slot = db.actor:item_in_slot(active_slot)
-            if item_in_slot then
+    local broken_lower_arm_bones = 0
+    if (bio_state.bone_health.l_ulna or 1.0) <= 0.5 then broken_lower_arm_bones = broken_lower_arm_bones + 1 end
+    if (bio_state.bone_health.r_ulna or 1.0) <= 0.5 then broken_lower_arm_bones = broken_lower_arm_bones + 1 end
+    if (bio_state.bone_health.l_hand or 1.0) <= 0.5 then broken_lower_arm_bones = broken_lower_arm_bones + 1 end
+    if (bio_state.bone_health.r_hand or 1.0) <= 0.5 then broken_lower_arm_bones = broken_lower_arm_bones + 1 end
+
+    local active_slot = db.actor:active_slot()
+    local item_in_slot = nil
+    if active_slot == 1 or active_slot == 2 or active_slot == 3 then
+        item_in_slot = db.actor:item_in_slot(active_slot)
+    end
+
+    if broken_lower_arm_bones >= 3 and item_in_slot and IsWeapon(item_in_slot) then
+        db.actor:drop_item(item_in_slot)
+        if tg > tg_arm_drop then
+            if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ARMS SHATTERED - UNABLE TO HOLD WEAPON", "critical") end
+            tg_arm_drop = tg + 2000
+        end
+        level.remove_cam_effector(CAM_ID_ARM_SWAY)
+        return
+    end
+    
+    -- Only apply if below 50% total arm health or a segment is critically damaged, OR hands flesh damaged
+    if arms_sum < 1.0 or l_arm <= 0.5 or r_arm <= 0.5 or bio_state.limb_health.l_hand < 1.0 or bio_state.limb_health.r_hand < 1.0 then
+        if item_in_slot then
                 local weight = SYS_GetParam(2, item_in_slot:section(), "inv_weight") or 1.0
                 local cam_power = 0
                 
@@ -963,12 +1427,21 @@ function process_arm_penalties(tg)
                     cam_power = 0.8 * weight / math_max(arms_sum, 0.1)
                 end
                 
+            -- Hand flesh penalty
+            if bio_state.limb_health.l_hand < 1.0 then cam_power = cam_power + (1.0 - bio_state.limb_health.l_hand) end
+            if bio_state.limb_health.r_hand < 1.0 then cam_power = cam_power + (1.0 - bio_state.limb_health.r_hand) end
+            
+            -- 2 broken bones = very shaky aim
+            if broken_lower_arm_bones == 2 then
+                cam_power = cam_power * 2.5
+            end
+            
                 -- Reduce if crouching
                 if IsMoveState and IsMoveState("mcCrouch") then
                     cam_power = cam_power * 0.6
                 end
                 
-                cam_power = math_min(cam_power, 3.0) * 0.5
+            cam_power = math_min(cam_power, 4.0) * 0.5
                 
                 -- Reduce when scoped
                 if item_in_slot.weapon_is_scope and item_in_slot:weapon_is_scope() then
@@ -980,9 +1453,6 @@ function process_arm_penalties(tg)
             else
                 level.remove_cam_effector(CAM_ID_ARM_SWAY)
             end
-        else
-            level.remove_cam_effector(CAM_ID_ARM_SWAY)
-        end
     else
         level.remove_cam_effector(CAM_ID_ARM_SWAY)
     end
