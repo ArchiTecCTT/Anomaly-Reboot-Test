@@ -36,6 +36,7 @@ local NARCOTIC_PAIN_REDUCTION   = 100
 local NARCOTIC_STAMINA_CAP      = 0.40
 local NARCOTIC_DURATION_S       = 300
 local NARCOTIC_PAIN_REBOUND     = 10
+local NARCOTIC_DEATH_REDUCTION  = 0.25
 local ANTIBIOTIC_SULFAD_DUR     = 14400
 local ANTIBIOTIC_CHLOR_DUR      = 28800
 local PURGE_TETANUS_POWER       = 0.50
@@ -114,8 +115,8 @@ item_map = {
     -- Chemical Management (Pain & Sepsis)
     ["analgetic"]      = { type = "analgesic", pain_reduction = ANALGESIC_STRONG_PAIN },
     ["salicidic_acid"] = { type = "analgesic", pain_reduction = ANALGESIC_WEAK_PAIN },
-    ["yadylin"]        = { type = "narcotic", pain_reduction = NARCOTIC_PAIN_REDUCTION, stamina_cap = NARCOTIC_STAMINA_CAP, duration = NARCOTIC_DURATION_S },
-    ["morphine"]       = { type = "narcotic", pain_reduction = NARCOTIC_PAIN_REDUCTION, stamina_cap = NARCOTIC_STAMINA_CAP, duration = NARCOTIC_DURATION_S },
+    ["yadylin"]        = { type = "narcotic", pain_reduction = NARCOTIC_PAIN_REDUCTION, stamina_cap = NARCOTIC_STAMINA_CAP, duration = NARCOTIC_DURATION_S, death_reduction = NARCOTIC_DEATH_REDUCTION },
+    ["morphine"]       = { type = "narcotic", pain_reduction = NARCOTIC_PAIN_REDUCTION, stamina_cap = NARCOTIC_STAMINA_CAP, duration = NARCOTIC_DURATION_S, death_reduction = NARCOTIC_DEATH_REDUCTION },
     ["antibio_sulfad"] = { type = "antibiotic", duration = ANTIBIOTIC_SULFAD_DUR },
     ["antibio_chlor"]  = { type = "antibiotic", duration = ANTIBIOTIC_CHLOR_DUR },
     ["tetanus"]        = { type = "purge", power = PURGE_TETANUS_POWER },
@@ -383,6 +384,9 @@ local function process_surgical_kit(item_data, t_limb)
         if item_data.blood_restore and mod_medical_core.set_blood_volume then
             mod_medical_core.set_blood_volume(mod_medical_core.get_blood_volume() + item_data.blood_restore)
         end
+        if mod_medical_core.reduce_death_rating then
+            mod_medical_core.reduce_death_rating(0.3) -- Treating an organ pulls you back from the brink of death
+        end
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FIELD SURGERY COMPLETE - ORGANS TREATED", "flesh") end
     else
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - NO CRITICAL WOUNDS", "critical") end
@@ -416,6 +420,7 @@ local function process_splint(item_data, t_limb)
     for i = #wounds, 1, -1 do
         local w = wounds[i]
         if w.type == "fracture" and w.status == "active" and is_wound_in_target(w, t_limb) then
+                w.bleed_rate = 0
             w.status = "stabilized"
             applied = true
         end
@@ -460,6 +465,10 @@ local function process_narcotic(item_data)
     item_effects.narcotic_active = true
     item_effects.narcotic_timer = time_global() + (item_data.duration * 1000)
     item_effects.narcotic_stamina_cap = item_data.stamina_cap or NARCOTIC_STAMINA_CAP
+    
+    if item_data.death_reduction and mod_medical_core.reduce_death_rating then
+        mod_medical_core.reduce_death_rating(item_data.death_reduction)
+    end
     
     if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("HEAVY NARCOTIC ADMINISTERED - CNS SUPPRESSED", "flesh") end
 end
@@ -515,6 +524,10 @@ local function actor_on_item_before_use(item, flags)
     if not data then return end
     
     if localized_types[data.type] then
+        if enhanced_animations and enhanced_animations.ama_fdda_consuming then
+            return
+        end
+        
         flags.ret_value = false
         if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("NEGATIVE - USE TARGETED MENU (RIGHT CLICK)", "critical") end
     end
@@ -691,8 +704,12 @@ function apply_localized_item(item, t_limb)
     end
     
     if success then
-        utils_obj.play_sound("interface\\inv_iam_open")
-        alife_release_id(item:id())
+        if enhanced_animations and enhanced_animations.enable_animations and enhanced_animations.use_item then
+            enhanced_animations.use_item(item)
+        else
+            utils_obj.play_sound("interface\\inv_iam_open")
+            alife_release_id(item:id())
+        end
     end
 end
 
@@ -703,8 +720,12 @@ function apply_localized_artery(item, t_limb)
     
     local success = process_arterial_bleed(data, t_limb)
     if success then
-        utils_obj.play_sound("interface\\inv_iam_open")
-        alife_release_id(item:id())
+        if enhanced_animations and enhanced_animations.enable_animations and enhanced_animations.use_item then
+            enhanced_animations.use_item(item)
+        else
+            utils_obj.play_sound("interface\\inv_iam_open")
+            alife_release_id(item:id())
+        end
     end
 end
 
@@ -724,4 +745,22 @@ end
 
 if custom_functor_autoinject then
     custom_functor_autoinject.add_functor("ama_med_apply", cond_apply_med, name_apply_med, nil, func_apply_med, true)
+end
+
+local function cond_apply_artery(item)
+    local data = item_map[item:section()]
+    if not data then return false end
+    return data.arterial_power ~= nil
+end
+
+local function name_apply_artery(item)
+    return "Treat Arterial Bleeding"
+end
+
+local function func_apply_artery(item)
+    ui_ama_context.start(item, "artery")
+end
+
+if custom_functor_autoinject then
+    custom_functor_autoinject.add_functor("ama_artery_apply", cond_apply_artery, name_apply_artery, nil, func_apply_artery, true)
 end

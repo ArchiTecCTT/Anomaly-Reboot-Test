@@ -16,6 +16,7 @@ Add external and internal bleeding count to the medical actor terminal. Also, ad
 Add an item known as the surgeon kit. This will allow the player to do operations to fully restore bodily condition to maximum without paying a surgeon. Though, it will be extremely rare and expensive.
 Dynamic pain accumulation instead of a flat value.
 Dynamic damage to flesh, bones, and organs.
+Add directional function to limb armors. Similar to the plates. Like, the back of your shin guard might have less armor or nothing at all, while the front and sides have.
 Add a function later on where if a player is on terminal armor mod, and they hover over a specific coordinate where a limb armor might be, then it'll show the current state of that armor and more information about it. All the other terminals will have this kind of feature. We can use Haruka's skill system for a window popping up when hovering on a specific coordinate while that window is open.
 We can make a new value for ammo that's "Ammo Type" where it can be FMJ, AP, HP, API, etc. and then we can build a table for them where they'll have different effects to armor and flesh.
 We will eventually overhaul the .ppe and .anms of the different states for our mod. For example, the player will experience a slight woozy effect and bloody screen when he is bleeding. The effect will get stronger as the player's blood loss crosses specific thresholds.

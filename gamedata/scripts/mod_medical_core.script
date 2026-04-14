@@ -76,7 +76,7 @@ local ORGAN_DEATH_RATINGS = {
     heart = 1.0, aorta = 1.0, cervical_spine = 1.0, spine = 1.0, brain = 1.0, trachea = 1.0,
     carotid_artery = {0.15, 0.30}, jugular = {0.05, 0.10}, femoral_artery = 0.10,
     iliac_artery = 0.05, brachial_artery = 0.02, radial_artery = 0.01,
-    liver = {0.15, 0.40}, lung = {0.15, 0.40}, gi_tract = {0.15, 0.40},
+    liver = {0.15, 0.40}, lung = {0.15, 0.40}, lungs = {0.15, 0.40}, left_lung = {0.15, 0.40}, right_lung = {0.15, 0.40}, gi_tract = {0.15, 0.40},
     pelvis = {0.05, 0.25}, leg_bone = {0.05, 0.25}, arm_bone = {0.01, 0.05}, ribs = {0.01, 0.05}
 }
 
@@ -114,8 +114,9 @@ bio_state = {
         ribs = 1.0, ilium = 1.0, sacrum = 1.0,
         l_humerus = 1.0, r_humerus = 1.0,
         l_ulna = 1.0, r_ulna = 1.0,
-        l_femur = 1.0, r_femur = 1.0,
-        l_tibia = 1.0, r_tibia = 1.0
+        l_femur = 1.0, r_femur = 1.0, l_tibia = 1.0, r_tibia = 1.0,
+        l_hand = 1.0, r_hand = 1.0, l_foot = 1.0, r_foot = 1.0,
+        l_finger = 1.0, r_finger = 1.0, l_toe = 1.0, r_toe = 1.0
     },
     treated_flesh = {},
     stabilized_organs = {},
@@ -148,10 +149,11 @@ function get_active_wounds()
     local sorted = {}
     if not bio_state.wounds then return sorted end
     for i, w in ipairs(bio_state.wounds) do
-        if w.status == "active" and w.bleed_rate > 0 and w.type ~= "fracture" then
+        local status = w.status or "active"
+            if status == "active" and w.bleed_rate > 0 then
             local w_name = w.limb or "body"
             if w_name == "" then w_name = "body" end
-            table.insert(sorted, { name = w_name, type = w.type or "unknown", bleed = w.bleed_rate, status = w.status })
+            table.insert(sorted, { name = w_name, type = w.type or "unknown", bleed = w.bleed_rate, status = status })
         end
     end
     table.sort(sorted, function(a, b) return a.bleed > b.bleed end)
@@ -166,7 +168,8 @@ function get_flesh_wounds()
             local w_name = w.limb or "body"
             if w_name == "" then w_name = "body" end
             local severity = w.original_bleed or w.bleed_rate or 0
-            table.insert(list, { name = w_name, type = w.type or "unknown", status = w.status, severity = severity })
+            local status = w.status or "active"
+            table.insert(list, { name = w_name, type = w.type or "unknown", status = status, severity = severity })
         end
     end
     table.sort(list, function(a, b) 
@@ -186,7 +189,8 @@ function get_bone_fractures()
         if w.type == "fracture" then
             local w_name = w.organ or "bone"
             if w_name == "" then w_name = "bone" end
-            table.insert(list, { name = w_name, type = w.type or "unknown", status = w.status })
+            local status = w.status or "active"
+            table.insert(list, { name = w_name, type = w.type or "unknown", status = status })
         end
     end
     table.sort(list, function(a, b)
@@ -211,6 +215,10 @@ function add_death_rating(val)
     bio_state.death_rating = bio_state.death_rating + val
 end
 
+function reduce_death_rating(val)
+    bio_state.death_rating = math_max(0.0, bio_state.death_rating - val)
+end
+
 local function map_bone_to_limb(bone_name)
     if not bone_name or bone_name == "" then return "torso" end
     local b = string.lower(bone_name)
@@ -221,8 +229,8 @@ local function map_bone_to_limb(bone_name)
     if string.find(b, "r_forearm") or string.find(b, "r_hand") or string.find(b, "r_finger") then return "r_forearm" end
     if string.find(b, "l_thigh") then return "l_thigh" end
     if string.find(b, "r_thigh") then return "r_thigh" end
-    if string.find(b, "l_calf") or string.find(b, "l_foot") or string.find(b, "l_toe") then return "l_shin" end
-    if string.find(b, "r_calf") or string.find(b, "r_foot") or string.find(b, "r_toe") then return "r_shin" end
+    if string.find(b, "l_calf") or string.find(b, "l_foot") or string.find(b, "l_toe") or string.find(b, "l_shin") then return "l_shin" end
+    if string.find(b, "r_calf") or string.find(b, "r_foot") or string.find(b, "r_toe") or string.find(b, "r_shin") then return "r_shin" end
     if string.find(b, "head") or string.find(b, "jaw") or string.find(b, "eye") or string.find(b, "neck") then return "head" end
     return "torso"
 end
@@ -268,7 +276,7 @@ function add_wound(wound_data)
     end
     
     -- Track bone health specifically for the skeletal paperdoll UI
-    if wound_data.type == "fracture" and org and bio_state.bone_health[org] ~= nil then
+    if (wound_data.type == "fracture" or wound_data.type == "internal") and org and bio_state.bone_health[org] ~= nil then
         bio_state.bone_health[org] = math_max(0.0, bio_state.bone_health[org] - 0.6)
     end
 
@@ -329,9 +337,9 @@ end
 
 local limb_to_bones = {
     ["r_upperarm"] = {"r_humerus"}, ["l_upperarm"] = {"l_humerus"},
-    ["r_forearm"]  = {"r_ulna"},    ["l_forearm"]  = {"l_ulna"},
+    ["r_forearm"]  = {"r_ulna", "r_hand", "r_finger"},    ["l_forearm"]  = {"l_ulna", "l_hand", "l_finger"},
     ["r_thigh"]    = {"r_femur"},   ["l_thigh"]    = {"l_femur"},
-    ["r_shin"]     = {"r_tibia"},   ["l_shin"]     = {"l_tibia"},
+    ["r_shin"]     = {"r_tibia", "r_foot", "r_toe"},   ["l_shin"]     = {"l_tibia", "l_foot", "l_toe"},
     ["torso"]      = {"lower_spine", "sacrum", "ilium", "ribs"},
     ["head"]       = {"skull", "cervical_spine"}
 }
@@ -353,6 +361,7 @@ function reset_biological_state()
     bio_state.blood_volume = MAX_BLOOD_VOLUME
     bio_state.pain_level = 0.0
     bio_state.sepsis_timer = 0.0
+    bio_state.death_rating = 0.0
     bio_state.wounds = {}
     for k, _ in pairs(bio_state.limb_health) do
         bio_state.limb_health[k] = 1.0
@@ -382,6 +391,7 @@ local function save_state(m_data)
     s.pain_level   = bio_state.pain_level
     s.sepsis_timer = bio_state.sepsis_timer
     s.blood_type   = bio_state.blood_type
+    s.death_rating = bio_state.death_rating
     
     s.splinted_limbs = {}
     for k, v in pairs(bio_state.splinted_limbs) do
@@ -441,6 +451,7 @@ local function load_state_internal(m_data)
         bio_state.pain_level   = s.pain_level or 0.0
         bio_state.sepsis_timer = s.sepsis_timer or 0.0
         bio_state.blood_type   = s.blood_type
+        bio_state.death_rating = s.death_rating or 0.0
         
         -- Load limb health
         if s.limb_health then
@@ -582,7 +593,7 @@ local function actor_on_update()
 
     if bio_state.wounds then
         for i, wound in ipairs(bio_state.wounds) do
-            if wound.bleed_rate and wound.bleed_rate > 0.5 then
+            if wound.bleed_rate and wound.bleed_rate > 0 and wound.status == "active" then
                 total_bleed_rate = total_bleed_rate + wound.bleed_rate
                 has_active_bleed = true
             end
@@ -609,7 +620,7 @@ local function actor_on_update()
     if bio_state.wounds then
         for i = #bio_state.wounds, 1, -1 do
             local w = bio_state.wounds[i]
-            if w.type == "flesh" and w.bleed_rate and w.bleed_rate <= 0.5 and w.status == "active" then
+            if w.type == "flesh" and w.bleed_rate and w.bleed_rate > 0 and w.bleed_rate <= 0.5 and w.status == "active" then
                 if not w.clot_timer then
                     w.clot_timer = FLESH_CLOT_TIME
                 else
@@ -626,7 +637,7 @@ local function actor_on_update()
     -- 4. Limb Health Degradation (wounds reduce their associated limb)
     if bio_state.wounds then
         for i, w in ipairs(bio_state.wounds) do
-            if w.limb and w.limb ~= "" and w.bleed_rate and w.bleed_rate > 0.5 and w.status == "active" then
+            if w.limb and w.limb ~= "" and w.bleed_rate and w.bleed_rate > 0 and w.status == "active" then
                 local degradation = (w.bleed_rate * LIMB_DEGRADATION_MULT) * dt
                 damage_limb(w.limb, degradation)
             end
@@ -639,7 +650,7 @@ local function actor_on_update()
             local has_wound_on_limb = false
             if bio_state.wounds then
                 for i, w in ipairs(bio_state.wounds) do
-                    if w.limb == limb_key and w.bleed_rate and w.bleed_rate > 0.5 and w.status == "active" then
+                    if w.limb == limb_key and w.bleed_rate and w.bleed_rate > 0 and w.status == "active" then
                         has_wound_on_limb = true
                         break
                     end
@@ -722,6 +733,12 @@ local function actor_on_update()
                 if conds.ChangeSatiety then conds:ChangeSatiety(-0.00015 * dt) end
                 if conds.ChangeThirst then conds:ChangeThirst(-0.00025 * dt) end
             end
+            if actor_status and actor_status.add_thirst then
+                actor_status.add_thirst(0.00025 * dt)
+            end
+            if arszi_thirst and arszi_thirst.add_thirst then
+                arszi_thirst.add_thirst(0.00025 * dt)
+            end
         end
         if bio_state.stabilized_organs["liver"] then
             db.actor.radiation = 0.0005 * dt
@@ -777,7 +794,7 @@ local function actor_on_update()
     -- 9.5 Systemic Breathing Audio Engine (Biological Degeneration)
     if tg > tg_breath_loop then
         if bio_state.blood_volume <= 2000.0 or bio_state.death_rating > 0.8 then
-            utils_obj.play_sound("actor\\health_1_" .. tostring(math_random(0, 4)))
+            utils_obj.play_sound("actor\\health_1_" .. tostring(math_random(1, 4)))
             tg_breath_loop = tg + math_random(2500, 3500)
         elseif bio_state.pain_level > 80 then
             utils_obj.play_sound("actor\\health_2_" .. tostring(math_random(1, 4)))
@@ -785,7 +802,7 @@ local function actor_on_update()
         elseif bio_state.sepsis_timer > SEPSIS_FEVER_THRESH or stamina_cap < 0.5 then
             -- Scale panting intensity based on stamina exhaustion
             local run_intensity = math_floor((1.0 - stamina_cap) * 4.0)
-            run_intensity = math_max(0, math_min(4, run_intensity))
+            run_intensity = math_max(1, math_min(4, run_intensity))
             utils_obj.play_sound("actor\\run_" .. tostring(run_intensity))
             tg_breath_loop = tg + math_random(1500, 2500)
         end
@@ -979,7 +996,7 @@ function process_head_penalties(tg)
         
         if tg > tg_head_anm then
             if math_random() < 0.2 then
-                level.add_cam_effector("camera_effects\\switch\\wake_up.anm", CAM_ID_HEAD, false, "", 0, false, 0.5 + (0.5 - head_hp))
+                level.add_cam_effector("camera_effects\\fusker.anm", CAM_ID_HEAD, false, "", 0, false, 0.5 + (0.5 - head_hp))
                 level.add_pp_effector("concussion_bhs.ppe", PPE_HEAD_CONCUSSION_ID, false)
             end
             tg_head_anm = tg + 5000 + math_random(2000, 5000)
@@ -1055,10 +1072,11 @@ function process_wound_aggravation(dt)
     
     for i, w in ipairs(bio_state.wounds) do
         -- Only aggravate clotted-but-not-closed wounds (bleed_rate between 0.5 and 5.0)
-        if w.bleed_rate and w.bleed_rate > 0.0 and w.bleed_rate <= 5.0 and w.status == "clotted" then
+        local orig_bleed = w.original_bleed or 0
+        if w.status == "clotted" and orig_bleed > 0.0 and orig_bleed <= 5.0 then
             if math_random() < WOUND_AGGRO_CHANCE then 
                 local old_rate = w.bleed_rate
-                w.bleed_rate = math_min(w.bleed_rate * WOUND_AGGRO_MULT, w.original_bleed or (w.bleed_rate * WOUND_AGGRO_MULT))
+                w.bleed_rate = orig_bleed
                 w.clot_timer = nil  -- Reset auto-clot
                 w.status = "active"
                 if ui_ama_combat_feed then
@@ -1103,10 +1121,15 @@ function get_surgery_cost()
         cost = cost + ((MAX_BLOOD_VOLUME - bio_state.blood_volume) * SURG_COST_BLOOD_ML)
     end
     for i, w in ipairs(bio_state.wounds) do
-        if w.type == "arterial" then cost = cost + SURG_COST_ARTERIAL
-        elseif w.type == "organ" then cost = cost + SURG_COST_ORGAN
+        local org = w.organ or ""
+        local is_arterial = string.find(org, "artery") or org == "jugular"
+        local is_cns = string.find(org, "spine") or org == "brain"
+        local is_organ = string.find(org, "lung") or org == "heart" or org == "liver" or org == "gi_tract"
+        
+        if is_arterial then cost = cost + SURG_COST_ARTERIAL
+        elseif is_organ then cost = cost + SURG_COST_ORGAN
+        elseif is_cns then cost = cost + SURG_COST_CNS
         elseif w.type == "fracture" then cost = cost + SURG_COST_FRACTURE
-        elseif w.type == "cns" then cost = cost + SURG_COST_CNS
         elseif w.type == "internal" then cost = cost + SURG_COST_INTERNAL
         else cost = cost + SURG_COST_FLESH
         end
@@ -1151,6 +1174,12 @@ function get_surgery_cost()
     end
     
     return math_floor(math_max(0, cost))
+end
+
+function get_surgery_cost_text(first_speaker, second_speaker)
+    local cost = get_surgery_cost()
+    local base_text = game.translate_string("st_ama_surgery_1")
+    return string.format("%s (%d RU)", base_text, cost)
 end
 
 function needs_surgery(first_speaker, second_speaker)
@@ -1205,6 +1234,14 @@ function perform_surgery(first_speaker, second_speaker)
         db.actor.power = -1.0
     end
     
+    -- Ensure thirst is applied correctly across vanilla Anomaly and popular mods
+    if actor_status and actor_status.add_thirst then
+        actor_status.add_thirst(10)
+    end
+    if arszi_thirst and arszi_thirst.add_thirst then
+        arszi_thirst.add_thirst(10)
+    end
+
     utils_obj.play_sound("actor\\sleep_wakeup")
 end
 

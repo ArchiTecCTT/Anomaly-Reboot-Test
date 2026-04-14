@@ -604,7 +604,7 @@ local function armor_npc_on_before_hit(npc, shit, bone_id, synth_pen)
     local ricochet_threshold = RICOCHET_BASE_ANGLE - (hardness * RICOCHET_HARDNESS_SCALE)
     if is_monocrystal then ricochet_threshold = math_max(0, ricochet_threshold - 25) end
     
-    if impact_angle_deg > ricochet_threshold then
+    if effective_angle_deg > ricochet_threshold then
         if not is_mutant_attack then play_npc_sound(npc, material, "ricochet") end
         shit.power = 0
         active_plate.cond = math_max(0, active_plate.cond - (RICOCHET_DURABILITY_COST * durability))
@@ -699,7 +699,6 @@ local function armor_npc_on_before_hit(npc, shit, bone_id, synth_pen)
         local plate_dmg = (kinetic_shock * DURABILITY_COST_STOP) * durability
         active_plate.cond = math_max(0, active_plate.cond - plate_dmg)
         if is_torso and PHASE3_OUTFIT_DMG > 0 then v_data.outfit_cond = math_max(0.01, v_data.outfit_cond - PHASE3_OUTFIT_DMG) end
-        if is_torso then v_data.outfit_cond = math_max(0.01, v_data.outfit_cond - PHASE3_OUTFIT_DMG) end
         
         if not is_mutant_attack then play_npc_sound(npc, material, "stopped") end
         

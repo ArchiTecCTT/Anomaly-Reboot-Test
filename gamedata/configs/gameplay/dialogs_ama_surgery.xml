@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <game_dialogs>
     <dialog id="ama_surgery_dialog">
+        <!-- Only show this dialogue option if the player actually needs medical attention -->
         <precondition>mod_medical_core.needs_surgery</precondition>
         <phrase_list>
             <phrase id="0">
@@ -8,13 +9,13 @@
                 <next>1</next>
             </phrase>
             <phrase id="1">
-                <text>st_ama_surgery_1</text>
+                <script_text>mod_medical_core.get_surgery_cost_text</script_text>
                 <next>2</next>
                 <next>3</next>
             </phrase>
             <phrase id="2">
-                <precondition>mod_medical_core.can_afford_surgery</precondition>
                 <text>st_ama_surgery_2</text>
+                <precondition>mod_medical_core.can_afford_surgery</precondition>
                 <action>mod_medical_core.perform_surgery</action>
                 <next>4</next>
             </phrase>

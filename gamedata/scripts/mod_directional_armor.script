@@ -109,30 +109,30 @@ local bones_mapped = false
 local function map_all_bones()
     if not db.actor or bones_mapped then return end
     
-   local target_torso = {
-        "bip01_spine", "bip01_spine1", "bip01_spine2"
-    }
-    for _, engine_bone in ipairs(target_torso) do
-        local b_id = db.actor:get_bone_id(engine_bone)
-        if b_id and b_id ~= 65535 then torso_bones[b_id] = engine_bone end
-    end
-
-    local target_curved = {
-        ["bip01_head"]       = { r = 120, slot = "helmet" },
-        ["bip01_l_upperarm"] = { r = 65,  slot = "l_upperarm" },
-        ["bip01_r_upperarm"] = { r = 65,  slot = "r_upperarm" },
-        ["bip01_l_forearm"]  = { r = 45,  slot = "l_forearm" },
-        ["bip01_r_forearm"]  = { r = 45,  slot = "r_forearm" },
-        ["bip01_l_thigh"]    = { r = 110, slot = "l_thigh" },
-        ["bip01_r_thigh"]    = { r = 110, slot = "r_thigh" },
-        ["bip01_l_calf"]     = { r = 75,  slot = "l_shin" },
-        ["bip01_r_calf"]     = { r = 75,  slot = "r_shin" }
-    }
-    
-    for engine_bone, data in pairs(target_curved) do
-        local b_id = db.actor:get_bone_id(engine_bone)
-        if b_id and b_id ~= 65535 then 
-            curved_bones[b_id] = { name = engine_bone, radius = data.r, target_slot = data.slot } 
+    for i = 0, 64 do
+        local bone_name = db.actor:bone_name(i)
+        if bone_name then
+            if string_find(bone_name, "pelvis") or string_find(bone_name, "spine") or string_find(bone_name, "neck") then
+                torso_bones[i] = bone_name
+            elseif string_find(bone_name, "head") or string_find(bone_name, "jaw") or string_find(bone_name, "eye") then
+                curved_bones[i] = { name = bone_name, radius = 120, target_slot = "helmet" }
+            elseif string_find(bone_name, "l_clavicle") or string_find(bone_name, "l_upperarm") then
+                curved_bones[i] = { name = bone_name, radius = 65, target_slot = "l_upperarm" }
+            elseif string_find(bone_name, "r_clavicle") or string_find(bone_name, "r_upperarm") then
+                curved_bones[i] = { name = bone_name, radius = 65, target_slot = "r_upperarm" }
+            elseif string_find(bone_name, "l_forearm") or string_find(bone_name, "l_hand") or string_find(bone_name, "l_finger") then
+                curved_bones[i] = { name = bone_name, radius = 45, target_slot = "l_forearm" }
+            elseif string_find(bone_name, "r_forearm") or string_find(bone_name, "r_hand") or string_find(bone_name, "r_finger") then
+                curved_bones[i] = { name = bone_name, radius = 45, target_slot = "r_forearm" }
+            elseif string_find(bone_name, "l_thigh") then
+                curved_bones[i] = { name = bone_name, radius = 110, target_slot = "l_thigh" }
+            elseif string_find(bone_name, "r_thigh") then
+                curved_bones[i] = { name = bone_name, radius = 110, target_slot = "r_thigh" }
+            elseif string_find(bone_name, "l_calf") or string_find(bone_name, "l_foot") or string_find(bone_name, "l_toe") then
+                curved_bones[i] = { name = bone_name, radius = 75, target_slot = "l_shin" }
+            elseif string_find(bone_name, "r_calf") or string_find(bone_name, "r_foot") or string_find(bone_name, "r_toe") then
+                curved_bones[i] = { name = bone_name, radius = 75, target_slot = "r_shin" }
+            end
         end
     end
     
@@ -142,6 +142,13 @@ end
 local function get_torso_soft_armor(outfit_sec, bone_str)
     local prot_section = SYS_GetParam(0, outfit_sec, "bones_koeff_protection")
     if not prot_section then return FALLBACK_SOFT_ARMOR end 
+    
+    -- Sanitize micro-hitboxes to fetch their parent's soft armor rating
+    if string_find(bone_str, "jaw") or string_find(bone_str, "eye") then bone_str = "bip01_head"
+    elseif string_find(bone_str, "l_finger") then bone_str = "bip01_l_hand"
+    elseif string_find(bone_str, "r_finger") then bone_str = "bip01_r_hand"
+    elseif string_find(bone_str, "l_toe") then bone_str = "bip01_l_foot"
+    elseif string_find(bone_str, "r_toe") then bone_str = "bip01_r_foot" end
     
     local val_str = SYS_GetParam(0, prot_section, bone_str)
     if not val_str then return FALLBACK_SOFT_ARMOR end
@@ -301,6 +308,8 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
     local hit_bone_str = nil
     local impact_angle_deg = 0
     local display_zone = "ARMOR"
+    local has_plate = false
+    local is_head = false
 
     if is_torso then
         if not outfit then return "PENETRATING", nil end
@@ -329,7 +338,21 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
             if not plate_hit then return "PENETRATING", nil end
             
             active_plate = plates[plate_hit]
-            display_zone = plate_hit:upper() .. " PLATE"
+            
+            has_plate = active_plate and active_plate.cond >= PLATE_DESTROYED_COND
+            if has_plate then
+                display_zone = plate_hit:upper() .. " PLATE"
+            else
+                local torso_segment = "TORSO"
+                if hit_bone_str == "bip01_spine2" then
+                    torso_segment = "UPPER TORSO"
+                elseif hit_bone_str == "bip01_spine1" then
+                    torso_segment = "MIDDLE TORSO"
+                elseif hit_bone_str == "bip01_spine" then
+                    torso_segment = "LOWER TORSO"
+                end
+                display_zone = plate_hit:upper() .. " " .. torso_segment
+            end
             
             local plate_normal = get_3d_plate_normal(plate_hit)
             
@@ -338,14 +361,16 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
             local dot = math_max(-1, math_min(1, b_inv:dotproduct(plate_normal)))
             impact_angle_deg = math_deg(math_acos(dot))
         else
-            display_zone = hit_bone_str:gsub("bip01_", ""):upper() .. " (SOFT ARMOR)"
+            local clean_bone = hit_bone_str:gsub("bip01_", ""):gsub("%d", "")
+            display_zone = clean_bone:upper() .. " (SOFT ARMOR)"
         end
 
     elseif is_curved then
         local curve_data = curved_bones[bone_id]
         hit_bone_str = curve_data.name
         
-        if hit_bone_str == "bip01_head" then
+        if curve_data.target_slot == "helmet" then
+            is_head = true
             if helmet_item then
                 local limbs = mod_limb_armor.installed_limbs[helmet_item:id()]
                 if limbs then active_plate = limbs[curve_data.target_slot] end
@@ -361,15 +386,25 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
             end
         end
         
-        if active_plate then
-            display_zone = hit_bone_str:gsub("bip01_", ""):upper() .. " ARMOR"
+        local display_name = curve_data.target_slot
+        if display_name == "helmet" then display_name = "head" end
+        
+        if string_find(hit_bone_str, "hand") then display_name = string_find(hit_bone_str, "l_") and "l_hand" or "r_hand"
+        elseif string_find(hit_bone_str, "finger") then display_name = string_find(hit_bone_str, "l_") and "l_finger" or "r_finger"
+        elseif string_find(hit_bone_str, "foot") then display_name = string_find(hit_bone_str, "l_") and "l_foot" or "r_foot"
+        elseif string_find(hit_bone_str, "toe") then display_name = string_find(hit_bone_str, "l_") and "l_toe" or "r_toe"
+        end
+        
+        local clean_name = display_name:gsub("_", " "):upper()
+        
+        has_plate = active_plate and active_plate.cond >= PLATE_DESTROYED_COND
+        if has_plate then
+            display_zone = clean_name .. " ARMOR"
         else
-            display_zone = hit_bone_str:gsub("bip01_", ""):upper() .. " SOFT ARMOR"
+            display_zone = clean_name .. " SOFT ARMOR"
         end
         impact_angle_deg = calculate_shared_limb_geometry(shit.direction, curve_data.radius)
     end
-
-    local has_plate = active_plate and active_plate.cond >= PLATE_DESTROYED_COND
 
     local bullet_pen = 0.1
     local bullet_bite = 0
@@ -379,7 +414,7 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
     local mass_mult = 1.0
 
     local shooter = shit.draftsman
-    if not shooter then return end
+    if not shooter then return "PENETRATING", nil end
 
     local ammo_sec = "Unknown/Mutant"
     if shit.type == hit.wound or shit.type == hit.strike then
@@ -445,7 +480,7 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
     
     -- GORGET FIX: Merge Outfit and Helmet protection if neck is hit
     local raw_koeff = FALLBACK_SOFT_ARMOR
-    if hit_bone_str == "bip01_neck" then
+    if hit_bone_str == "bip01_neck" or string_find(hit_bone_str, "head") or string_find(hit_bone_str, "jaw") or string_find(hit_bone_str, "eye") then
         local outfit_k = outfit and get_torso_soft_armor(outfit:section(), hit_bone_str) or FALLBACK_SOFT_ARMOR
         local helmet_k = helmet_item and get_torso_soft_armor(helmet_item:section(), hit_bone_str) or FALLBACK_SOFT_ARMOR
         raw_koeff = math_max(outfit_k, helmet_k)
@@ -586,6 +621,7 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
                 apply_plate_damage(active_plate, plate_dmg)
             end
             if is_torso and outfit then outfit:set_condition(math_max(0.01, outfit:condition() - outfit_dmg)) end
+            if is_head and helmet_item then helmet_item:set_condition(math_max(0.01, helmet_item:condition() - outfit_dmg)) end
             
             if not is_mutant_attack then 
                 if has_plate then play_plate_sound(material, "penetrated") end
@@ -625,18 +661,21 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
                 apply_plate_damage(active_plate, plate_dmg)
             end
             if is_torso and outfit then outfit:set_condition(math_max(0.01, outfit:condition() - outfit_dmg)) end
+            if is_head and helmet_item then helmet_item:set_condition(math_max(0.01, helmet_item:condition() - outfit_dmg)) end
             
             if not is_mutant_attack then 
                 if bullet_impulse >= 0.75 then trigger_audio_ducking() end
                 if has_plate then
                     if active_plate.cond <= PLATE_DESTROYED_COND then
                         play_plate_sound(material, "broken")
-                        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg(display_zone .. " PLATE SHATTERED", "critical") end
+                        if ui_ama_combat_feed then ui_ama_combat_feed.push_msg(display_zone .. " SHATTERED", "critical") end
                     else
                         play_plate_sound(material, "penetrated")
                     end
+                    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ARMOR BREACHED: " .. display_zone, "critical") end
+                else
+                    if ui_ama_combat_feed then ui_ama_combat_feed.push_msg(display_zone .. " PENETRATED", "critical") end
                 end
-                if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("ARMOR BREACHED: " .. display_zone, "critical") end
             end
             
             t_data.phase = "PHASE 4 - LETHAL BREACH"
@@ -665,6 +704,7 @@ local function armor_actor_on_before_hit(shit, bone_id, synth_pen)
             apply_plate_damage(active_plate, plate_dmg)
         end
         if is_torso and outfit_dmg > 0 and outfit then outfit:set_condition(math_max(0.01, outfit:condition() - outfit_dmg)) end
+        if is_head and outfit_dmg > 0 and helmet_item then helmet_item:set_condition(math_max(0.01, helmet_item:condition() - outfit_dmg)) end
         
         if not is_mutant_attack then 
             if has_plate then play_plate_sound(material, "stopped") end
@@ -761,10 +801,12 @@ local function actor_on_update()
     local h_gen, p_gen, r_gen, psy_gen = 0, 0, 0, 0
 
     for slot, data in pairs(installed) do
-        h_gen = h_gen + (SYS_GetParam(2, data.sec, "health_restore_speed") or 0)
-        p_gen = p_gen + (SYS_GetParam(2, data.sec, "power_restore_speed") or 0)
-        r_gen = r_gen + (SYS_GetParam(2, data.sec, "radiation_restore_speed") or 0)
-        if data.tier == 7 then psy_gen = psy_gen - 0.005 end
+        if data.sec then
+            h_gen = h_gen + (SYS_GetParam(2, data.sec, "health_restore_speed") or 0)
+            p_gen = p_gen + (SYS_GetParam(2, data.sec, "power_restore_speed") or 0)
+            r_gen = r_gen + (SYS_GetParam(2, data.sec, "radiation_restore_speed") or 0)
+            if data.tier == 7 then psy_gen = psy_gen - 0.005 end
+        end
     end
 
     if h_gen ~= 0 then db.actor.health = h_gen end

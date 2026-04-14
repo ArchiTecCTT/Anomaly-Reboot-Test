@@ -29,6 +29,8 @@ All your base are belong to us! (⌐■_■)
 local ini_eff = {}
 enable_animations = true
 mutant_loot_mod = true
+ama_fdda_consuming = false
+
 local ea_debug = false
 ini_eff = ini_file("items\\items\\animations_settings.ltx")
 local anim_exist_tm,wpn,item_usage_snd,monster_usage_snd,item,anim_use_time,obj_m,used_monster = nil
@@ -232,7 +234,7 @@ function itms_manager.actor_on_item_before_use(obj,flags)
 		["survival_kit"]    = true
 	}
 
-	if banned_items[item] then
+	if banned_items[item] and not ama_fdda_consuming then
 		if utils_obj and utils_obj.play_sound then
 			utils_obj.play_sound("interface\\inv_error")
 		end
@@ -248,7 +250,7 @@ function itms_manager.actor_on_item_before_use(obj,flags)
 		flags.ret_value = false
 		return
 	end
-	if ini_eff:r_string_ex(item, "snd") and enable_animations and flags.ret_value then
+	if ini_eff:r_string_ex(item, "snd") and enable_animations and flags.ret_value and not ama_fdda_consuming then
 		use_item(obj)
 		flags.ret_value = false
 		return
@@ -300,10 +302,12 @@ end
 
 --eating fake item to stop default items sound and delayed item using
 function eat_my_obj()
+	ama_fdda_consuming = true
 	if obj_m then
 		db.actor:eat(obj_m)
 	end
 	db.actor:eat(db.actor:object("items_anm_dummy"))
+	ama_fdda_consuming = false
 	return true
 end
 

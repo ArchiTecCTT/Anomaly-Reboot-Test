@@ -21,14 +21,16 @@ local function action_router(obj_id, slot, mode, action)
     local obj = level.object_by_id(obj_id)
     if not obj then return end
 
-    if mode == "medical" then
+    if mode == "medical" or mode == "artery" then
         if slot ~= "none" then
-            if mod_medical_items and mod_medical_items.apply_localized_item then
-                mod_medical_items.apply_localized_item(obj, slot)
-            end
-        elseif action == "single_artery" then
-            if mod_medical_items and mod_medical_items.apply_localized_artery then
-                mod_medical_items.apply_localized_artery(obj, slot)
+            if action == "single_artery" then
+                if mod_medical_items and mod_medical_items.apply_localized_artery then
+                    mod_medical_items.apply_localized_artery(obj, slot)
+                end
+            else
+                if mod_medical_items and mod_medical_items.apply_localized_item then
+                    mod_medical_items.apply_localized_item(obj, slot)
+                end
             end
         end
     else
@@ -66,7 +68,7 @@ function start(obj, mode)
 
     local obj_id = obj:id()
 
-    if mode == "medical" then
+    if mode == "medical" or mode == "artery" then
         local valid_limbs = {}
         local valid_arteries = {}
         local item_sec = obj:section()
@@ -119,20 +121,24 @@ function start(obj, mode)
         end
 
         local count = 0
-        for limb, _ in pairs(valid_limbs) do
-            local display_name = "Apply to " .. (limb_names[limb] or limb)
-            table.insert(context_str, display_name)
-            table.insert(context_action, "apply_ama_med")
-            table.insert(context_params, {obj_id, limb, mode, "single"})
-            count = count + 1
+        if mode == "medical" then
+            for limb, _ in pairs(valid_limbs) do
+                local display_name = "Apply to " .. (limb_names[limb] or limb)
+                table.insert(context_str, display_name)
+                table.insert(context_action, "apply_ama_med")
+                table.insert(context_params, {obj_id, limb, mode, "single"})
+                count = count + 1
+            end
         end
         
-        for limb, _ in pairs(valid_arteries) do
-            local display_name = "Stop Arterial Bleeding (" .. (limb_names[limb] or limb) .. ")"
-            table.insert(context_str, display_name)
-            table.insert(context_action, "apply_ama_med")
-            table.insert(context_params, {obj_id, limb, mode, "single_artery"})
-            count = count + 1
+        if mode == "medical" or mode == "artery" then
+            for limb, _ in pairs(valid_arteries) do
+                local display_name = "Stop Arterial Bleeding (" .. (limb_names[limb] or limb) .. ")"
+                table.insert(context_str, display_name)
+                table.insert(context_action, "apply_ama_med")
+                table.insert(context_params, {obj_id, limb, mode, "single_artery"})
+                count = count + 1
+            end
         end
         
         if count == 0 then

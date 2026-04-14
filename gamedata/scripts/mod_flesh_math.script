@@ -77,7 +77,7 @@ local TORSO_ILIAC_DMG_MULT        = 2.5
 local TORSO_ILIAC_BLEED_MULT      = 3.5
 local TORSO_ILIAC_PAIN            = 25
 local TORSO_PELVIS_PAIN           = 50
-local TORSO_EXIT_WOUND_BLEED_BASE = 15.0
+local TORSO_EXIT_WOUND_BLEED_BASE = 25.0
 local TORSO_EXIT_WOUND_PAIN       = 25.0
 local TORSO_TUMBLE_RIB_COST       = 6.0
 local TORSO_TUMBLE_PELVIS_COST    = 8.0
@@ -130,7 +130,7 @@ local NPC_GI_DMG                  = 1.2
 local NPC_GI_BLEED                = 1.2
 
 -- Hit Process Fallback Tuning
-local FALLBACK_WOUND_BLEED_MULT   = 10.0
+local FALLBACK_WOUND_BLEED_MULT   = 15.0
 local FALLBACK_PAIN_MULT          = 5.0
 local MAX_BULLET_IMPULSE          = 3.0
 local SHOCK_SEVERE_MULT           = 1.5
@@ -183,23 +183,23 @@ end
 
 local TISSUE_PROPERTIES = {
     ["brain"]          = { thickness = 150, hardness = 0.20, base_bleed = 30.0, death_rating = 1.0 },
-    ["lungs"]          = { thickness = 200, hardness = 0.05, base_bleed = 25.0, death_rating = 0.8 },
-    ["heart"]          = { thickness = 115, hardness = 0.25, base_bleed = 80.0, death_rating = 1.0 },
-    ["liver"]          = { thickness = 140, hardness = 0.30, base_bleed = 45.0, death_rating = 0.6 },
-    ["gi_tract"]       = { thickness = 230, hardness = 0.15, base_bleed = 15.0, death_rating = 0.4 },
+    ["lungs"]          = { thickness = 200, hardness = 0.05, base_bleed = 35.0, death_rating = 0.8 },
+    ["heart"]          = { thickness = 115, hardness = 0.25, base_bleed = 95.0, death_rating = 1.0 },
+    ["liver"]          = { thickness = 140, hardness = 0.30, base_bleed = 60.0, death_rating = 0.6 },
+    ["gi_tract"]       = { thickness = 230, hardness = 0.15, base_bleed = 25.0, death_rating = 0.4 },
     ["skull"]          = { thickness = 10,  hardness = 0.85, base_bleed = 0.0,  death_rating = 0.0 },
-    ["cervical_spine"] = { thickness = 24,  hardness = 0.65, base_bleed = 5.0,  death_rating = 1.0 },
-    ["lumbar_spine"]   = { thickness = 45,  hardness = 0.65, base_bleed = 5.0,  death_rating = 1.0 },
-    ["rib"]            = { thickness = 13,  hardness = 0.50, base_bleed = 2.0,  death_rating = 0.0 },
-    ["ilium"]          = { thickness = 10,  hardness = 0.60, base_bleed = 30.0, death_rating = 0.2 },
-    ["sacrum"]         = { thickness = 35,  hardness = 0.60, base_bleed = 15.0, death_rating = 0.3 },
-    ["femur"]          = { thickness = 30,  hardness = 0.80, base_bleed = 10.0, death_rating = 0.1 },
-    ["tibia"]          = { thickness = 30,  hardness = 0.80, base_bleed = 5.0,  death_rating = 0.0 },
-    ["humerus"]        = { thickness = 20,  hardness = 0.75, base_bleed = 5.0,  death_rating = 0.0 },
-    ["radius_ulna"]    = { thickness = 14,  hardness = 0.75, base_bleed = 3.0,  death_rating = 0.0 },
-    ["flesh"]          = { thickness = 50,  hardness = 0.10, base_bleed = 2.0,  death_rating = 0.01 },
-    ["trachea"]        = { thickness = 40,  hardness = 0.10, base_bleed = 15.0, death_rating = 0.9 },
-    ["artery"]         = { thickness = 20,  hardness = 0.05, base_bleed = 15.0, death_rating = 0.8 }
+    ["cervical_spine"] = { thickness = 24,  hardness = 0.65, base_bleed = 10.0, death_rating = 1.0 },
+    ["lumbar_spine"]   = { thickness = 45,  hardness = 0.65, base_bleed = 10.0, death_rating = 1.0 },
+    ["rib"]            = { thickness = 13,  hardness = 0.50, base_bleed = 5.0,  death_rating = 0.0 },
+    ["ilium"]          = { thickness = 10,  hardness = 0.60, base_bleed = 40.0, death_rating = 0.2 },
+    ["sacrum"]         = { thickness = 35,  hardness = 0.60, base_bleed = 20.0, death_rating = 0.3 },
+    ["femur"]          = { thickness = 30,  hardness = 0.80, base_bleed = 20.0, death_rating = 0.1 },
+    ["tibia"]          = { thickness = 30,  hardness = 0.80, base_bleed = 10.0, death_rating = 0.0 },
+    ["humerus"]        = { thickness = 20,  hardness = 0.75, base_bleed = 10.0, death_rating = 0.0 },
+    ["radius_ulna"]    = { thickness = 14,  hardness = 0.75, base_bleed = 6.0,  death_rating = 0.0 },
+    ["flesh"]          = { thickness = 50,  hardness = 0.10, base_bleed = 5.0,  death_rating = 0.01 },
+    ["trachea"]        = { thickness = 40,  hardness = 0.10, base_bleed = 20.0, death_rating = 0.9 },
+    ["artery"]         = { thickness = 20,  hardness = 0.05, base_bleed = 20.0, death_rating = 0.8 }
 }
 
 local function get_bone_category(bone_name)
@@ -318,7 +318,6 @@ local function apply_tissue_drag(hit_organ, organ_string, bullet_pen, flesh_powe
     end
     local final_death_risk = props.death_rating * pen_ratio
     table.insert(wounds, acquire_wound(wound_type, final_bleed, organ_string or hit_organ, limb, final_death_risk))
-    if bullet_pen > 0 then utils_obj.play_sound("actor\\hurt" .. tostring(math_random(1, 7))) end
     
     return bullet_pen
 end
@@ -412,7 +411,6 @@ local function calculate_neck_trauma(target, shit, bone_name, flesh_power, flesh
         if dist_from_center > radius + 5 then
             is_exit = true
             travel_dist_mm = i * step_size_mm
-            if target:id() == 0 then play_sequential_bhp() end
             table.insert(path_log, "Exit Wound")
             break
         end
@@ -563,7 +561,6 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
         if dist_from_center > radius + 5 or current_y < -10 or current_y > length + 10 then
             is_exit = true
             travel_dist_mm = i * step_size_mm
-            if target:id() == 0 then play_sequential_bhp() end
             table.insert(path_log, "Exit Wound")
             break
         end
@@ -696,16 +693,24 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
             if not hits.bone and math_abs(current_x) < 15 and (current_z > -20 and current_z < 40) then
                 hits.bone = true
                 dmg_mult = dmg_mult + 0.3
+                
+                local is_hand = string.find(bone_name, "hand")
+                local sub_bone = is_hand and (side_prefix .. "hand") or (side_prefix .. "finger")
+                local side_char = string.upper(string.sub(side_prefix, 1, 1))
+                local msg_str = side_char .. " " .. (is_hand and "HAND" or "FINGER")
+                
                 table.insert(path_log, "Hand/Digits Struck")
                 
-                bullet_pen = apply_tissue_drag("radius_ulna", bone_name, bullet_pen, flesh_power, wounds, side_prefix .. "forearm", "fracture")
+                bullet_pen = apply_tissue_drag("radius_ulna", sub_bone, bullet_pen, flesh_power, wounds, side_prefix .. "forearm", "fracture")
                 total_pain_spike = total_pain_spike + 15
                 
                 local active_weapon = target:active_item()
                 if active_weapon and (target:id() == 0 or math_random() < 0.6) then
                     target:drop_item(active_weapon)
                     table.insert(path_log, "(Weapon Dropped)")
-                    if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("HAND/FINGERS STRUCK - WEAPON DROPPED", "flesh") end
+                    if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg(msg_str .. " STRUCK - WEAPON DROPPED", "flesh") end
+                else
+                    if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg(msg_str .. " STRUCK", "flesh") end
                 end
                 remaining_power = remaining_power - 0.05
                 if bullet_pen <= 0 then break end
@@ -716,12 +721,18 @@ local function raymarch_limb(target, shit, bone_name, flesh_power, flesh_impulse
             if not hits.bone and math_abs(current_x) < 20 and (current_z > -20 and current_z < 40) then
                 hits.bone = true
                 dmg_mult = dmg_mult + 0.3
+                
+                local is_foot = string.find(bone_name, "foot")
+                local sub_bone = is_foot and (side_prefix .. "foot") or (side_prefix .. "toe")
+                local side_char = string.upper(string.sub(side_prefix, 1, 1))
+                local msg_str = side_char .. " " .. (is_foot and "FOOT" or "TOE")
+                
                 table.insert(path_log, "Foot/Toes Struck")
                 
-                bullet_pen = apply_tissue_drag("tibia", bone_name, bullet_pen, flesh_power, wounds, side_prefix .. "shin", "fracture")
+                bullet_pen = apply_tissue_drag("tibia", sub_bone, bullet_pen, flesh_power, wounds, side_prefix .. "shin", "fracture")
                 total_pain_spike = total_pain_spike + 15
                 
-                if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg("FOOT/TOES STRUCK", "flesh") end
+                if target:id() == 0 and ui_ama_combat_feed then ui_ama_combat_feed.push_msg(msg_str .. " STRUCK", "flesh") end
                 remaining_power = remaining_power - 0.05
                 if bullet_pen <= 0 then break end
             end
@@ -860,7 +871,6 @@ local function raymarch_torso(target, shit, bone_name, flesh_power, flesh_impuls
             is_exit = true
             travel_dist_mm = step_count * step_size_mm
             total_dmg_mult, total_bleed_mult = total_dmg_mult + 0.5, total_bleed_mult + 1.0
-            if target:id() == 0 then play_sequential_bhp() end
             table.insert(path_log, "Exit Wound")
             break
         end
@@ -1080,9 +1090,9 @@ local function process_blunt_hit(target, shit, bone_name, category, flesh_power)
         -- Tier 1: Surface Bruising
         path_log = "Surface Bruising"
         if is_player then
-            local sound_pool = math_random(1, 2)
-            if sound_pool == 1 then utils_obj.play_sound("actor\\pain_" .. tostring(math_random(1, 8)))
-            else utils_obj.play_sound("actor\\pain" .. tostring(math_random(1, 8))) end
+                local sound_pool = math_random(1, 2)
+                if sound_pool == 1 then utils_obj.play_sound("actor\\pain_" .. tostring(math_random(1, 8)))
+                else utils_obj.play_sound("actor\\pain" .. tostring(math_random(1, 8))) end
         end
     elseif power < BLUNT_TIER2_THRESH then
         -- Tier 2: Severe Contusion
@@ -1090,9 +1100,9 @@ local function process_blunt_hit(target, shit, bone_name, category, flesh_power)
         path_log = "Severe Contusion"
         if is_player then 
             db.actor.power = -BLUNT_TIER2_STAMINA_DRAIN 
-            local sound_pool = math_random(1, 2)
-            if sound_pool == 1 then utils_obj.play_sound("actor\\pain_" .. tostring(math_random(1, 8)))
-            else utils_obj.play_sound("actor\\pain" .. tostring(math_random(1, 8))) end
+                local sound_pool = math_random(1, 2)
+                if sound_pool == 1 then utils_obj.play_sound("actor\\pain_" .. tostring(math_random(1, 8)))
+                else utils_obj.play_sound("actor\\pain" .. tostring(math_random(1, 8))) end
         end
     elseif power < BLUNT_TIER3_THRESH then
         -- Tier 3: Bone Fracture / Concussion
@@ -1200,7 +1210,7 @@ local function process_blast_hit(target, shit, flesh_power)
         pain_spike = BLAST_TIER1_PAIN
         if is_player then
             level.add_pp_effector("snd_shock.ppe", 2030, false)
-            utils_obj.play_sound("actor\\pain" .. tostring(math_random(1, 8)))
+                utils_obj.play_sound("actor\\pain_" .. tostring(math_random(1, 8)))
             if ui_ama_combat_feed then ui_ama_combat_feed.push_msg("MINOR OVERPRESSURE - AUDITORY TRAUMA", "flesh") end
         end
     elseif flesh_power < BLAST_TIER2_THRESH then
@@ -1374,6 +1384,11 @@ function process_flesh_hit(target, shit, flesh_power, flesh_impulse, bullet_pen,
         if pain_spike and pain_spike > 0 and mod_medical_core then
             mod_medical_core.set_pain_level(mod_medical_core.get_pain_level() + pain_spike)
         end
+            
+            -- Play standard bullet hit pain if a severe physiological shock didn't already trigger one
+            if not severe_shock then
+                play_sequential_bhp()
+            end
 
         db.actor.power = -(shock_amount * bullet_impulse * SHOCK_STAMINA_DRAIN_MULT)
         shit.power = 0.0001 -- Nullify vanilla health reduction

@@ -63,12 +63,24 @@ local function get_health_and_state(bio, wounds, part, view)
         health = bio.organ_health and bio.organ_health[target_org] or 1.0
         is_stabilized = bio.stabilized_organs and bio.stabilized_organs[target_org] or false
     elseif view == 3 then -- Skeletal View
-        health = bio.bone_health and bio.bone_health[part] or 1.0
+        local bh = bio.bone_health
+        health = bh and bh[part] or 1.0
+        if bh then
+            if part == "l_ulna" then health = math_min(health, bh["l_hand"] or 1.0, bh["l_finger"] or 1.0)
+            elseif part == "r_ulna" then health = math_min(health, bh["r_hand"] or 1.0, bh["r_finger"] or 1.0)
+            elseif part == "l_tibia" then health = math_min(health, bh["l_foot"] or 1.0, bh["l_toe"] or 1.0)
+            elseif part == "r_tibia" then health = math_min(health, bh["r_foot"] or 1.0, bh["r_toe"] or 1.0)
+            end
+        end
     else -- Flesh (1) or Circulatory (4) View
-        health = bio.limb_health[limb_key] or 1.0
+        health = bio.limb_health and bio.limb_health[limb_key] or 1.0
     end
         
     local is_splinted = limb_key and bio.splinted_limbs and bio.splinted_limbs[limb_key]
+    if view == 3 and is_splinted then
+        is_stabilized = true
+    end
+
     local is_critical = false
     
     for _, w in ipairs(wounds) do
@@ -92,8 +104,16 @@ local function get_health_and_state(bio, wounds, part, view)
                     break
                 end
             elseif view == 3 then
-                if (w_org == part or (part == "ribs" and w_org == "rib")) and w.type == "fracture" then
-                    is_critical = true -- Used to force red color for active fractures
+                local match = false
+                if w_org == part or (part == "ribs" and w_org == "rib") then match = true
+                elseif part == "l_ulna" and (w_org == "l_hand" or w_org == "l_finger") then match = true
+                elseif part == "r_ulna" and (w_org == "r_hand" or w_org == "r_finger") then match = true
+                elseif part == "l_tibia" and (w_org == "l_foot" or w_org == "l_toe") then match = true
+                elseif part == "r_tibia" and (w_org == "r_foot" or w_org == "r_toe") then match = true
+                end
+                
+                if match and (w.type == "fracture" or w.type == "internal") then
+                    is_critical = true
                     break
                 end
             end
@@ -558,7 +578,13 @@ function AMATerminalUI:UpdateActorMode()
             if w_data then
                 local display_name = string.gsub(tostring(w_data.name), "_", " ")
                 ui_item.name:SetText(string.upper(display_name))
-                ui_item.state:SetText(string.format("%.1f mL/s", w_data.bleed))
+                
+                local type_tag = "EXTERNAL"
+                if w_data.type == "fracture" or w_data.type == "internal" then
+                    type_tag = "INTERNAL"
+                end
+                
+                ui_item.state:SetText(string.format("%s (%.1f mL/s)", type_tag, w_data.bleed))
                 
                 local w_cond = 1.0 - math_min(w_data.bleed / 15.0, 1.0)
                 local w_color = get_text_color(w_cond)
